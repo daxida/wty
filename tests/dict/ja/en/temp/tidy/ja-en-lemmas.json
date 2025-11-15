@@ -5,15 +5,11 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ta̠no̞ɕiː]",
-              "tags": []
+              "ipa": "[ta̠no̞ɕiː]"
             }
           ],
           "glossTree": {
-            "pleasant, delightful, fun, enjoyable": {
-              "_tags": [],
-              "_examples": []
-            }
+            "pleasant, delightful, fun, enjoyable": {}
           },
           "etymology_text": "⟨tano₁siki₁⟩ → */tanʷosikʲi/ → /tanoshii/\nFrom Old Japanese. First attested in the Kojiki of 712 CE. No Ryukyuan cognates exist; as a result, further derivation unknown. Theories include:\n* A compound of 手 (ta, “hand”, combining form) + 伸す (nosu, “to extend”)\n*: This is problematic, as nosu has first been attested starting from the early 900s, with no A/B distinction (see Jōdai Tokushu Kanazukai for details).\n* From 田神 (tano, literally “rice paddy god”)\n*: No reading of 神 (*no, “god”) exists.\n* A borrowing from an unknown language\n*: No words resemble *tanV meaning \"fun\" or \"to enjoy\".",
           "head_info_text": "楽(たの)しい • (tanoshii) -i (adverbial 楽(たの)しく (tanoshiku))",
@@ -29,14 +25,12 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[sɨ̥kʲi]",
-              "tags": []
+              "ipa": "[sɨ̥kʲi]"
             }
           ],
           "glossTree": {
             "liked, likable": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "好きな食べ物は？ アイスクリームです。",
                   "translation": "What's your favorite food? - It's ice cream."
@@ -70,14 +64,12 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ta̠nɯ̟kʲi]",
-              "tags": []
+              "ipa": "[ta̠nɯ̟kʲi]"
             }
           ],
           "glossTree": {
             "a raccoon dog, Nyctereutes procyonoides": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "狸 兼名苑云狸［音𨤲和名太奴木］摶鳥為粮者也",
                   "translation": "Raccoon dog: According to Jian Ming Yuan (兼名苑), raccoon dogs [read as 𨤲 (ri), native Japanese 太奴木 (tanuki)] always prey on birds."
@@ -89,10 +81,10 @@
               ]
             },
             "a person who pretends to be good but in fact is cunning (compare English sly fox)": {
-              "_tags": [
+              "tags": [
                 "figuratively"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "やいやい、其処な狸め",
                   "translation": "Hey there, you sly dog!"
@@ -100,19 +92,18 @@
               ]
             },
             "short for 狸饂飩 (tanuki-udon) and 狸蕎麦 (tanuki-soba): styles of various noodle dishes": {
-              "_tags": [
+              "tags": [
                 "abbreviation",
                 "alt-of"
-              ],
-              "_examples": []
+              ]
             },
             "short for 狸寝入り (tanuki neiri): pretending to be asleep": {
-              "_tags": [
+              "tags": [
                 "abbreviation",
                 "alt-of",
                 "rare"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "狸を決め込む ― tanuki o kimekomu ― pretend to be a raccoon dog → feign sleep",
                   "translation": ""
@@ -120,13 +111,12 @@
               ]
             },
             "short for 狸汁 (tanuki-jiru): a soup made from tanuki meat mixed with daikon, burdock root, etc.": {
-              "_tags": [
+              "tags": [
                 "abbreviation",
                 "alt-of",
                 "obsolete",
                 "rare"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "According to one theory, derived from 手貫 (tanuki, “arm glove, gauntlet”), which raccoon dog hide was sometimes used for.",
@@ -143,23 +133,20 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ha̠ɕiɾɯ̟]",
-              "tags": []
+              "ipa": "[ha̠ɕiɾɯ̟]"
             }
           ],
           "glossTree": {
             "to run (move fast on foot)": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "マラソン選手が走り出した。",
                   "translation": "Marathon athlete(s) started running."
                 }
               ],
-              "_children": {
+              "children": {
                 "to move forward; (of a machine) to operate, function; (of objects) to move at a high speed (of a vehicle)": {
-                  "_tags": [],
-                  "_examples": [
+                  "examples": [
                     {
                       "text": "車が走っている。",
                       "translation": "A car is running. / Cars are running."
@@ -167,8 +154,7 @@
                   ]
                 },
                 "to flow vigorously (of liquid)": {
-                  "_tags": [],
-                  "_examples": [
+                  "examples": [
                     {
                       "text": "石の上を水が走る。",
                       "translation": "The water runs over the stones."
@@ -178,10 +164,10 @@
               }
             },
             "to run through some kind of place": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "彼はこの道をよく走る。",
                   "translation": "He often runs down this street."
@@ -189,25 +175,17 @@
               ]
             },
             "to move smoothly; to slide": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "刀が鞘から走る。",
                   "translation": "The sword slides out of its sheath."
                 }
               ]
             },
-            "to run away, escape": {
-              "_tags": [],
-              "_examples": []
-            },
-            "to rush, hurry around": {
-              "_tags": [],
-              "_examples": []
-            },
+            "to run away, escape": {},
+            "to rush, hurry around": {},
             "to give over oneself to; to commit oneself to (usually something bad)": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "彼は敵に走った。",
                   "translation": "He defected to the enemy."
@@ -218,13 +196,9 @@
                 }
               ]
             },
-            "to spread out, scatter, splatter, spout": {
-              "_tags": [],
-              "_examples": []
-            },
+            "to spread out, scatter, splatter, spout": {},
             "to lead or extend in a certain direction": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "山脈が南北に走る。",
                   "translation": "The mountain range runs north–south."
@@ -236,8 +210,7 @@
               ]
             },
             "to appear briefly; to flash": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "稲妻が走る",
                   "translation": "lightning flashes by"
@@ -248,22 +221,17 @@
                 }
               ]
             },
-            "to feel palpitations; to have a sense of unease": {
-              "_tags": [],
-              "_examples": []
-            },
+            "to feel palpitations; to have a sense of unease": {},
             "to crack": {
-              "_tags": [
+              "tags": [
                 "euphemistic"
-              ],
-              "_examples": []
+              ]
             },
             "alternative spelling of ハシる": {
-              "_tags": [
+              "tags": [
                 "alt-of",
                 "alternative"
-              ],
-              "_examples": []
+              ]
             }
           },
           "head_info_text": "走(はし)る • (hashiru) intransitive godan (stem 走(はし)り (hashiri), past 走(はし)った (hashitta))",
@@ -279,23 +247,15 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ɡo̞ɕikʲi]",
-              "tags": []
+              "ipa": "[ɡo̞ɕikʲi]"
             },
             {
-              "ipa": "[ɡo̞ɕo̞kɯ̟]",
-              "tags": []
+              "ipa": "[ɡo̞ɕo̞kɯ̟]"
             }
           ],
           "glossTree": {
-            "five colors (usu. red (赤), blue (青), yellow (黄), white (白) and black (黒))": {
-              "_tags": [],
-              "_examples": []
-            },
-            "synonym of 瓜 (uri, “melon, gourd”)": {
-              "_tags": [],
-              "_examples": []
-            }
+            "five colors (usu. red (赤), blue (青), yellow (黄), white (白) and black (黒))": {},
+            "synonym of 瓜 (uri, “melon, gourd”)": {}
           },
           "head_info_text": "五(ご)色(しき) • (goshiki) ^(←ごしき (gosiki)?)",
           "wlink": "https://en.wiktionary.org/wiki/五色#Japanese",
@@ -310,15 +270,11 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[o̞na̠ka̠ ɡa̠ sɨita̠]",
-              "tags": []
+              "ipa": "[o̞na̠ka̠ ɡa̠ sɨita̠]"
             }
           ],
           "glossTree": {
-            "[I am / someone is] hungry": {
-              "_tags": [],
-              "_examples": []
-            }
+            "[I am / someone is] hungry": {}
           },
           "etymology_text": "The perfective form of お腹が空く (onaka ga suku, “to become hungry”, literally “one's stomach becomes empty”).",
           "head_info_text": "お腹(なか)が空(す)いた • (onaka ga suita)",

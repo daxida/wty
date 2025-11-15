@@ -5,18 +5,15 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ʁɔk]",
-              "tags": []
+              "ipa": "[ʁɔk]"
             },
             {
-              "ipa": "[ɹɔk]",
-              "tags": []
+              "ipa": "[ɹɔk]"
             }
           ],
           "glossTree": {
             "populäre Musikrichtung, die Anfang der 1950er Jahre in den USA entstand": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Der Rock ist nicht totzukriegen.",
                   "translation": ""
@@ -30,14 +27,12 @@
         "1": {
           "ipa": [
             {
-              "ipa": "[ʁɔk]",
-              "tags": []
+              "ipa": "[ʁɔk]"
             }
           ],
           "glossTree": {
             "in arabischen Märchen: flugfähiger Vogel in der Größe eines Elefanten": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Sindbad band sich, um seinem Schicksal auf einer abgelegenen Insel zu entkommen, an ein Bein des Vogels Rock.",
                   "translation": ""
@@ -75,14 +70,12 @@
               ]
             },
             {
-              "ipa": "[ˈɡaʁaːʃ]",
-              "tags": []
+              "ipa": "[ˈɡaʁaːʃ]"
             }
           ],
           "glossTree": {
             "Raum zum dauerhaften Ab- und Unterstellen von Kraftfahrzeugen": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Ich werde das Auto in die Garage schaffen.",
                   "translation": ""
@@ -106,8 +99,7 @@
               ]
             },
             "Raum zum kurzfristigen Ab- und Unterstellen von Kraftfahrzeugen": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "„Ein Mann steht vor seinem Opel allein in einer Garage.“",
                   "translation": ""
@@ -127,16 +119,15 @@
               ]
             },
             "auf die Reparatur und Wartung von Automobilen ausgerichtete Werkstatt": {
-              "_tags": [
+              "tags": [
                 "rare"
-              ],
-              "_examples": []
+              ]
             },
             "Geschäft, das sowohl als eine auf die Reparatur von Kraftfahrzeugen spezialisierte Werkstatt als auch als Verkaufslokal von Kraftfahrzeugen dient": {
-              "_tags": [
+              "tags": [
                 "Swiss Standard German"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "„Selbstverständlich werden in der Garage auch künftig Fremdmarken repariert.“",
                   "translation": ""

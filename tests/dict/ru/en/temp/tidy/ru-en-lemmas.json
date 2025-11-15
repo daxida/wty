@@ -5,17 +5,16 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[sʲnʲek]",
-              "tags": []
+              "ipa": "[sʲnʲek]"
             }
           ],
           "glossTree": {
             "snow": {
-              "_tags": [
+              "tags": [
                 "inanimate",
                 "masculine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "идёт снег",
                   "translation": "it is snowing"
@@ -51,20 +50,18 @@
               ]
             },
             "snow, the white electrical noise on a TV set when there is no TV signal": {
-              "_tags": [
+              "tags": [
                 "figuratively",
                 "inanimate",
                 "masculine"
-              ],
-              "_examples": []
+              ]
             },
             "cocaine": {
-              "_tags": [
+              "tags": [
                 "inanimate",
                 "masculine",
                 "slang"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "Inherited from Proto-Slavic *sněgъ, from Proto-Balto-Slavic *snáigas, from Proto-Indo-European *snóygʷʰos.",
@@ -81,38 +78,33 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[pəbʲɪˈlʲetʲ]",
-              "tags": []
+              "ipa": "[pəbʲɪˈlʲetʲ]"
             }
           ],
           "glossTree": {
             "to turn white, (intransitive) to whiten": {
-              "_tags": [
+              "tags": [
                 "perfective"
-              ],
-              "_examples": []
+              ]
             },
             "to turn gray": {
-              "_tags": [
+              "tags": [
                 "colloquial",
                 "perfective"
-              ],
-              "_examples": []
+              ]
             },
             "to become brighter": {
-              "_tags": [
+              "tags": [
                 "colloquial",
                 "perfective"
-              ],
-              "_examples": []
+              ]
             },
             "to dawn": {
-              "_tags": [
+              "tags": [
                 "colloquial",
                 "impersonal",
                 "perfective"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "по- (po-) + беле́ть (belétʹ)",
@@ -129,15 +121,11 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ˈzɪmnei̯]",
-              "tags": []
+              "ipa": "[ˈzɪmnei̯]"
             }
           ],
           "glossTree": {
-            "cold": {
-              "_tags": [],
-              "_examples": []
-            }
+            "cold": {}
           },
           "etymology_text": "From Proto-Slavic *zimьnъ. Morphologically, from зима́ (zymá) + -ний (-nyj).\nRelated to зи́мній (zýmnij).",
           "head_info_text": "зи́мний • (zýmnyj)",

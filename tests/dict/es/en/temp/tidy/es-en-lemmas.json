@@ -5,26 +5,23 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/biˈbiɾ/",
-              "tags": []
+              "ipa": "/biˈbiɾ/"
             },
             {
-              "ipa": "[biˈβ̞iɾ]",
-              "tags": []
+              "ipa": "[biˈβ̞iɾ]"
             }
           ],
           "glossTree": {
             "to live; to be alive": {
-              "_tags": [
+              "tags": [
                 "intransitive"
-              ],
-              "_examples": []
+              ]
             },
             "to make a living, to live on": {
-              "_tags": [
+              "tags": [
                 "intransitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Vive de migas, nada más.",
                   "translation": "He lives on crumbs, nothing more."
@@ -32,10 +29,10 @@
               ]
             },
             "to live in, reside, inhabit": {
-              "_tags": [
+              "tags": [
                 "intransitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Vive en la casa roja.",
                   "translation": "She lives in the red house."
@@ -47,10 +44,9 @@
               ]
             },
             "to experience, to live through": {
-              "_tags": [
+              "tags": [
                 "transitive"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "From Old Spanish bevir, bivir, vevir, viver, inherited from Latin vīvere. Compare Ladino bivir, Portuguese viver.",

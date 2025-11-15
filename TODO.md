@@ -30,9 +30,8 @@
 - [x] verbose flag
 - [x] [en] finish porting the EN testsuite
 - [x] finish porting the testsuite
-
-- [ ] bring the registry code
-- [ ] rename/refactor Tidy now that we won't have to fight with diffs
+- [x] bring the registry code
+- [x] rename/refactor Tidy now that we won't have to fight with diffs
 
 - [ ] localize tags for fun?
 - [ ] Exit code?

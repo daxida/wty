@@ -5,15 +5,11 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/ˈakuɫ/",
-              "tags": []
+              "ipa": "/ˈakuɫ/"
             }
           ],
           "glossTree": {
-            "very": {
-              "_tags": [],
-              "_examples": []
-            }
+            "very": {}
           },
           "etymology_text": "Uncertain. Possibly:\n# A derivation from Proto-Indo-European *keHl- whence also Proto-Celtic *kaletos (“hard”), Proto-Slavic *kaliti (“to temper, harden”), Latin callum (“hardened skin”).\n# Borrowed from Germanic, ultimately from Proto-Germanic *jekulaz (“icicle”).\n# Akin Old Armenian ոյծ (oyc, “cold, frost”), suffixed with -ull, though the two terms are phonologically incompatible.",
           "wlink": "https://en.wiktionary.org/wiki/akull#Albanian",
@@ -76,10 +72,10 @@
           ],
           "glossTree": {
             "tongue (organ)": {
-              "_tags": [
+              "tags": [
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "gjuhë lope e zier",
                   "translation": "boiled beef tongue"
@@ -89,13 +85,13 @@
                   "translation": "Burned its tongue."
                 }
               ],
-              "_children": {
+              "children": {
                 "speech, talking": {
-                  "_tags": [
+                  "tags": [
                     "feminine",
                     "figuratively"
                   ],
-                  "_examples": [
+                  "examples": [
                     {
                       "text": "Mbaje gjuhën!",
                       "translation": "Hold your tongue!"
@@ -107,35 +103,33 @@
                   ]
                 },
                 "strip of land": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 },
                 "bell clapper, clanger, tongue": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 }
               }
             },
             "language, tongue": {
-              "_tags": [
+              "tags": [
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "gjuha shqipe",
                   "translation": "the Albanian language"
                 }
               ],
-              "_children": {
+              "children": {
                 "register, speech, style": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
                   ],
-                  "_examples": [
+                  "examples": [
                     {
                       "text": "gjuha e fëmijëve",
                       "translation": "children speech"
@@ -151,10 +145,10 @@
                   ]
                 },
                 "language (generally, any form of communication)": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
                   ],
-                  "_examples": [
+                  "examples": [
                     {
                       "text": "gjuha e muzikës",
                       "translation": "music's language"
@@ -166,18 +160,16 @@
                   ]
                 },
                 "local dialect": {
-                  "_tags": [
+                  "tags": [
                     "colloquial",
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 },
                 "Albanian, as a subject in school": {
-                  "_tags": [
+                  "tags": [
                     "colloquial",
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 }
               }
             }

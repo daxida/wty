@@ -301,16 +301,14 @@
           ],
           "glossTree": {
             "paddy field; wet field (Classifier: 坵 mn)": {
-              "_tags": [
+              "tags": [
                 "Min"
-              ],
-              "_examples": []
+              ]
             },
             "farmland in general; field (Classifier: 坵 mn)": {
-              "_tags": [
+              "tags": [
                 "Min"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "The Min native word for “paddy field; field”.\nEtymology unknown. Chinese scholars identify 塍 (OC *ɦljɯŋ, “raised path between fields”) as the etymological character (本字), although Norman proposes that this is related to 層 (OC *zɯːŋ, “layer”), reflecting the terraced fields commonly found in Fujian (Schuessler, 2007). Compare also 㽪 (“wet field”).",

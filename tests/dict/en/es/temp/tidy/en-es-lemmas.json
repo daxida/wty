@@ -22,27 +22,17 @@
             }
           ],
           "glossTree": {
-            "Rápido, veloz.": {
-              "_tags": [],
-              "_examples": []
-            },
+            "Rápido, veloz.": {},
             "Adelantado.": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Your watch is some minutes fast",
                   "translation": "Tu reloj va algunos minutos adelantado."
                 }
               ]
             },
-            "Firme, fijo, sólido.": {
-              "_tags": [],
-              "_examples": []
-            },
-            "Cachondo, entregado a los placeres.": {
-              "_tags": [],
-              "_examples": []
-            }
+            "Firme, fijo, sólido.": {},
+            "Cachondo, entregado a los placeres.": {}
           },
           "etymology_text": "Del inglés medio fast, del inglés antiguo fæst.",
           "wlink": "https://es.wiktionary.org/wiki/fast#English",

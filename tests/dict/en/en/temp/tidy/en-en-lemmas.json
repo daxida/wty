@@ -5,17 +5,16 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/ˈbɹɪŋ/",
-              "tags": []
+              "ipa": "/ˈbɹɪŋ/"
             }
           ],
           "glossTree": {
             "To transport toward somebody/somewhere.": {
-              "_tags": [
+              "tags": [
                 "ditransitive",
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Waiter, please bring me a single malt whiskey.",
                   "translation": ""
@@ -23,11 +22,11 @@
               ]
             },
             "To supply or contribute.": {
-              "_tags": [
+              "tags": [
                 "figuratively",
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "The new company director brought a fresh perspective on sales and marketing.",
                   "translation": ""
@@ -35,10 +34,10 @@
               ]
             },
             "To occasion or bring about.": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "The controversial TV broadcast brought a storm of complaints.",
                   "translation": ""
@@ -50,14 +49,12 @@
               ]
             },
             "To raise (a lawsuit, charges, etc.) against somebody.": {
-              "_tags": [
+              "tags": [
                 "transitive"
-              ],
-              "_examples": []
+              ]
             },
             "To persuade; to induce; to draw; to lead; to guide.": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "It seems so preposterous a thing[…]that they do not easily bring themselves to it.",
                   "translation": ""
@@ -65,8 +62,7 @@
               ]
             },
             "To produce in exchange; to sell for; to fetch.": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "What does coal bring per ton?",
                   "translation": ""
@@ -74,8 +70,7 @@
               ]
             },
             "To pitch, often referring to a particularly hard thrown fastball.": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "The closer Jones can really bring it.",
                   "translation": ""
@@ -97,17 +92,16 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/weɪn/",
-              "tags": []
+              "ipa": "/weɪn/"
             }
           ],
           "glossTree": {
             "A wagon; a four-wheeled cart for hauling loads, usually pulled by horses or oxen.": {
-              "_tags": [
+              "tags": [
                 "archaic",
                 "literary"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "\"The Hay Wain\" is a famous painting by John Constable.",
                   "translation": ""
@@ -154,8 +148,7 @@
               ]
             },
             {
-              "ipa": "/ˈfoːlkən/",
-              "tags": []
+              "ipa": "/ˈfoːlkən/"
             },
             {
               "ipa": "/ˈfɛlkən/",
@@ -165,23 +158,13 @@
             }
           ],
           "glossTree": {
-            "Any bird of the genus Falco, all of which are birds of prey.": {
-              "_tags": [],
-              "_examples": []
-            },
-            "Any bird of prey of the subfamilies Falconinae and Herpetotherinae.": {
-              "_tags": [],
-              "_examples": []
-            },
-            "A female such bird, a male being a tiercel.": {
-              "_tags": [],
-              "_examples": []
-            },
+            "Any bird of the genus Falco, all of which are birds of prey.": {},
+            "Any bird of prey of the subfamilies Falconinae and Herpetotherinae.": {},
+            "A female such bird, a male being a tiercel.": {},
             "A light cannon used from the 15th to the 17th century.": {
-              "_tags": [
+              "tags": [
                 "historical"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "From Middle English faucoun, falcon, faulcon, from Old French falcun, from Late Latin falcō (“falcon”), of Germanic origin, probably via Frankish *falkō (“falcon, hawk”), from Proto-Germanic *falkô (“falcon”), from Proto-Indo-European *pol̑- (“pale”), from *pel- (“fallow”).\nCognates\nCognate with Old English *fealca, fealcen (“falcon”), Dutch valk (“falcon, hawk”), German Falke (“falcon, hawk”), Norwegian and Swedish falk (“falcon”), Icelandic fálki (“falcon”), French faucon (“falcon”), Italian falco (“falcon”), Spanish halcón (“falcon”), Portuguese falcão (“falcon”), Latin falco (“falcon”), Lithuanian pálšas (“pale”), Latvian bāls (“pale”), Latgalian buolgs (“pale”). More at fallow.",

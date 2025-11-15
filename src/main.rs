@@ -271,41 +271,46 @@ fn flat_iter_forms_mut(
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct RawSenseEntry {
     ipa: Vec<Ipa>,
+
     #[serde(rename = "glossTree")]
     gloss_tree: GlossTree,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     etymology_text: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     head_info_text: Option<String>,
+
     #[serde(rename = "wlink")]
     link_wiktionary: String,
 
     // This is not included in the dictionary and is only used for debugging
-    //
-    // Should we include it in the dictionary though? Seems useful
+    // * Should we include it in the dictionary though? Seems useful
     #[serde(rename = "klink")]
     link_kaikki: String,
 }
 
 type GlossTree = Map<String, GlossInfo>;
 
-// TODO: _tags > tags once we are done migrating
-// TODO: dont serialize empty once we are done migrating
-//
 // ... its really SenseInfo but oh well
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 #[serde(default)]
 struct GlossInfo {
-    _tags: Vec<Tag>,
-    _examples: Vec<Example>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    tags: Vec<Tag>,
+
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    examples: Vec<Example>,
+
     #[serde(skip_serializing_if = "Map::is_empty")]
-    _children: GlossTree,
+    children: GlossTree,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(default)]
 struct Ipa {
     ipa: String,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     tags: Vec<Tag>,
 }
 
@@ -947,27 +952,27 @@ fn insert_glosses(
 
     // get or insert node with only tags at this level
     let node = gloss_tree.entry(head.clone()).or_insert_with(|| GlossInfo {
-        _tags: tags.to_vec(),
-        _examples: vec![],
-        _children: GlossTree::new(),
+        tags: tags.to_vec(),
+        examples: vec![],
+        children: GlossTree::new(),
     });
 
     // intersect tags if node already exists
-    if !node._tags.is_empty() {
-        node._tags = tags
+    if !node.tags.is_empty() {
+        node.tags = tags
             .iter()
-            .filter(|&t| node._tags.contains(t))
+            .filter(|&t| node.tags.contains(t))
             .cloned()
             .collect();
     }
 
     // assign examples to the last level
     if tail.is_empty() {
-        node._examples = examples.to_vec();
+        node.examples = examples.to_vec();
         return;
     }
 
-    insert_glosses(&mut node._children, tail, tags, examples);
+    insert_glosses(&mut node.children, tail, tags, examples);
 }
 
 // rg: isinflection
@@ -1502,7 +1507,7 @@ fn make_yomitan_lemma(
     let common_tags: Vec<Tag> = info
         .gloss_tree
         .values()
-        .map(|g| IndexSet::from_iter(g._tags.iter().cloned()))
+        .map(|g| IndexSet::from_iter(g.tags.iter().cloned()))
         .reduce(|acc, set| acc.intersection(&set).cloned().collect::<IndexSet<Tag>>())
         .unwrap_or_default() // in case of no glosses
         .into_iter()
@@ -1635,7 +1640,7 @@ fn get_structured_glosses_go(
     let mut nested = Vec::new();
 
     for (gloss, gloss_info) in gloss_tree {
-        let level_tags = gloss_info._tags.clone();
+        let level_tags = gloss_info.tags.clone();
         // delete _tags but why
 
         // processglosstags: skip
@@ -1656,22 +1661,22 @@ fn get_structured_glosses_go(
         let gloss_content = Node::Text(gloss.into());
         level_content.push(gloss_content);
 
-        if !gloss_info._examples.is_empty() {
-            let structured_examples = get_structured_examples(args, &gloss_info._examples);
+        if !gloss_info.examples.is_empty() {
+            let structured_examples = get_structured_examples(args, &gloss_info.examples);
             level_content.push(structured_examples);
         }
 
         let level_structured = wrap(html_tag, "", level_content);
         nested.push(level_structured);
 
-        if !gloss_info._children.is_empty() {
+        if !gloss_info.children.is_empty() {
             // we dont want tags from the parent appearing again in the children
             let mut new_common_short_tags_recognized = common_short_tags_recognized.to_vec();
             new_common_short_tags_recognized.extend(minimal_tags);
 
             let child_defs = get_structured_glosses_go(
                 args,
-                &gloss_info._children,
+                &gloss_info.children,
                 &new_common_short_tags_recognized,
                 level + 1,
             );

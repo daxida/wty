@@ -5,16 +5,15 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/pʁɑ̃.dʁə/",
-              "tags": []
+              "ipa": "/pʁɑ̃.dʁə/"
             }
           ],
           "glossTree": {
             "to take": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "prends ma main",
                   "translation": "take my hand"
@@ -22,10 +21,10 @@
               ]
             },
             "to eat; to drink": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "elle prend un café",
                   "translation": "she is drinking a coffee"
@@ -33,10 +32,10 @@
               ]
             },
             "to get; to buy": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Je vais prendre le plat du jour.",
                   "translation": "I'll get the dish of the day."
@@ -44,10 +43,10 @@
               ]
             },
             "to rob; to deprive": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "prendre quelque chose à quelqu'un",
                   "translation": "to take something from someone"
@@ -55,10 +54,10 @@
               ]
             },
             "to make": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "prendre une décision",
                   "translation": "to make a decision"
@@ -70,10 +69,10 @@
               ]
             },
             "to catch, to work, to start": {
-              "_tags": [
+              "tags": [
                 "intransitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "le feu ne prend pas",
                   "translation": "the fire won't start"
@@ -93,10 +92,10 @@
               ]
             },
             "to get (something) caught (in), to jam": {
-              "_tags": [
+              "tags": [
                 "reflexive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "je me suis pris la main dans la porte",
                   "translation": "I caught my hand in the door"
@@ -108,10 +107,10 @@
               ]
             },
             "to get into, to come over (to cause to behave uncharacteristically, to affect in a surprising manner, to possess)": {
-              "_tags": [
+              "tags": [
                 "intransitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Qu'est-ce qui t'a pris ? Qu'est-ce qui t'est passé par la tête ?",
                   "translation": "What were you thinking? What got into you? What came over you?"
@@ -131,10 +130,10 @@
               ]
             },
             "to start having a negative feeling towards someone": {
-              "_tags": [
+              "tags": [
                 "transitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "prendre en aversion",
                   "translation": "take an aversion (to)"
@@ -150,8 +149,7 @@
               ]
             },
             "to gain": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "prendre de la vitesse",
                   "translation": "to gain speed"
@@ -219,11 +217,11 @@
               ]
             },
             "to take (a certain amount of time)": {
-              "_tags": [
+              "tags": [
                 "colloquial",
                 "impersonal"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Ça va me prendre au moins deux heures pour le mettre à jour.",
                   "translation": "It's going to take me at least two hours to update it."
@@ -231,12 +229,12 @@
               ]
             },
             "to take (a certain number or amount of)": {
-              "_tags": [
+              "tags": [
                 "broadly",
                 "colloquial",
                 "impersonal"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Pour finir dans deux heures, ça prend trois personnes.",
                   "translation": "To finish in two hours, it'll take three people."
@@ -244,10 +242,10 @@
               ]
             },
             "to come over (to arise in and gain some control over one's thoughts and/or actions)": {
-              "_tags": [
+              "tags": [
                 "impersonal"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "il prend [quelque chose] à [quelqu'un]",
                   "translation": "[something] comes over [someone]"
@@ -276,17 +274,16 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/sɑ̃.ble/",
-              "tags": []
+              "ipa": "/sɑ̃.ble/"
             }
           ],
           "glossTree": {
             "to seem, to resemble": {
-              "_tags": [
+              "tags": [
                 "impersonal",
                 "intransitive"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Il semblerait qu'il y ait des différences significatives entre les deux groupes.",
                   "translation": "There would seem to be significant differences between the two groups."
@@ -294,10 +291,9 @@
               ]
             },
             "to appear": {
-              "_tags": [
+              "tags": [
                 "intransitive"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "Inherited from Middle French sembler, from Old French sembler, from Late Latin similāre, a verb based on Latin similis (“similar”). Doublet of simuler.",
@@ -313,40 +309,34 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/ʃɑ̃bʁ/",
-              "tags": []
+              "ipa": "/ʃɑ̃bʁ/"
             }
           ],
           "glossTree": {
             "a chamber in its various senses, including:": {
-              "_tags": [
+              "tags": [
                 "feminine"
               ],
-              "_examples": [],
-              "_children": {
+              "children": {
                 "a room.": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 },
                 "a hotel room.": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 },
                 "a bedroom.": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 },
                 "a house of a parliament.": {
-                  "_tags": [
+                  "tags": [
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 }
               }
             }
@@ -365,14 +355,12 @@
         "0": {
           "ipa": [
             {
-              "ipa": "/d‿a.kɔʁ/",
-              "tags": []
+              "ipa": "/d‿a.kɔʁ/"
             }
           ],
           "glossTree": {
             "in agreement": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Oui, je suis d’accord avec vous.",
                   "translation": "Yes, I agree with you."

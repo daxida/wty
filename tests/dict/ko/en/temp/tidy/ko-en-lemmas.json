@@ -14,11 +14,10 @@
           ],
           "glossTree": {
             "Germany (a country in Central Europe, formed in 1949 as West Germany, with its provisional capital Bonn until 1990, when it incorporated East Germany)": {
-              "_tags": [
+              "tags": [
                 "South-Korea",
                 "Yanbian"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "Sino-Korean word from 獨逸, an orthographic borrowing from Japanese 獨逸 (Doitsu, “Germany”), from Dutch Duits (“German”).",

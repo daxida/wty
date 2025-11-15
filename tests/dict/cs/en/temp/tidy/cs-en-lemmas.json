@@ -5,16 +5,15 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ˈspraːva]",
-              "tags": []
+              "ipa": "[ˈspraːva]"
             }
           ],
           "glossTree": {
             "message": {
-              "_tags": [
+              "tags": [
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "textová zpráva",
                   "translation": "text message"
@@ -26,10 +25,10 @@
               ]
             },
             "report": {
-              "_tags": [
+              "tags": [
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "lékařská zpráva",
                   "translation": "medical report"
@@ -55,14 +54,12 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ˈpro]",
-              "tags": []
+              "ipa": "[ˈpro]"
             }
           ],
           "glossTree": {
             "for": {
-              "_tags": [],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Zabili ho pro peníze.",
                   "translation": "They killed him for his money."
@@ -83,17 +80,15 @@
         "0": {
           "ipa": [
             {
-              "ipa": "[ˈpr̝̊iːt]",
-              "tags": []
+              "ipa": "[ˈpr̝̊iːt]"
             }
           ],
           "glossTree": {
             "to dispute": {
-              "_tags": [
+              "tags": [
                 "imperfective",
                 "reflexive"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "Inherited from Old Czech přieti, from Proto-Slavic *pьrěti.",

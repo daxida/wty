@@ -14,18 +14,17 @@
           ],
           "glossTree": {
             "fame": {
-              "_tags": [
+              "tags": [
                 "declension-1",
                 "feminine"
-              ],
-              "_examples": []
+              ]
             },
             "rumour, talk, opinion, report": {
-              "_tags": [
+              "tags": [
                 "declension-1",
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "hascine propter rēs maledicās fāmās ferunt.",
                   "translation": "Is it on account of these things that they spread slanderous reports?"
@@ -37,11 +36,11 @@
               ]
             },
             "reputation": {
-              "_tags": [
+              "tags": [
                 "declension-1",
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Dīmīcantī dē fāmā dēesse.",
                   "translation": "To abandon one whose reputation is attacked."
@@ -57,11 +56,10 @@
               ]
             },
             "Fama, personified as a fast-moving, malicious goddess, the daughter of Terra. From the Greek φήμη, Pheme. Typically translated from the Latin as “Rumor.”": {
-              "_tags": [
+              "tags": [
                 "declension-1",
                 "feminine"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "From Proto-Italic *fāmā, from Proto-Indo-European *bʰéh₂meh₂, from *bʰeh₂- (“to speak”). Cognate to Ancient Greek φήμη (phḗmē, “talk”).",
@@ -92,16 +90,15 @@
           ],
           "glossTree": {
             "to choose, select": {
-              "_tags": [
+              "tags": [
                 "conjugation-3"
-              ],
-              "_examples": []
+              ]
             },
             "to appoint": {
-              "_tags": [
+              "tags": [
                 "conjugation-3"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "[…] dum ne quem militem legeret ex eo numero quibus senatus missionem reditumque in patriam negasset ante belli finem.",
                   "translation": "[…] provided he did not choose any soldier from those to whom the Senate had refused discharge and a return home before the end of the war"
@@ -109,10 +106,10 @@
               ]
             },
             "to collect, gather, bring together, catch": {
-              "_tags": [
+              "tags": [
                 "conjugation-3"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "“… Date volnera lymphīs / abluam, et, extrēmus sī quis super hālitus errat, / ōre legam.” …",
                   "translation": "“Grant that I may wash her wounds with water, and, if any last breath wanders over her, I will gather it with my lips.”"
@@ -120,22 +117,20 @@
               ]
             },
             "to take out, pick out, extract, remove": {
-              "_tags": [
+              "tags": [
                 "conjugation-3"
-              ],
-              "_examples": []
+              ]
             },
             "to take to one's self unjustly, carry off, steal, purloin, plunder, abstract": {
-              "_tags": [
+              "tags": [
                 "conjugation-3"
-              ],
-              "_examples": []
+              ]
             },
             "to read": {
-              "_tags": [
+              "tags": [
                 "conjugation-3"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Librōs lege.",
                   "translation": "Read books."
@@ -151,17 +146,15 @@
               ]
             },
             "to teach, profess": {
-              "_tags": [
+              "tags": [
                 "Medieval-Latin",
                 "conjugation-3"
-              ],
-              "_examples": []
+              ]
             },
             "to be bound, fettered, detained": {
-              "_tags": [
+              "tags": [
                 "conjugation-3"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "Etymology tree\nProto-Indo-European *leǵ-der.\nProto-Italic *legōder.\nLatin lego\nFrom Proto-Italic *legō, from Proto-Indo-European *léǵeti, from *leǵ-. Cognates include Ancient Greek λέγω (légō, “I speak, I choose, I mean”) and Albanian mbledh. May be related to lēx.",
@@ -192,11 +185,10 @@
           ],
           "glossTree": {
             "a lily": {
-              "_tags": [
+              "tags": [
                 "declension-2",
                 "neuter"
-              ],
-              "_examples": []
+              ]
             }
           },
           "etymology_text": "Borrowed from Ancient Greek λείριον (leírion). See there for more.",
@@ -227,16 +219,15 @@
           ],
           "glossTree": {
             "constantly, continuously": {
-              "_tags": [
+              "tags": [
                 "not-comparable"
-              ],
-              "_examples": []
+              ]
             },
             "as far as, up to, right until, all the way": {
-              "_tags": [
+              "tags": [
                 "not-comparable"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": ", Latin Vulgate translation of Psalm 71:8; Canadian national motto\nĀ marī usque ad mare.",
                   "translation": "From sea unto sea."
@@ -276,7 +267,7 @@
           ],
           "glossTree": {
             "led straight along, drawn in a straight line, straight, upright.": {
-              "_tags": [
+              "tags": [
                 "declension-1",
                 "declension-2",
                 "form-of",
@@ -284,7 +275,7 @@
                 "passive",
                 "perfect"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Quae rectis lineis suos ordines servant",
                   "translation": "Which preserve their order in straight lines"
@@ -292,7 +283,7 @@
               ]
             },
             "right, correct, proper, appropriate, befitting.": {
-              "_tags": [
+              "tags": [
                 "declension-1",
                 "declension-2",
                 "form-of",
@@ -300,11 +291,10 @@
                 "passive",
                 "perfect",
                 "usually"
-              ],
-              "_examples": []
+              ]
             },
             "morally right, correct, lawful, just, virtuous, noble, good, proper, honest.": {
-              "_tags": [
+              "tags": [
                 "declension-1",
                 "declension-2",
                 "form-of",
@@ -312,7 +302,7 @@
                 "passive",
                 "perfect"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Via stultī rēcta in oculīs eius; quī autem sapiēns est audit cōnsilia.",
                   "translation": "The way of a fool is right in his own eyes: but he that is wise hearkeneth unto counsels. (Douay-Rheims trans., Challoner rev.: 1752 CE)"
@@ -348,13 +338,13 @@
           ],
           "glossTree": {
             "house, home (the building where a person lives)": {
-              "_tags": [
+              "tags": [
                 "declension-2",
                 "declension-4",
                 "irregular",
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "Deō domuīque",
                   "translation": "For God and for home (motto of Methodist Ladies' College, Melbourne)"
@@ -368,74 +358,68 @@
                   "translation": "It was night, and [there were] no lights in the whole house."
                 }
               ],
-              "_children": {
+              "children": {
                 "a townhouse": {
-                  "_tags": [
+                  "tags": [
                     "declension-2",
                     "declension-4",
                     "irregular",
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 }
               }
             },
             "any dwelling-place or abode (of people or animals)": {
-              "_tags": [
+              "tags": [
                 "declension-2",
                 "declension-4",
                 "irregular",
                 "feminine"
-              ],
-              "_examples": []
+              ]
             },
             "the place of one's birth or residence, native country, town": {
-              "_tags": [
+              "tags": [
                 "declension-2",
                 "declension-4",
                 "irregular",
                 "feminine"
-              ],
-              "_examples": []
+              ]
             },
             "household, family (the dependants of the head of a house)": {
-              "_tags": [
+              "tags": [
                 "declension-2",
                 "declension-4",
                 "irregular",
                 "feminine"
               ],
-              "_examples": [],
-              "_children": {
+              "children": {
                 "a group of disciples, school; an intellectual movement": {
-                  "_tags": [
+                  "tags": [
                     "declension-2",
                     "declension-4",
                     "irregular",
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 },
                 "house, dynasty": {
-                  "_tags": [
+                  "tags": [
                     "declension-2",
                     "declension-4",
                     "irregular",
                     "feminine"
-                  ],
-                  "_examples": []
+                  ]
                 }
               }
             },
             "one's own possessions or resources": {
-              "_tags": [
+              "tags": [
                 "declension-2",
                 "declension-4",
                 "idiomatic",
                 "irregular",
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "domum trahere",
                   "translation": "to drag into one's pocket"
@@ -455,14 +439,14 @@
               ]
             },
             "peace": {
-              "_tags": [
+              "tags": [
                 "declension-2",
                 "declension-4",
                 "idiomatic",
                 "irregular",
                 "feminine"
               ],
-              "_examples": [
+              "examples": [
                 {
                   "text": "bellī domīque; bellō domīque; vel bellī vel domī; domī bellōque; domī mīlitiaeque",
                   "translation": "in war and peace"
