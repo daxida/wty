@@ -193,5 +193,120 @@
         ]
       ]
     }
+  },
+  "ψηφίζω": {
+    "ψηφίσας": {
+      "verb": [
+        "inflection",
+        [
+          "masculine"
+        ]
+      ]
+    }
+  },
+  "ψηφίσας": {
+    "ψηφίσαντας": {
+      "verb": [
+        "extracted",
+        [
+          "nominative singular masculine"
+        ]
+      ]
+    },
+    "ψηφίσασα": {
+      "verb": [
+        "extracted",
+        [
+          "accusative singular feminine",
+          "nominative singular feminine",
+          "vocative singular feminine"
+        ]
+      ]
+    },
+    "ψηφίσαν": {
+      "verb": [
+        "extracted",
+        [
+          "accusative singular neuter",
+          "nominative singular neuter",
+          "vocative singular neuter"
+        ]
+      ]
+    },
+    "ψηφίσαντος": {
+      "verb": [
+        "extracted",
+        [
+          "genitive singular masculine",
+          "genitive singular neuter"
+        ]
+      ]
+    },
+    "ψηφίσαντα": {
+      "verb": [
+        "extracted",
+        [
+          "accusative plural neuter",
+          "nominative plural neuter",
+          "vocative plural neuter",
+          "accusative singular masculine",
+          "genitive singular masculine",
+          "vocative singular masculine"
+        ]
+      ]
+    },
+    "ψηφίσασας": {
+      "verb": [
+        "extracted",
+        [
+          "genitive singular feminine"
+        ]
+      ]
+    },
+    "ψηφισάσης": {
+      "verb": [
+        "extracted",
+        [
+          "genitive singular feminine"
+        ]
+      ]
+    },
+    "ψηφίσαντες": {
+      "verb": [
+        "extracted",
+        [
+          "accusative plural masculine",
+          "nominative plural masculine",
+          "vocative plural masculine"
+        ]
+      ]
+    },
+    "ψηφίσασες": {
+      "verb": [
+        "extracted",
+        [
+          "accusative plural feminine",
+          "nominative plural feminine",
+          "vocative plural feminine"
+        ]
+      ]
+    },
+    "ψηφισάντων": {
+      "verb": [
+        "extracted",
+        [
+          "genitive plural masculine",
+          "genitive plural neuter"
+        ]
+      ]
+    },
+    "ψηφισασών": {
+      "verb": [
+        "extracted",
+        [
+          "genitive plural feminine"
+        ]
+      ]
+    }
   }
 }

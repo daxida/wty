@@ -469,5 +469,299 @@
     ],
     0,
     ""
+  ],
+  [
+    "ψηφίσας",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίζω",
+        [
+          "masculine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσαντας",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "nominative singular masculine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσασα",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "accusative singular feminine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "nominative singular feminine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "vocative singular feminine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσαν",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "accusative singular neuter"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "nominative singular neuter"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "vocative singular neuter"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσαντος",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "genitive singular masculine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "genitive singular neuter"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσαντα",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "accusative plural neuter"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "nominative plural neuter"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "vocative plural neuter"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "accusative singular masculine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "genitive singular masculine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "vocative singular masculine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσασας",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "genitive singular feminine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφισάσης",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "genitive singular feminine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσαντες",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "accusative plural masculine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "nominative plural masculine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "vocative plural masculine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφίσασες",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "accusative plural feminine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "nominative plural feminine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "vocative plural feminine"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφισάντων",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "genitive plural masculine"
+        ]
+      ],
+      [
+        "ψηφίσας",
+        [
+          "genitive plural neuter"
+        ]
+      ]
+    ],
+    0,
+    ""
+  ],
+  [
+    "ψηφισασών",
+    "",
+    "non-lemma",
+    "",
+    0,
+    [
+      [
+        "ψηφίσας",
+        [
+          "genitive plural feminine"
+        ]
+      ]
+    ],
+    0,
+    ""
   ]
 ]
