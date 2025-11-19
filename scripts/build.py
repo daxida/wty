@@ -105,9 +105,8 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
 
     # has_edition
     w(f"{idt}pub const fn has_edition(&self) -> bool {{\n")
-    w(f"{idt * 2}use Lang::*;\n")
     with_edition_title = " | ".join(
-        lang.iso.title() for lang in langs if lang.has_edition
+        f"Self::{lang.iso.title()}" for lang in langs if lang.has_edition
     )
     w(f"{idt * 2}matches!(self, {with_edition_title})\n")
     w(f"{idt}}}\n\n")
@@ -123,12 +122,6 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     for lang in langs:
         w(f'{idt * 3}Self::{lang.iso.title()} => "{lang.language}",\n')
     w(f"{idt * 2}}}\n")
-    w(f"{idt}}}\n\n")
-
-    # to_string, hack to not have a huge match
-    w(f"{idt}/// Return the iso code as a String.\n")
-    w(f"{idt}pub fn to_string(&self) -> String {{\n")
-    w(f'{idt * 2}format!("{{self:?}}").to_lowercase()\n')
     w(f"{idt}}}\n")
     w("}\n\n")
 
@@ -149,7 +142,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     # Display impl
     w("impl std::fmt::Display for Lang {\n")
     w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
-    w(f'{idt * 2}write!(f, "{{}}", self.to_string())\n')
+    w(f'{idt * 2}write!(f, "{{}}", format!("{{self:?}}").to_lowercase())\n')
     w(f"{idt}}}\n")
     w("}\n")
 

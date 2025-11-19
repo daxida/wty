@@ -129,8 +129,7 @@ impl Lang {
     }
 
     pub const fn has_edition(&self) -> bool {
-        use Lang::*;
-        matches!(self, Zh | Cs | Nl | En | Fr | De | El | Id | It | Ja | Ku | Ko | Ms | Pl | Pt | Ru | Es | Th | Tr | Vi)
+        matches!(self, Self::Zh | Self::Cs | Self::Nl | Self::En | Self::Fr | Self::De | Self::El | Self::Id | Self::It | Self::Ja | Self::Ku | Self::Ko | Self::Ms | Self::Pl | Self::Pt | Self::Ru | Self::Es | Self::Th | Self::Tr | Self::Vi)
     }
 
     pub const fn has_edition_help_message() -> &'static str {
@@ -198,11 +197,6 @@ impl Lang {
             Self::Ur => "Urdu",
             Self::Vi => "Vietnamese",
         }
-    }
-
-    /// Return the iso code as a String.
-    pub fn to_string(&self) -> String {
-        format!("{self:?}").to_lowercase()
     }
 }
 
@@ -276,6 +270,6 @@ impl std::str::FromStr for Lang {
 
 impl std::fmt::Display for Lang {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", format!("{self:?}").to_lowercase())
     }
 }

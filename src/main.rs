@@ -97,9 +97,8 @@ fn filter_jsonl(args: &Args, path_jsonl_raw: &Path, path_jsonl: PathBuf) -> Resu
 
     loop {
         line.clear();
-        match reader.read_line(&mut line)? {
-            0 => break, // EOF
-            _ => {}
+        if reader.read_line(&mut line)? == 0 {
+            break; // EOF
         }
 
         line_count += 1;
@@ -249,7 +248,7 @@ fn flat_iter_forms_mut(
 //
 // In the future, consider alt_of, form_of
 #[allow(unused)]
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 enum FormSource {
     /// Form extracted from `word_entry.forms`
@@ -389,7 +388,7 @@ fn postprocess_forms(form_map: &mut FormMap) {
 #[tracing::instrument(skip_all)]
 fn tidy(args: &Args, pm: &PathManager, path_jsonl: &Path) -> Result<Tidy> {
     if !path_jsonl.exists() {
-        bail!("{path_jsonl:?} does not exist @ tidy")
+        bail!("{:?} does not exist @ tidy", path_jsonl.display())
     }
 
     debug!("Reading jsonlines @ {}", path_jsonl.display());
@@ -427,9 +426,8 @@ fn tidy_run(args: &Args, reader_path: &Path) -> Result<Tidy> {
 
     loop {
         line.clear();
-        match reader.read_line(&mut line)? {
-            0 => break, // EOF
-            _ => {}
+        if reader.read_line(&mut line)? == 0 {
+            break; // EOF
         }
 
         // Only relevant for tests. Kaikki jsonlines should not contain empty lines
@@ -667,16 +665,16 @@ fn get_reading(args: &Args, word_entry: &WordEntry) -> String {
                 None => word_entry.word.clone(),
             }
         }
-        _ => get_canonical_word_form(args, word_entry).to_string(),
+        _ => get_canonical_word(args, word_entry).to_string(),
     }
 }
 
-/// The canonical form may contain extra diacritics.
+/// The canonical word may contain extra diacritics.
 ///
 /// For most languages, this is equal to word, but for, let's say, Latin, there may be a
 /// difference (cf. <https://en.wiktionary.org/wiki/fama>, where `word_entry.word` is fama, but
 /// this will return fāma).
-fn get_canonical_word_form<'a>(args: &Args, word_entry: &'a WordEntry) -> &'a str {
+fn get_canonical_word<'a>(args: &Args, word_entry: &'a WordEntry) -> &'a str {
     match args.source {
         Lang::La | Lang::Ru | Lang::Grc => match get_canonical_form(word_entry) {
             Some(cform) => &cform.form,
@@ -1102,12 +1100,12 @@ fn handle_inflection_gloss_en(args: &Args, word_entry: &WordEntry, sense: &Sense
     if let Some(uninflected) = lemmas.iter().next() {
         // Not sure if this is better (cf. ru-en) over word_entry.word but it is what was done in
         // the original, so lets not change that for the moment.
-        let cform_str = get_canonical_word_form(args, word_entry);
+        let inflected = get_canonical_word(args, word_entry);
 
         for inflection in inflections {
             ret.insert_form(
                 uninflected,
-                &cform_str,
+                inflected,
                 &word_entry.pos,
                 FormSource::Inflection,
                 vec![inflection],
@@ -1202,7 +1200,7 @@ impl Node {
         }
     }
 
-    fn new_array() -> Self {
+    const fn new_array() -> Self {
         Self::Array(vec![])
     }
 
@@ -1730,7 +1728,7 @@ fn make_yomitan_forms(args: &Args, form_map: FormMap) -> Vec<YomitanEntry> {
         // and it didn't seem to do anything for the testsuite...
 
         let deinflection_definitions: Vec<_> = tags
-            .into_iter()
+            .iter()
             .map(|tag| {
                 DetailedDefinition::Inflection((uninflected.to_string(), vec![tag.to_string()]))
             })
@@ -2024,9 +2022,8 @@ fn make_glossary_run(args: &Args, pm: &PathManager, path_jsonl_raw: &Path) -> Re
 
     loop {
         line.clear();
-        match reader.read_line(&mut line)? {
-            0 => break, // EOF
-            _ => {}
+        if reader.read_line(&mut line)? == 0 {
+            break; // EOF
         }
 
         line_count += 1;
@@ -2083,28 +2080,18 @@ fn make_glossary_run(args: &Args, pm: &PathManager, path_jsonl_raw: &Path) -> Re
     zip.start_file("tag_bank_1.json", options)?; // it needs to end in _1
     zip.write_all(&tag_bank_bytes)?;
 
+    let entry_ty = "entry";
+
     if args.keep_files {
-        // also write to disk for debugging
-        let mut bank_index = 0;
         let out_dir = pm.dir_temp_dict();
-        let entry_ty = "entry";
-        fs::create_dir_all(&out_dir)?;
         let out_sink = BankSink::Disk;
-        write_banks(
-            args,
-            entries.clone(),
-            &mut bank_index,
-            entry_ty,
-            &out_dir,
-            out_sink,
-        )?;
+        fs::create_dir_all(&out_dir)?;
+        write_banks(args, entries.clone(), &mut 0, entry_ty, &out_dir, out_sink)?;
     }
 
-    let mut bank_index = 0;
     let out_dir = PathBuf::from("unused_for_zip"); // only for printing
-    let entry_ty = "entry";
     let out_sink = BankSink::Zip(&mut zip, options);
-    write_banks(args, entries, &mut bank_index, entry_ty, &out_dir, out_sink)?;
+    write_banks(args, entries, &mut 0, entry_ty, &out_dir, out_sink)?;
 
     zip.finish()?;
 
@@ -2338,6 +2325,35 @@ mod tests {
     use anyhow::{Ok, Result};
     use std::path::PathBuf;
 
+    /// Clean empty folders and zip artifacts under folder "root" recursively
+    fn clean_empty_dirs(root: &Path) -> bool {
+        let entries = fs::read_dir(root).unwrap();
+
+        let mut is_empty = true;
+
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                let child_empty = clean_empty_dirs(&path);
+                if child_empty {
+                    fs::remove_dir(&path).unwrap();
+                } else {
+                    is_empty = false;
+                }
+            } else if path
+                .extension()
+                .and_then(|e| e.to_str())
+                .is_some_and(|ext| ext.eq_ignore_ascii_case("zip"))
+            {
+                fs::remove_file(&path).unwrap();
+            } else {
+                is_empty = false;
+            }
+        }
+
+        is_empty
+    }
+
     // test via snapshots and commits like the original
     #[test]
     fn snapshot() {
@@ -2411,36 +2427,6 @@ mod tests {
                 pm.setup_dirs().unwrap(); // this makes some noise but ok
                 make_glossary_run(&args, &pm, &path_monolingual).unwrap();
             }
-        }
-
-        // Clean empty folders and zip artifacts under folder "dict" recursively
-
-        fn clean_empty_dirs(root: &Path) -> bool {
-            let entries = fs::read_dir(root).unwrap();
-
-            let mut is_empty = true;
-
-            for entry in entries.flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    let child_empty = clean_empty_dirs(&path);
-                    if child_empty {
-                        fs::remove_dir(&path).unwrap();
-                    } else {
-                        is_empty = false;
-                    }
-                } else if path
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .is_some_and(|ext| ext.eq_ignore_ascii_case("zip"))
-                {
-                    fs::remove_file(&path).unwrap();
-                } else {
-                    is_empty = false;
-                }
-            }
-
-            is_empty
         }
 
         clean_empty_dirs(&fixture_dir.join("dict"));

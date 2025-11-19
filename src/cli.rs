@@ -35,6 +35,7 @@ pub enum Command {
 }
 
 #[derive(Parser, Debug, Default)]
+#[expect(clippy::struct_excessive_bools)]
 pub struct Args {
     // We hide this for simplicity and because for our purposes, this is always equal to the target
     // language. We still keep this around in case it becomes useful later down the road.
