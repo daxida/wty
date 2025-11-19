@@ -1103,7 +1103,7 @@ fn get_index(dict_name: &str, source: Lang, target: Lang) -> String {
 
 // https://github.com/MarvNC/yomichan-dict-builder/blob/master/src/types/yomitan/termbank.ts
 // @ TermInformation
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct YomitanEntry(
     pub String,                  // term
     pub String,                  // reading
@@ -1117,13 +1117,13 @@ pub struct YomitanEntry(
 
 // https://github.com/MarvNC/yomichan-dict-builder/blob/master/src/types/yomitan/termbank.ts
 // @ StructuredContentNode
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub enum Node {
-    Text(String),
-    Array(Box<Vec<Node>>),
-    Generic(Box<GenericNode>),
-    Backlink(BacklinkContent),
+    Text(String),              // 32
+    Array(Vec<Node>),          // 32
+    Generic(Box<GenericNode>), // 16
+    Backlink(BacklinkContent), // 40
 }
 
 impl Node {
@@ -1135,17 +1135,18 @@ impl Node {
         }
     }
 
+    fn new_array() -> Self {
+        Self::Array(vec![])
+    }
+
     #[must_use]
     fn to_array_node(self) -> Self {
-        Self::Array(Box::new(vec![self]))
+        Self::Array(vec![self])
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(transparent)]
-pub struct NodeData {
-    pub inner: Map<String, String>,
-}
+#[derive(Debug, Serialize, Clone)]
+pub struct NodeData(Map<String, String>);
 
 impl<K, V> FromIterator<(K, V)> for NodeData
 where
@@ -1157,43 +1158,75 @@ where
             .into_iter()
             .map(|(k, v)| (k.into(), v.into()))
             .collect();
-        Self { inner }
+        Self(inner)
     }
+}
+
+#[derive(Debug, Serialize, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+enum NTag {
+    Span,
+    Div,
+    Ol,
+    Ul,
+    Li,
+    Details,
+    Summary,
 }
 
 // The order follows kty serialization, not yomichan builder order
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct GenericNode {
-    /// 'span' | 'div' | 'ol' | 'ul' | 'li' | 'details' | 'summary'
-    /// INVARIANT is not verified here (tag could be any string)
-    pub tag: String,
+    tag: NTag,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub title: Option<String>,
+    title: Option<String>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub data: Option<NodeData>,
-    pub content: Node,
+    data: Option<NodeData>,
+
+    content: Node,
 }
 
 impl GenericNode {
-    pub fn to_node(self) -> Node {
+    fn to_node(self) -> Node {
         Node::Generic(Box::new(self))
-    }
-
-    pub fn to_array_node(self) -> Node {
-        Node::Array(Box::new(vec![self.to_node()]))
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct BacklinkContent {
-    pub tag: String,
-    pub href: String,
-    pub content: String,
+    href: String,
+    content: &'static str,
+}
+
+impl BacklinkContent {
+    fn new(href: &str, content: &'static str) -> Self {
+        Self {
+            href: href.to_string(),
+            content,
+        }
+    }
+}
+
+// Custom Serialize to not have to store the constant 'a' tag
+impl Serialize for BacklinkContent {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::SerializeStruct;
+        let mut state = serializer.serialize_struct("BacklinkContent", 3)?;
+        state.serialize_field("tag", "a")?;
+        state.serialize_field("href", &self.href)?;
+        state.serialize_field("content", &self.content)?;
+        state.end()
+    }
 }
 
 // https://github.com/MarvNC/yomichan-dict-builder/blob/master/src/types/yomitan/termbank.ts
 // @ DetailedDefinition
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub enum DetailedDefinition {
     Text(String),
@@ -1202,7 +1235,6 @@ pub enum DetailedDefinition {
 }
 
 impl DetailedDefinition {
-    /// Build a `DetailedDefinition::StructuredContent` variant from a Node
     fn structured(content: Node) -> Self {
         Self::StructuredContent(StructuredContent {
             ty: "structured-content".to_string(),
@@ -1211,16 +1243,16 @@ impl DetailedDefinition {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Clone)]
 pub struct StructuredContent {
     #[serde(rename = "type")]
     ty: String, // should be hardcoded to "structured-content" (but then to serialize it...)
     content: Node,
 }
 
-fn wrap(tag: &str, content_ty: &str, content: Node) -> Node {
+fn wrap(tag: NTag, content_ty: &str, content: Node) -> Node {
     GenericNode {
-        tag: tag.into(),
+        tag,
         title: None, // hardcoded since most of the wrap calls don't use it
         data: match content_ty {
             "" => None,
@@ -1354,7 +1386,7 @@ fn make_yomitan_lemma(
         get_recognized_tags(args, lemma, pos, &info.gloss_tree, diagnostics);
     let definition_tags = common_short_tags_recognized.join(" ");
 
-    let mut detailed_definition_content = Node::Array(Box::default());
+    let mut detailed_definition_content = Node::new_array();
 
     // rg: etymologytext / head_info_text headinfo
     if info.etymology_text.is_some() || info.head_info_text.is_some() {
@@ -1424,17 +1456,21 @@ fn get_recognized_tags(
 }
 
 fn build_details_entry(ty: &str, content: &str) -> Node {
-    let mut summary = wrap("summary", "summary-entry", Node::Text(ty.into())).to_array_node();
-    let div = wrap("div", &format!("{ty}-content"), Node::Text(content.into()));
+    let mut summary = wrap(NTag::Summary, "summary-entry", Node::Text(ty.into())).to_array_node();
+    let div = wrap(
+        NTag::Div,
+        &format!("{ty}-content"),
+        Node::Text(content.into()),
+    );
     summary.push(div);
-    wrap("details", &format!("details-entry-{ty}"), summary)
+    wrap(NTag::Details, &format!("details-entry-{ty}"), summary)
 }
 
 fn get_structured_preamble(
     etymology_text: Option<&String>,
     head_info_text: Option<&String>,
 ) -> Node {
-    let mut preamble_content = Node::Array(Box::default());
+    let mut preamble_content = Node::new_array();
     if let Some(head_info_text) = &head_info_text {
         let detail = build_details_entry("Grammar", head_info_text);
         preamble_content.push(detail);
@@ -1443,29 +1479,21 @@ fn get_structured_preamble(
         let detail = build_details_entry("Etymology", etymology_text);
         preamble_content.push(detail);
     }
-    let preamble = wrap("div", "preamble", preamble_content);
+    let preamble = wrap(NTag::Div, "preamble", preamble_content);
 
-    wrap("div", "", preamble.to_array_node())
+    wrap(NTag::Div, "", preamble.to_array_node())
 }
 
 #[allow(unused)]
 fn get_structured_backlink(wlink: &str, klink: &str) -> Node {
-    let mut links = Node::Array(Box::default());
+    let mut links = Node::new_array();
 
-    links.push(Node::Backlink(BacklinkContent {
-        tag: "a".into(),
-        href: wlink.into(),
-        content: "Wiktionary".into(),
-    }));
+    links.push(Node::Backlink(BacklinkContent::new(wlink, "Wiktionary")));
 
     // links.push(Node::Text(" | ".into())); // JMdict does this
-    // links.push(Node::Backlink(BacklinkContent {
-    //     tag: "a".into(),
-    //     href: klink.into(),
-    //     content: "Kaikki".into(),
-    // }));
+    // links.push(Node::Backlink(BacklinkContent::new(klink, "Kaikki")));
 
-    wrap("div", "backlink", links)
+    wrap(NTag::Div, "backlink", links)
 }
 
 // should return Node for consistency
@@ -1479,10 +1507,10 @@ fn get_structured_glosses(
         let synthetic_branch = GlossTree::from_iter([(gloss.clone(), gloss_info.clone())]);
         let nested_gloss =
             get_structured_glosses_go(args, &synthetic_branch, common_short_tags_recognized, 0);
-        let structured_gloss = wrap("li", "", Node::Array(Box::new(nested_gloss)));
+        let structured_gloss = wrap(NTag::Li, "", Node::Array(nested_gloss));
         sense_content.push(structured_gloss);
     }
-    wrap("ol", "glosses", Node::Array(Box::new(sense_content)))
+    wrap(NTag::Ol, "glosses", Node::Array(sense_content))
 }
 
 // Recursive helper
@@ -1493,7 +1521,7 @@ fn get_structured_glosses_go(
     common_short_tags_recognized: &[Tag],
     level: usize,
 ) -> Vec<Node> {
-    let html_tag = if level == 0 { "div" } else { "li" };
+    let html_tag = if level == 0 { NTag::Div } else { NTag::Li };
     let mut nested = Vec::new();
 
     for (gloss, gloss_info) in gloss_tree {
@@ -1505,7 +1533,7 @@ fn get_structured_glosses_go(
             .filter(|tag| !common_short_tags_recognized.contains(tag))
             .collect();
 
-        let mut level_content = Node::Array(Box::default());
+        let mut level_content = Node::new_array();
 
         if let Some(structured_tags) =
             get_structured_tags(&minimal_tags, common_short_tags_recognized)
@@ -1534,7 +1562,7 @@ fn get_structured_glosses_go(
                 &new_common_short_tags_recognized,
                 level + 1,
             );
-            let structured_child_defs = wrap("ul", "", Node::Array(Box::new(child_defs)));
+            let structured_child_defs = wrap(NTag::Ul, "", Node::Array(child_defs));
             nested.push(structured_child_defs);
         }
     }
@@ -1560,7 +1588,7 @@ fn get_structured_tags(tags: &[Tag], common_short_tags_recognized: &[Tag]) -> Op
         }
 
         let structured_tag_content = GenericNode {
-            tag: "span".into(),
+            tag: NTag::Span,
             title: Some(full_tag.long_tag),
             data: Some(NodeData::from_iter([
                 ("content", "tag"),
@@ -1577,9 +1605,9 @@ fn get_structured_tags(tags: &[Tag], common_short_tags_recognized: &[Tag]) -> Op
         None
     } else {
         Some(wrap(
-            "div",
+            NTag::Div,
             "tags",
-            Node::Array(Box::new(structured_tags_content)),
+            Node::Array(structured_tags_content),
         ))
     }
 }
@@ -1590,7 +1618,7 @@ fn get_structured_examples(args: &Args, examples: &[Example]) -> Option<Node> {
     }
 
     let mut structured_examples_content = wrap(
-        "summary",
+        NTag::Summary,
         "summary-entry",
         Node::Text(get_locale_examples_string(&args.target, examples.len())),
     )
@@ -1598,29 +1626,29 @@ fn get_structured_examples(args: &Args, examples: &[Example]) -> Option<Node> {
 
     for example in examples {
         let mut structured_example_content = wrap(
-            "div",
+            NTag::Div,
             "example-sentence-a",
             Node::Text(example.text.clone()),
         )
         .to_array_node();
         if !example.translation.is_empty() {
             let structured_translation_content = wrap(
-                "div",
+                NTag::Div,
                 "example-sentence-b",
                 Node::Text(example.translation.clone()),
             );
             structured_example_content.push(structured_translation_content);
         }
         let structured_example_content_wrap = wrap(
-            "div",
+            NTag::Div,
             "extra-info",
-            wrap("div", "example-sentence", structured_example_content),
+            wrap(NTag::Div, "example-sentence", structured_example_content),
         );
         structured_examples_content.push(structured_example_content_wrap);
     }
 
     Some(wrap(
-        "details",
+        NTag::Details,
         "details-entry-examples",
         structured_examples_content,
     ))
@@ -2059,16 +2087,20 @@ fn make_glossary_yomitan_entry(args: &Args, word_entry: &WordEntry) -> Option<Yo
                 }
             }
             Some(sense) => {
-                let mut structured_translations_content = Node::Array(Box::default());
-                let structured_sense = wrap("span", "", Node::Text(sense));
+                let mut structured_translations_content = Node::new_array();
+                let structured_sense = wrap(NTag::Span, "", Node::Text(sense));
                 structured_translations_content.push(structured_sense);
-                let mut structured_translations_array = Node::Array(Box::default());
+                let mut structured_translations_array = Node::new_array();
                 for translation in translations {
-                    structured_translations_array.push(wrap("li", "", Node::Text(translation)));
+                    structured_translations_array.push(wrap(NTag::Li, "", Node::Text(translation)));
                 }
-                structured_translations_content.push(wrap("ul", "", structured_translations_array));
+                structured_translations_content.push(wrap(
+                    NTag::Ul,
+                    "",
+                    structured_translations_array,
+                ));
                 let structured_translations = DetailedDefinition::structured(wrap(
-                    "div",
+                    NTag::Div,
                     "",
                     structured_translations_content,
                 ));
@@ -2336,7 +2368,7 @@ mod tests {
                 } else if path
                     .extension()
                     .and_then(|e| e.to_str())
-                    .map_or(false, |ext| ext.eq_ignore_ascii_case("zip"))
+                    .is_some_and(|ext| ext.eq_ignore_ascii_case("zip"))
                 {
                     fs::remove_file(&path).unwrap();
                 } else {
