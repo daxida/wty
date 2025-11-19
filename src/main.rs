@@ -1128,30 +1128,15 @@ pub enum Node {
 
 impl Node {
     /// Push a new node into the array variant.
-    pub fn push(&mut self, node: Self) {
+    fn push(&mut self, node: Self) {
         match self {
             Self::Array(boxed_vec) => boxed_vec.push(node),
             _ => panic!("Error: called 'push' with a non Node::Array"),
         }
     }
 
-    /// Inserts a new node at position `index` into the array variant.
-    pub fn insert(&mut self, index: usize, node: Self) {
-        match self {
-            Self::Array(boxed_vec) => boxed_vec.insert(index, node),
-            _ => panic!("Error: called 'insert' with a non Node::Array"),
-        }
-    }
-
-    pub fn is_empty(&self) -> bool {
-        match self {
-            Self::Array(boxed_vec) => boxed_vec.is_empty(),
-            _ => panic!("Error: called 'is_empty' to a non Node::Array"),
-        }
-    }
-
     #[must_use]
-    pub fn to_array_node(self) -> Self {
+    fn to_array_node(self) -> Self {
         Self::Array(Box::new(vec![self]))
     }
 }
@@ -1363,9 +1348,51 @@ fn make_yomitan_lemma(
     }
     .to_string();
 
+    let yomitan_reading = if *reading == *lemma { "" } else { reading };
+
+    let common_short_tags_recognized =
+        get_recognized_tags(args, lemma, pos, &info.gloss_tree, diagnostics);
+    let definition_tags = common_short_tags_recognized.join(" ");
+
+    let mut detailed_definition_content = Node::Array(Box::default());
+
+    // rg: etymologytext / head_info_text headinfo
+    if info.etymology_text.is_some() || info.head_info_text.is_some() {
+        let structured_preamble =
+            get_structured_preamble(info.etymology_text.as_ref(), info.head_info_text.as_ref());
+        detailed_definition_content.push(structured_preamble);
+    }
+
+    let structured_glosses =
+        get_structured_glosses(args, &info.gloss_tree, &common_short_tags_recognized);
+    detailed_definition_content.push(structured_glosses);
+
+    let backlink = get_structured_backlink(&info.link_wiktionary, &info.link_kaikki);
+    detailed_definition_content.push(backlink);
+
+    let detailed_definition = DetailedDefinition::structured(detailed_definition_content);
+
+    YomitanEntry(
+        lemma.to_string(),
+        yomitan_reading.to_string(),
+        definition_tags,
+        found_pos,
+        0,
+        vec![detailed_definition],
+        0,
+        String::new(),
+    )
+}
+
+fn get_recognized_tags(
+    args: &Args,
+    lemma: &str,
+    pos: &Pos,
+    gloss_tree: &GlossTree,
+    diagnostics: &mut Diagnostics,
+) -> Vec<Tag> {
     // common tags to all glosses (this is an English edition reasoning really...)
-    let common_tags: Vec<Tag> = info
-        .gloss_tree
+    let common_tags: Vec<Tag> = gloss_tree
         .values()
         .map(|g| IndexSet::from_iter(g.tags.iter().cloned()))
         .reduce(|acc, set| acc.intersection(&set).cloned().collect::<IndexSet<Tag>>())
@@ -1393,38 +1420,7 @@ fn make_yomitan_lemma(
         }
     }
     // Some filtering here: skip
-    let definition_tags = common_short_tags_recognized.join(" ");
-
-    let gloss_content =
-        get_structured_glosses(args, &info.gloss_tree, &common_short_tags_recognized);
-
-    let mut detailed_definition_content =
-        wrap("ol", "glosses", Node::Array(Box::new(gloss_content))).to_array_node();
-
-    // rg: etymologytext / head_info_text headinfo
-    if info.etymology_text.is_some() || info.head_info_text.is_some() {
-        let structured_preamble =
-            get_structured_preamble(info.etymology_text.as_ref(), info.head_info_text.as_ref());
-        detailed_definition_content.insert(0, structured_preamble);
-    }
-
-    let backlink = get_structured_backlink(&info.link_wiktionary);
-    detailed_definition_content.push(backlink);
-
-    let detailed_definition = DetailedDefinition::structured(detailed_definition_content);
-
-    let yomitan_reading = if *reading == *lemma { "" } else { reading };
-
-    YomitanEntry(
-        lemma.to_string(),
-        yomitan_reading.to_string(),
-        definition_tags,
-        found_pos,
-        0,
-        vec![detailed_definition],
-        0,
-        String::new(),
-    )
+    common_short_tags_recognized
 }
 
 fn build_details_entry(ty: &str, content: &str) -> Node {
@@ -1452,17 +1448,24 @@ fn get_structured_preamble(
     wrap("div", "", preamble.to_array_node())
 }
 
-fn get_structured_backlink(link: &str) -> Node {
-    wrap(
-        "div",
-        "backlink",
-        Node::Backlink(BacklinkContent {
-            tag: "a".into(),
-            href: link.into(),
-            content: "Wiktionary".into(),
-        })
-        .to_array_node(),
-    )
+#[allow(unused)]
+fn get_structured_backlink(wlink: &str, klink: &str) -> Node {
+    let mut links = Node::Array(Box::default());
+
+    links.push(Node::Backlink(BacklinkContent {
+        tag: "a".into(),
+        href: wlink.into(),
+        content: "Wiktionary".into(),
+    }));
+
+    // links.push(Node::Text(" | ".into())); // JMdict does this
+    // links.push(Node::Backlink(BacklinkContent {
+    //     tag: "a".into(),
+    //     href: klink.into(),
+    //     content: "Kaikki".into(),
+    // }));
+
+    wrap("div", "backlink", links)
 }
 
 // should return Node for consistency
@@ -1470,7 +1473,7 @@ fn get_structured_glosses(
     args: &Args,
     gloss_tree: &GlossTree,
     common_short_tags_recognized: &[Tag],
-) -> Vec<Node> {
+) -> Node {
     let mut sense_content = Vec::new();
     for (gloss, gloss_info) in gloss_tree {
         let synthetic_branch = GlossTree::from_iter([(gloss.clone(), gloss_info.clone())]);
@@ -1479,7 +1482,7 @@ fn get_structured_glosses(
         let structured_gloss = wrap("li", "", Node::Array(Box::new(nested_gloss)));
         sense_content.push(structured_gloss);
     }
-    sense_content
+    wrap("ol", "glosses", Node::Array(Box::new(sense_content)))
 }
 
 // Recursive helper
@@ -1495,7 +1498,6 @@ fn get_structured_glosses_go(
 
     for (gloss, gloss_info) in gloss_tree {
         let level_tags = gloss_info.tags.clone();
-        // delete _tags but why
 
         // processglosstags: skip
         let minimal_tags: Vec<_> = level_tags
@@ -1504,7 +1506,6 @@ fn get_structured_glosses_go(
             .collect();
 
         let mut level_content = Node::Array(Box::default());
-        // delete _examples but why
 
         if let Some(structured_tags) =
             get_structured_tags(&minimal_tags, common_short_tags_recognized)
@@ -1515,8 +1516,7 @@ fn get_structured_glosses_go(
         let gloss_content = Node::Text(gloss.into());
         level_content.push(gloss_content);
 
-        if !gloss_info.examples.is_empty() {
-            let structured_examples = get_structured_examples(args, &gloss_info.examples);
+        if let Some(structured_examples) = get_structured_examples(args, &gloss_info.examples) {
             level_content.push(structured_examples);
         }
 
@@ -1542,50 +1542,34 @@ fn get_structured_glosses_go(
     nested
 }
 
-// uses an option because we need to check if structured_tags_content is empty in order to push it
-// outside of this function, but it is extremely hard to do so with the opaque Node
-//
-// ~~ maybe fix it later and make it work like get_structured_examples
 fn get_structured_tags(tags: &[Tag], common_short_tags_recognized: &[Tag]) -> Option<Node> {
     let mut structured_tags_content = Vec::new();
 
     for tag in tags {
-        let full_tag = find_tag_in_bank(tag);
-        if full_tag.is_none() {
+        let Some(full_tag) = find_tag_in_bank(tag) else {
             continue;
-        }
+        };
 
         // minimaltags
         // HACK: the conversion to short tag is done differently in the original
-        let short_tag = full_tag
-            .as_ref()
-            .map(|t| t.short_tag.clone())
-            .unwrap_or_default();
+        let short_tag = full_tag.short_tag;
+
         if common_short_tags_recognized.contains(&short_tag) {
             // We dont want "masculine" appear twice...
             continue;
         }
 
-        // defaults to "" if None
-        let title = full_tag
-            .as_ref()
-            .map(|t| t.long_tag.clone())
-            .unwrap_or_default();
-        let category = full_tag
-            .as_ref()
-            .map(|t| t.category.clone())
-            .unwrap_or_default();
-
         let structured_tag_content = GenericNode {
             tag: "span".into(),
-            title: Some(title),
+            title: Some(full_tag.long_tag),
             data: Some(NodeData::from_iter([
                 ("content", "tag"),
-                ("category", &category),
+                ("category", &full_tag.category),
             ])),
             content: Node::Text(short_tag),
         }
         .to_node();
+
         structured_tags_content.push(structured_tag_content);
     }
 
@@ -1600,7 +1584,11 @@ fn get_structured_tags(tags: &[Tag], common_short_tags_recognized: &[Tag]) -> Op
     }
 }
 
-fn get_structured_examples(args: &Args, examples: &[Example]) -> Node {
+fn get_structured_examples(args: &Args, examples: &[Example]) -> Option<Node> {
+    if examples.is_empty() {
+        return None;
+    }
+
     let mut structured_examples_content = wrap(
         "summary",
         "summary-entry",
@@ -1631,11 +1619,11 @@ fn get_structured_examples(args: &Args, examples: &[Example]) -> Node {
         structured_examples_content.push(structured_example_content_wrap);
     }
 
-    wrap(
+    Some(wrap(
         "details",
         "details-entry-examples",
         structured_examples_content,
-    )
+    ))
 }
 
 fn make_yomitan_forms(args: &Args, form_map: FormMap) -> Vec<YomitanEntry> {
@@ -1779,7 +1767,7 @@ fn write_yomitan(
     // Copy paste tag_bank.json
     let tag_bank = get_tag_bank_as_tag_info();
     let tag_bank_bytes = serde_json::to_vec_pretty(&tag_bank)?;
-    zip.start_file("tag_bank_1.json", options)?;
+    zip.start_file("tag_bank_1.json", options)?; // it needs to end in _1
     zip.write_all(&tag_bank_bytes)?;
 
     let mut bank_index = 0;
