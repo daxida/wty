@@ -3,31 +3,6 @@
     "malak": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ma.ˈlak/",
-              "tags": [
-                "Classical-Persian"
-              ]
-            },
-            {
-              "ipa": "[mä.lák]",
-              "tags": [
-                "Dari",
-                "formal",
-                "Kabuli",
-                "Hazaragi",
-                "Tajik"
-              ]
-            },
-            {
-              "ipa": "[mæ.lǽkʲ]",
-              "tags": [
-                "Iran",
-                "formal"
-              ]
-            }
-          ],
           "glossTree": {
             "angel": {
               "examples": [
@@ -50,42 +25,6 @@
     "fârsi": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/faːr.ˈsiː/",
-              "tags": [
-                "Classical-Persian"
-              ]
-            },
-            {
-              "ipa": "[fɑːɾ.síː]",
-              "tags": [
-                "Dari",
-                "formal",
-                "Kabuli"
-              ]
-            },
-            {
-              "ipa": "[fɔːɾ.sí]",
-              "tags": [
-                "Hazaragi"
-              ]
-            },
-            {
-              "ipa": "[fɒːɹ.síː]",
-              "tags": [
-                "Iran",
-                "formal"
-              ]
-            },
-            {
-              "ipa": "[fɔɾ.sí]",
-              "tags": [
-                "Tajik",
-                "formal"
-              ]
-            }
-          ],
           "glossTree": {
             "Persian (the language of modern Iran, Afghanistan and Tajikistan, and widely spoken in Uzbekistan).": {
               "examples": [

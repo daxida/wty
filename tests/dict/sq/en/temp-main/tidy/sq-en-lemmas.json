@@ -3,11 +3,6 @@
     "akull": {
       "adv": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ˈakuɫ/"
-            }
-          ],
           "glossTree": {
             "very": {}
           },
@@ -22,54 +17,6 @@
     "gjuhë": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ˈɟuhə/",
-              "tags": [
-                "northern Tosk, Lab"
-              ]
-            },
-            {
-              "ipa": "[ˈɟuh]",
-              "tags": [
-                "southern Gheg, central Gheg"
-              ]
-            },
-            {
-              "ipa": "[ˈɡjuː(h)]",
-              "tags": [
-                "Gheg",
-                "Northern"
-              ]
-            },
-            {
-              "ipa": "[ˈɡuː(h)]",
-              "tags": [
-                "Gheg",
-                "Northern"
-              ]
-            },
-            {
-              "ipa": "[ˈɡũː]",
-              "tags": [
-                "Kosovo"
-              ]
-            },
-            {
-              "ipa": "[ˈɡʎuhə]",
-              "tags": [
-                "Arbëresh",
-                "Arvanitika",
-                "Cham"
-              ]
-            },
-            {
-              "ipa": "[ˈɡʎuɣə]",
-              "tags": [
-                "Calabria"
-              ]
-            }
-          ],
           "glossTree": {
             "tongue (organ)": {
               "tags": [

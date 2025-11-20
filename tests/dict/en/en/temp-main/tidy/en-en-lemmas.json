@@ -3,11 +3,6 @@
     "bring": {
       "verb": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ˈbɹɪŋ/"
-            }
-          ],
           "glossTree": {
             "To transport toward somebody/somewhere.": {
               "tags": [
@@ -90,11 +85,6 @@
     "wain": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/weɪn/"
-            }
-          ],
           "glossTree": {
             "A wagon; a four-wheeled cart for hauling loads, usually pulled by horses or oxen.": {
               "tags": [
@@ -121,42 +111,6 @@
     "falcon": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ˈfɔː(l)kən/",
-              "tags": [
-                "Received-Pronunciation"
-              ]
-            },
-            {
-              "ipa": "/ˈfɒlkən/",
-              "tags": [
-                "Received-Pronunciation"
-              ]
-            },
-            {
-              "ipa": "/ˈfælkən/",
-              "tags": [
-                "US",
-                "General-Australian"
-              ]
-            },
-            {
-              "ipa": "/ˈfɑːlkən/",
-              "tags": [
-                "US"
-              ]
-            },
-            {
-              "ipa": "/ˈfoːlkən/"
-            },
-            {
-              "ipa": "/ˈfɛlkən/",
-              "tags": [
-                "New-Zealand"
-              ]
-            }
-          ],
           "glossTree": {
             "Any bird of the genus Falco, all of which are birds of prey.": {},
             "Any bird of prey of the subfamilies Falconinae and Herpetotherinae.": {},

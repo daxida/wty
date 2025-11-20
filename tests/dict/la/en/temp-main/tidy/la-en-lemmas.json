@@ -3,15 +3,6 @@
     "fāma": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈfaː.ma]",
-              "tags": [
-                "Classical-Latin",
-                "modern Italianate Ecclesiastical"
-              ]
-            }
-          ],
           "glossTree": {
             "fame": {
               "tags": [
@@ -74,20 +65,6 @@
     "legō": {
       "verb": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈɫɛ.ɡoː]",
-              "tags": [
-                "Classical-Latin"
-              ]
-            },
-            {
-              "ipa": "[ˈlɛː.ɡo]",
-              "tags": [
-                "modern Italianate Ecclesiastical"
-              ]
-            }
-          ],
           "glossTree": {
             "to choose, select": {
               "tags": [
@@ -169,20 +146,6 @@
     "līlium": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈliː.li.ũː]",
-              "tags": [
-                "Classical-Latin"
-              ]
-            },
-            {
-              "ipa": "[ˈliː.li.um]",
-              "tags": [
-                "modern Italianate Ecclesiastical"
-              ]
-            }
-          ],
           "glossTree": {
             "a lily": {
               "tags": [
@@ -203,20 +166,6 @@
     "usque": {
       "adv": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈʊs.kʷɛ]",
-              "tags": [
-                "Classical-Latin"
-              ]
-            },
-            {
-              "ipa": "[ˈus.kʷe]",
-              "tags": [
-                "modern Italianate Ecclesiastical"
-              ]
-            }
-          ],
           "glossTree": {
             "constantly, continuously": {
               "tags": [
@@ -251,20 +200,6 @@
     "rēctus": {
       "verb": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈreːk.tʊs]",
-              "tags": [
-                "Classical-Latin"
-              ]
-            },
-            {
-              "ipa": "[ˈrɛk.t̪us]",
-              "tags": [
-                "modern Italianate Ecclesiastical"
-              ]
-            }
-          ],
           "glossTree": {
             "led straight along, drawn in a straight line, straight, upright.": {
               "tags": [
@@ -322,20 +257,6 @@
     "domus": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈdɔ.mʊs]",
-              "tags": [
-                "Classical-Latin"
-              ]
-            },
-            {
-              "ipa": "[ˈd̪ɔː.mus]",
-              "tags": [
-                "modern Italianate Ecclesiastical"
-              ]
-            }
-          ],
           "glossTree": {
             "house, home (the building where a person lives)": {
               "tags": [

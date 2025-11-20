@@ -3,11 +3,6 @@
     "たのしい": {
       "adj": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ta̠no̞ɕiː]"
-            }
-          ],
           "glossTree": {
             "pleasant, delightful, fun, enjoyable": {}
           },
@@ -23,11 +18,6 @@
     "すき": {
       "adj": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[sɨ̥kʲi]"
-            }
-          ],
           "glossTree": {
             "liked, likable": {
               "examples": [
@@ -62,11 +52,6 @@
     "たぬき": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ta̠nɯ̟kʲi]"
-            }
-          ],
           "glossTree": {
             "a raccoon dog, Nyctereutes procyonoides": {
               "examples": [
@@ -131,11 +116,6 @@
     "はしる": {
       "verb": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ha̠ɕiɾɯ̟]"
-            }
-          ],
           "glossTree": {
             "to run (move fast on foot)": {
               "examples": [
@@ -245,14 +225,6 @@
     "ごしき": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ɡo̞ɕikʲi]"
-            },
-            {
-              "ipa": "[ɡo̞ɕo̞kɯ̟]"
-            }
-          ],
           "glossTree": {
             "five colors (usu. red (赤), blue (青), yellow (黄), white (白) and black (黒))": {},
             "synonym of 瓜 (uri, “melon, gourd”)": {}
@@ -268,11 +240,6 @@
     "おなかがすいた": {
       "phrase": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[o̞na̠ka̠ ɡa̠ sɨita̠]"
-            }
-          ],
           "glossTree": {
             "[I am / someone is] hungry": {}
           },

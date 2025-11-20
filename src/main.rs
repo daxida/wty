@@ -281,8 +281,6 @@ fn form_map_len_inflection(form_map: &FormMap) -> usize {
 // yomitan side of things. It all depends on what we may or may not consider useful for debugging.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 struct RawSenseEntry {
-    ipa: Vec<Ipa>,
-
     #[serde(rename = "glossTree")]
     gloss_tree: GlossTree,
 
@@ -769,7 +767,6 @@ fn process_word_entry(args: &Args, word_entry: &WordEntry) -> Option<RawSenseEnt
     }
 
     Some(RawSenseEntry {
-        ipa: get_ipas(word_entry),
         gloss_tree,
         etymology_text,
         head_info_text: get_head_info(&word_entry.head_templates),

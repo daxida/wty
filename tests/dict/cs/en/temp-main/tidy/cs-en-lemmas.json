@@ -3,11 +3,6 @@
     "zpráva": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈspraːva]"
-            }
-          ],
           "glossTree": {
             "message": {
               "tags": [
@@ -52,11 +47,6 @@
     "pro": {
       "prep": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈpro]"
-            }
-          ],
           "glossTree": {
             "for": {
               "examples": [
@@ -78,11 +68,6 @@
     "přít": {
       "verb": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈpr̝̊iːt]"
-            }
-          ],
           "glossTree": {
             "to dispute": {
               "tags": [

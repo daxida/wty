@@ -3,14 +3,6 @@
     "Rock": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ʁɔk]"
-            },
-            {
-              "ipa": "[ɹɔk]"
-            }
-          ],
           "glossTree": {
             "populäre Musikrichtung, die Anfang der 1950er Jahre in den USA entstand": {
               "examples": [
@@ -25,11 +17,6 @@
           "klink": "https://kaikki.org/dictionary/German/meaning/R/Ro/Rock.html"
         },
         "1": {
-          "ipa": [
-            {
-              "ipa": "[ʁɔk]"
-            }
-          ],
           "glossTree": {
             "in arabischen Märchen: flugfähiger Vogel in der Größe eines Elefanten": {
               "examples": [
@@ -50,29 +37,6 @@
     "Garage": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ɡaˈʁaːʒə]",
-              "tags": [
-                "Germany"
-              ]
-            },
-            {
-              "ipa": "[ɡaˈʁaːʃ]",
-              "tags": [
-                "Austrian German"
-              ]
-            },
-            {
-              "ipa": "[ɡaˈʁaːʃə]",
-              "tags": [
-                "Swiss Standard German"
-              ]
-            },
-            {
-              "ipa": "[ˈɡaʁaːʃ]"
-            }
-          ],
           "glossTree": {
             "Raum zum dauerhaften Ab- und Unterstellen von Kraftfahrzeugen": {
               "examples": [

@@ -3,24 +3,6 @@
     "fast": {
       "adj": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/fɑːst/",
-              "tags": [
-                "Australia",
-                "New-Zealand",
-                "London",
-                "Received-Pronunciation"
-              ]
-            },
-            {
-              "ipa": "/fæst/",
-              "tags": [
-                "US",
-                "UK"
-              ]
-            }
-          ],
           "glossTree": {
             "Rápido, veloz.": {},
             "Adelantado.": {

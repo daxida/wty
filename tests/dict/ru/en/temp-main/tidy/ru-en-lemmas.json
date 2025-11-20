@@ -3,11 +3,6 @@
     "снег": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[sʲnʲek]"
-            }
-          ],
           "glossTree": {
             "snow": {
               "tags": [
@@ -76,11 +71,6 @@
     "побеле́ть": {
       "verb": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[pəbʲɪˈlʲetʲ]"
-            }
-          ],
           "glossTree": {
             "to turn white, (intransitive) to whiten": {
               "tags": [
@@ -119,11 +109,6 @@
     "зи́мний": {
       "adj": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "[ˈzɪmnei̯]"
-            }
-          ],
           "glossTree": {
             "cold": {}
           },

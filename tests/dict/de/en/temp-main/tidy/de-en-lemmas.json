@@ -3,26 +3,6 @@
     "pflegen": {
       "verb": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ˈpfleːɡən/"
-            },
-            {
-              "ipa": "[ˈpfleːɡən]"
-            },
-            {
-              "ipa": "[ˈpfleːɡŋ̩]",
-              "tags": [
-                "standard"
-              ]
-            },
-            {
-              "ipa": "/ˈfleːɡən/",
-              "tags": [
-                "most speakers in northern and central Germany"
-              ]
-            }
-          ],
           "glossTree": {
             "providing care or service for someone/something": {
               "tags": [
@@ -208,11 +188,6 @@
     "Fuchs": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/fʊks/"
-            }
-          ],
           "glossTree": {
             "fox (animal)": {
               "tags": [
@@ -322,17 +297,6 @@
     "Herz": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/hɛrts/"
-            },
-            {
-              "ipa": "[hɛʁt͡s]"
-            },
-            {
-              "ipa": "[hɛɐ̯t͡s]"
-            }
-          ],
           "glossTree": {
             "heart": {
               "tags": [
@@ -368,11 +332,6 @@
     "Fahrer": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ˈfaːʁɐ/"
-            }
-          ],
           "glossTree": {
             "agent noun of fahren; driver (person)": {
               "tags": [
@@ -395,14 +354,6 @@
     "von": {
       "prep": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/fɔn/"
-            },
-            {
-              "ipa": "[fɔn]"
-            }
-          ],
           "glossTree": {
             "from": {
               "examples": [
@@ -472,11 +423,6 @@
     "Base": {
       "noun": {
         "0": {
-          "ipa": [
-            {
-              "ipa": "/ˈbaːzə/"
-            }
-          ],
           "glossTree": {
             "A female cousin.": {
               "tags": [
@@ -497,11 +443,6 @@
           "klink": "https://kaikki.org/dictionary/German/meaning/B/Ba/Base.html"
         },
         "1": {
-          "ipa": [
-            {
-              "ipa": "/ˈbaːzə/"
-            }
-          ],
           "glossTree": {
             "base (compound that will neutralize an acid)": {
               "tags": [
