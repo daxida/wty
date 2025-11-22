@@ -4,6 +4,7 @@ use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 
+use crate::lang::Edition;
 use crate::lang::{EditionLang, Lang};
 use crate::models::WordEntry;
 
@@ -129,7 +130,7 @@ pub struct GlossaryLangs {
 #[derive(Parser, Debug, Default)]
 pub struct GlossaryExtendedLangs {
     /// Edition language
-    pub edition: EditionLang,
+    pub edition: Edition,
 
     /// Source language
     pub source: Lang,
@@ -181,7 +182,7 @@ pub struct ArgsOptions {
     pub reject: Vec<(FilterKey, String)>,
 
     /// Write jsons with whitespace
-    #[arg(long)]
+    #[arg(short, long)]
     pub pretty: bool,
 
     /// Change the root directory
@@ -273,14 +274,14 @@ impl fmt::Display for DictionaryType {
 
 /// Helper trait to support CLI edition validation, while treating them as equal later on.
 pub trait Langs {
-    fn edition(&self) -> EditionLang;
+    fn edition(&self) -> Edition;
     fn source(&self) -> Lang;
     fn target(&self) -> Lang;
 }
 
 impl Langs for MainLangs {
-    fn edition(&self) -> EditionLang {
-        self.edition
+    fn edition(&self) -> Edition {
+        Edition::EditionLang(self.edition)
     }
     fn source(&self) -> Lang {
         self.source
@@ -291,7 +292,7 @@ impl Langs for MainLangs {
 }
 
 impl Langs for GlossaryExtendedLangs {
-    fn edition(&self) -> EditionLang {
+    fn edition(&self) -> Edition {
         self.edition
     }
     fn source(&self) -> Lang {
@@ -303,8 +304,8 @@ impl Langs for GlossaryExtendedLangs {
 }
 
 impl Langs for GlossaryLangs {
-    fn edition(&self) -> EditionLang {
-        self.edition
+    fn edition(&self) -> Edition {
+        Edition::EditionLang(self.edition)
     }
     fn source(&self) -> Lang {
         self.source.into()
@@ -360,11 +361,9 @@ impl SimpleArgs for IpaArgs {
     fn dict_name(&self) -> &str {
         &self.dict_name
     }
-
     fn langs(&self) -> &impl Langs {
         &self.langs
     }
-
     fn options(&self) -> &ArgsOptions {
         &self.options
     }
@@ -379,7 +378,7 @@ pub struct PathManager {
     dict_name: String,
     dict_ty: DictionaryType,
 
-    edition: EditionLang,
+    edition: Edition,
     source: Lang,
     target: Lang,
 
@@ -406,7 +405,7 @@ impl PathManager {
     }
 
     // Seems a bit hacky to get it from the PathManager...
-    pub const fn langs(&self) -> (EditionLang, Lang, Lang) {
+    pub const fn langs(&self) -> (Edition, Lang, Lang) {
         (self.edition, self.source, self.target)
     }
 
@@ -452,8 +451,11 @@ impl PathManager {
     /// Example (de-en): `data/kaikki/de-en-extract.jsonl`
     pub fn path_jsonl_raw(&self) -> PathBuf {
         self.dir_kaik().join(match self.edition {
-            EditionLang::En => format!("{}-{}-extract.jsonl", self.source, self.target),
-            _ => format!("{}-extract.jsonl", self.edition),
+            Edition::All => panic!(), // this can't happen in DictionaryType::Main
+            Edition::EditionLang(EditionLang::En) => {
+                format!("{}-{}-extract.jsonl", self.source, self.target)
+            }
+            Edition::EditionLang(_) => format!("{}-extract.jsonl", self.edition),
         })
     }
 

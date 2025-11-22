@@ -1004,6 +1004,12 @@ fn is_inflection_gloss(target: EditionLang, _word_entry: &WordEntry, sense: &Sen
     }
 }
 
+static DE_INFLECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(
+        r"^(.*)des (?:Verbs|Adjektivs|Substantivs|Demonstrativpronomens|Possessivpronomens|Pronomens) (.*)$"
+    ).unwrap()
+});
+
 fn handle_inflection_gloss(
     source: Lang,
     target: EditionLang,
@@ -1052,13 +1058,7 @@ fn handle_inflection_gloss(
                 return;
             }
 
-            static INFLECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
-                Regex::new(
-        r"^(.*)des (?:Verbs|Adjektivs|Substantivs|Demonstrativpronomens|Possessivpronomens|Pronomens) (.*)$"
-    ).unwrap()
-            });
-
-            if let Some(caps) = INFLECTION_RE.captures(&sense.glosses[0])
+            if let Some(caps) = DE_INFLECTION_RE.captures(&sense.glosses[0])
                 && let (Some(inflection_tags), Some(uninflected)) = (caps.get(1), caps.get(2))
             {
                 let inflection_tags = inflection_tags.as_str().trim();
@@ -1903,7 +1903,7 @@ const STYLES_CSS: &[u8] = include_bytes!("../assets/styles.css"); // = ../args.p
 
 /// Write lemma / form / whatever banks to either disk or zip.
 ///
-/// If save_temps is true, we assume that the user is debugging and does not need the zip.
+/// If `save_temps` is true, we assume that the user is debugging and does not need the zip.
 fn write_yomitan(
     source: Lang,
     target: Lang,
@@ -1919,13 +1919,15 @@ fn write_yomitan(
         for (entry_ty, entries) in labelled_entries {
             write_banks(
                 options.pretty,
-                &entries,
+                entries,
                 &mut bank_index,
                 entry_ty,
                 &out_dir,
                 BankSink::Disk,
             )?;
         }
+
+        pretty_println_at_path(&format!("{CHECK_C} Wrote temp data"), &out_dir);
     } else {
         let writer_path = pm.path_dict();
         let writer_file = File::create(&writer_path)?;
@@ -1934,7 +1936,7 @@ fn write_yomitan(
             SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
 
         // Zip index.json
-        let index_string = get_index(&pm.dict_name_expanded(), source, target.into());
+        let index_string = get_index(&pm.dict_name_expanded(), source, target);
         zip.start_file("index.json", zip_options)?;
         zip.write_all(index_string.as_bytes())?;
 
@@ -1951,7 +1953,7 @@ fn write_yomitan(
         for (entry_ty, entries) in labelled_entries {
             write_banks(
                 options.pretty,
-                &entries,
+                entries,
                 &mut bank_index,
                 entry_ty,
                 &writer_path,
@@ -1961,7 +1963,7 @@ fn write_yomitan(
 
         zip.finish()?;
 
-        pretty_println_at_path(&format!("{CHECK_C} Wrote yomitan dict"), &pm.path_dict());
+        pretty_println_at_path(&format!("{CHECK_C} Wrote yomitan dict"), &writer_path);
     }
 
     Ok(())
@@ -2061,23 +2063,27 @@ impl SimpleDictionary for DictionaryType {
         }
     }
 
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<PathBuf> {
+    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
         match self {
             Self::Main => unimplemented!("Main dictionary is made differently"),
             Self::Glossary => {
-                let (_, source, _) = pm.langs();
-                vec![pm.path_jsonl(source, source)]
+                let (edition, source, _) = pm.langs();
+                let edition_lang = edition.try_into().unwrap(); // edition is never Edition::All
+                vec![(edition_lang, pm.path_jsonl(source, source))]
             }
             Self::GlossaryExtended => {
                 let (edition, _, _) = pm.langs();
-                vec![
-                    pm.path_jsonl(edition.into(), edition.into()),
-                    pm.path_jsonl(edition.into(), edition.into()), // Testing multiple jsonl
-                ]
+                let mut paths = Vec::new();
+                for edition_lang in edition.variants() {
+                    let lang = edition_lang.into();
+                    paths.push((edition_lang, pm.path_jsonl(lang, lang)));
+                }
+                paths
             }
             Self::Ipa => {
-                let (_, source, target) = pm.langs();
-                vec![pm.path_jsonl(source, target)]
+                let (edition, source, target) = pm.langs();
+                let edition_lang = edition.try_into().unwrap(); // edition is never Edition::All
+                vec![(edition_lang, pm.path_jsonl(source, target))]
             }
         }
     }
@@ -2092,7 +2098,7 @@ trait SimpleDictionary {
     /// Most dictionaries only use a single path. For instance, Glossary will only use the `source`
     /// edition. It is possible, though, to make a yomitan dictionary by using information from
     /// multiple dumps.
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<PathBuf>;
+    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)>;
 
     /// How to transform a `WordEntry` into `YomitanEntry`s.
     ///
@@ -2107,7 +2113,7 @@ trait SimpleDictionary {
 }
 
 fn make_simple_dict(options: &ArgsOptions, pm: &PathManager) -> Result<()> {
-    let (edition, source, target) = pm.langs();
+    let (_, source, target) = pm.langs();
     let dict = pm.dict_ty();
 
     pm.setup_dirs()?;
@@ -2120,7 +2126,7 @@ fn make_simple_dict(options: &ArgsOptions, pm: &PathManager) -> Result<()> {
     let mut line = String::with_capacity(1 << 10);
     let mut entries = Vec::new();
 
-    for path_jsonl_raw in dict.paths_jsonl_raw(pm) {
+    for (edition, path_jsonl_raw) in dict.paths_jsonl_raw(pm) {
         download_jsonl(edition, source, &path_jsonl_raw, options.redownload)?;
 
         let reader_path = path_jsonl_raw;

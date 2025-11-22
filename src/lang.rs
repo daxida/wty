@@ -303,6 +303,70 @@ impl std::fmt::Display for Lang {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Edition {
+    /// All editions
+    All,
+    /// An `EditionLang`
+    EditionLang(EditionLang),
+}
+
+impl Edition {
+    pub fn variants(&self) -> Vec<EditionLang> {
+        match self {
+            Self::All => vec![
+                EditionLang::Zh,
+                EditionLang::Cs,
+                EditionLang::Nl,
+                EditionLang::En,
+                EditionLang::Fr,
+                EditionLang::De,
+                EditionLang::El,
+                EditionLang::Id,
+                EditionLang::It,
+                EditionLang::Ja,
+                EditionLang::Ku,
+                EditionLang::Ko,
+                EditionLang::Ms,
+                EditionLang::Pl,
+                EditionLang::Pt,
+                EditionLang::Ru,
+                EditionLang::Es,
+                EditionLang::Th,
+                EditionLang::Tr,
+                EditionLang::Vi,
+            ],
+            Self::EditionLang(lang) => vec![*lang],
+        }
+    }
+}
+
+impl Default for Edition {
+    fn default() -> Self {
+        Self::EditionLang(EditionLang::default())
+    }
+}
+
+impl std::str::FromStr for Edition {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "all" => Ok(Self::All),
+            other => Ok(Self::EditionLang(other.parse::<EditionLang>()?)),
+        }
+    }
+}
+
+impl std::fmt::Display for Edition {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::All => write!(f, "all"),
+            Self::EditionLang(lang) => write!(f, "{lang}"),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
 pub enum EditionLang {
     /// English
@@ -374,6 +438,17 @@ impl std::convert::TryFrom<Lang> for EditionLang {
             Lang::Tr => Ok(Self::Tr),
             Lang::Vi => Ok(Self::Vi),
             _ => Err("language has no edition"),
+        }
+    }
+}
+
+impl std::convert::TryFrom<Edition> for EditionLang {
+    type Error = &'static str;
+
+    fn try_from(edition: Edition) -> Result<Self, Self::Error> {
+        match edition {
+            Edition::EditionLang(lang) => Ok(lang),
+            Edition::All => Err("cannot convert Edition::All to EditionLang"),
         }
     }
 }

@@ -164,6 +164,59 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w(f"{idt}}}\n")
     w("}\n\n")
 
+    ### Edition start
+
+    # Edition
+    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]\n")
+    w("pub enum Edition {\n")
+    w(f"{idt}/// All editions\n")
+    w(f"{idt}All,\n")
+    w(f"{idt}/// An `EditionLang`\n")
+    w(f"{idt}EditionLang(EditionLang),\n")
+    w("}\n\n")
+
+    # Edition: variants (iteration)
+    w("impl Edition {\n")
+    w(f"{idt}pub fn variants(&self) -> Vec<EditionLang> {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f"{idt * 3}Self::All => vec![\n")
+    for lang in langs:
+        if lang.has_edition:
+            w(f"{idt * 4}EditionLang::{lang.iso.title()},\n")
+    w(f"{idt * 3}],\n")
+    w(f"{idt * 3}Self::EditionLang(lang) => vec![*lang],\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # Edition: Default
+    w("impl Default for Edition {\n")
+    w(f"{idt}fn default() -> Self {{\n")
+    w(f"{idt * 2}Self::EditionLang(EditionLang::default())\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # Edition: FromStr
+    w("impl std::str::FromStr for Edition {\n")
+    w(f"{idt}type Err = String;\n\n")
+    w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
+    w(f"{idt * 2}match s {{\n")
+    w(f'{idt * 3}"all" => Ok(Self::All),\n')
+    w(f"{idt * 3}other => Ok(Self::EditionLang(other.parse::<EditionLang>()?)),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # Edition: Display
+    w("impl std::fmt::Display for Edition {\n")
+    w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f'{idt * 3}Self::All => write!(f, "all"),\n')
+    w(f'{idt * 3}Self::EditionLang(lang) => write!(f, "{{lang}}"),\n')
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
     ### EditionLang start
 
     # EditionLang
@@ -186,10 +239,19 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w(f"{idt * 2}match lang {{\n")
     for lang in langs:
         if lang.has_edition:
-            w(
-                f"{idt * 3}Lang::{lang.iso.title()} => Ok(Self::{lang.iso.title()}),\n"
-            )
+            w(f"{idt * 3}Lang::{lang.iso.title()} => Ok(Self::{lang.iso.title()}),\n")
     w(f'{idt * 3}_ => Err("language has no edition"),\n')
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # EditionLang: TryFrom<Edition>
+    w("impl std::convert::TryFrom<Edition> for EditionLang {\n")
+    w(f"{idt}type Error = &'static str;\n\n")
+    w(f"{idt}fn try_from(edition: Edition) -> Result<Self, Self::Error> {{\n")
+    w(f"{idt * 2}match edition {{\n")
+    w(f"{idt * 3}Edition::EditionLang(lang) => Ok(lang),\n")
+    w(f'{idt * 3}Edition::All => Err("cannot convert Edition::All to EditionLang"),\n')
     w(f"{idt * 2}}}\n")
     w(f"{idt}}}\n")
     w("}\n\n")

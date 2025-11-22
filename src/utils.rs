@@ -6,17 +6,30 @@ use std::path::Path;
 pub const SKIP_C: &str = "⏭";
 pub const CHECK_C: &str = "✓";
 
+fn size(path: &Path) -> std::io::Result<u64> {
+    let md = fs::metadata(path)?;
+    if md.is_file() {
+        Ok(md.len())
+    } else if md.is_dir() {
+        let mut total = 0;
+        for entry in fs::read_dir(path)? {
+            total += size(&entry?.path())?;
+        }
+        Ok(total)
+    } else {
+        // symlinks and other beasts
+        Ok(0)
+    }
+}
+
 fn get_file_size_in_mb(path: &Path) -> Result<f64> {
-    let metadata = fs::metadata(path)?;
-    let size_bytes = metadata.len();
-    let size_mb = size_bytes as f64 / (1024.0 * 1024.0);
-    Ok(size_mb)
+    Ok(size(path)? as f64 / (1024.0 * 1024.0))
 }
 
 fn pretty_msg_at_path(msg: &str, path: &Path) -> String {
     let at = "\x1b[1;36m@\x1b[0m"; // bold + cyan
     match get_file_size_in_mb(path) {
-        core::result::Result::Ok(size_mb) => {
+        Result::Ok(size_mb) => {
             let size_str = format!("\x1b[1m{size_mb:.2} MB\x1b[0m"); // bold
             format!("{msg} {at} {} ({})", path.display(), size_str)
         }
