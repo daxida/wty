@@ -1127,30 +1127,38 @@ fn handle_inflection_gloss_en(source: Lang, word_entry: &WordEntry, sense: &Sens
             .replace(&format!("of {lemma}"), "")
             .replace(lemma, "")
             .replace(':', "")
-            .trim()
             .to_string();
         // Remove parenthesized content at the end
-        inflection = EN_INSIDE_PARENS_RE.replace_all(&inflection, "").to_string();
+        inflection = EN_INSIDE_PARENS_RE
+            .replace_all(&inflection, "")
+            .trim()
+            .to_string();
 
-        if !inflection.trim().is_empty() {
+        if !inflection.is_empty() {
             inflections.insert(inflection);
         }
     }
 
-    if let Some(uninflected) = lemmas.iter().next() {
-        // Not sure if this is better (cf. ru-en) over word_entry.word but it is what was done in
-        // the original, so lets not change that for the moment.
-        let inflected = get_canonical_word(source, word_entry);
+    let Some(uninflected) = lemmas.iter().next() else {
+        return;
+    };
 
-        for inflection in inflections {
-            ret.insert_form(
-                uninflected,
-                inflected,
-                &word_entry.pos,
-                FormSource::Inflection,
-                vec![inflection],
-            );
-        }
+    // Not sure if this is better (cf. ru-en) over word_entry.word but it is what was done in
+    // the original, so lets not change that for the moment.
+    let inflected = get_canonical_word(source, word_entry);
+
+    if inflected == uninflected {
+        return;
+    }
+
+    for inflection in inflections {
+        ret.insert_form(
+            uninflected,
+            inflected,
+            &word_entry.pos,
+            FormSource::Inflection,
+            vec![inflection],
+        );
     }
 }
 
@@ -2776,10 +2784,13 @@ mod tests {
         let fixture_dir = PathBuf::from("tests");
         // have to hardcode this since we have not initialized args
         let fixture_input_dir = fixture_dir.join("kaikki");
-        let fixture_output_dir = fixture_dir.join("dict");
 
         // Nuke the output dir to prevent pollution
-        fs::remove_dir_all(fixture_output_dir).unwrap();
+        // It has the disadvantage of massive diffs if we failfast.
+        //
+        // let fixture_output_dir = fixture_dir.join("dict");
+        // Don't crash if there is no output dir. It may happen if we nuke it manually
+        // let _ = fs::remove_dir_all(fixture_output_dir);
 
         // iterdir and search for source-target-extract.jsonl files
         let mut cases = Vec::new();

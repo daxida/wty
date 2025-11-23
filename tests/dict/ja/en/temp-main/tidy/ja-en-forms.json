@@ -1823,5 +1823,15 @@
         ]
       ]
     }
+  },
+  "きょう": {
+    "けふ": {
+      "noun": [
+        "extracted",
+        [
+          "hiragana historical"
+        ]
+      ]
+    }
   }
 }
