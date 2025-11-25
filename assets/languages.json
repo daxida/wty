@@ -16,6 +16,7 @@
     {"iso": "eo",  "language": "Esperanto",              "displayName": "Esperanto",                "flag": "🌍"                       },
     {"iso": "fi",  "language": "Finnish",                "displayName": "Finnish",                  "flag": "🇫🇮"                       },
     {"iso": "fr",  "language": "French",                 "displayName": "French",                   "flag": "🇫🇷",   "hasEdition": true },
+    {"iso": "ka",  "language": "Georgian",               "displayName": "Georgian",                 "flag": "🇬🇪"                       },
     {"iso": "de",  "language": "German",                 "displayName": "German",                   "flag": "🇩🇪",   "hasEdition": true },
     {"iso": "el",  "language": "Greek",                  "displayName": "Greek",                    "flag": "🇬🇷",   "hasEdition": true },
     {"iso": "grc", "language": "Ancient Greek",          "displayName": "Greek, Ancient",           "flag": "🏺"                       },

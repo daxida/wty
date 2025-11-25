@@ -308,7 +308,7 @@ def sort_languages_json(path: Path) -> None:
         for _, idx in langs_sorted:
             f.write(lines[idx + 1])
             f.write("\n")
-        f.write("]\n\n")
+        f.write("]\n")
 
 
 def main() -> None:
