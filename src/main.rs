@@ -39,11 +39,11 @@ use zip::write::SimpleFileOptions;
 use tracing::{Level, debug, error, info, span, trace, warn};
 
 use kty::cli::{
-    ArgsOptions, Cli, Command, DGlossary, DGlossaryExtended, DIpa, DictionaryType, FilterKey,
-    MainArgs, MainLangs, PathManager,
+    ArgsOptions, Cli, Command, DGlossary, DGlossaryExtended, DIpa, DIpaMerged, DictionaryType,
+    FilterKey, MainArgs, MainLangs, PathManager,
 };
 use kty::download::download_jsonl;
-use kty::lang::{EditionLang, Lang};
+use kty::lang::{Edition, EditionLang, Lang};
 use kty::locale::get_locale_examples_string;
 use kty::models::{Example, Form, HeadTemplate, Pos, Sense, Tag, WordEntry};
 use kty::tags::{
@@ -324,7 +324,7 @@ struct GlossInfo {
     children: GlossTree,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq, Hash)]
 #[serde(default)]
 struct Ipa {
     ipa: String,
@@ -1245,7 +1245,7 @@ struct TermBankMeta(
     PhoneticTranscription, // phonetic transcription
 );
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq, Eq, Hash)]
 struct PhoneticTranscription {
     reading: String,
     transcriptions: Vec<Ipa>,
@@ -2153,6 +2153,43 @@ impl SimpleDictionary for DIpa {
     }
 }
 
+impl SimpleDictionary for DIpaMerged {
+    type I = IIpa;
+
+    fn process(
+        &self,
+        edition: EditionLang,
+        source: Lang,
+        _target: Lang,
+        entry: &WordEntry,
+    ) -> Vec<Self::I> {
+        make_ir_ipa(edition, source, entry)
+    }
+
+    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
+        let (edition, _, _) = pm.langs();
+        let mut paths = Vec::new();
+        for edition_lang in edition.variants() {
+            let lang = edition_lang.into();
+            paths.push((edition_lang, pm.path_jsonl(lang, lang)));
+        }
+        paths
+    }
+
+    fn compact(&self, irs: &mut Vec<Self::I>) {
+        // Keep only unique entries
+        let mut seen = IndexSet::new();
+        seen.extend(irs.drain(..));
+        *irs = seen.into_iter().collect();
+        // Sorting is not needed ~ just for visibility
+        irs.sort_by(|a, b| a.0.cmp(&b.0));
+    }
+
+    fn to_yomitan(&self, tidy: Self::I) -> YomitanEntry {
+        make_yomitan_ipa(tidy)
+    }
+}
+
 // Ideally this should support Main at some point
 //
 // If this ends up having too much overhead for dictionaries that do not use Self::I, consider this
@@ -2645,8 +2682,9 @@ fn main() -> Result<()> {
     let span = tracing::info_span!("main");
     let _guard = span.enter();
 
-    debug!("{:#?}", cli.command);
-
+    // Issue warnings and finish setting args, before debug printing.
+    //
+    // Done in a separate match for visibility. Everything that mutates args should go here.
     match cli.command {
         Command::Main(ref mut args) => {
             if !args.options.save_temps && (args.skip.tidy || args.skip.yomitan) {
@@ -2656,8 +2694,6 @@ fn main() -> Result<()> {
 
             args.langs.edition = args.langs.target;
             push_filter_key_lang(&mut args.options.filter, args.langs.source);
-            let pm = PathManager::new(DictionaryType::Main, args);
-            make_dict_main(args, &pm)
         }
         Command::Glossary(ref mut args) => {
             let source_as_lang: Lang = args.langs.source.into();
@@ -2668,23 +2704,47 @@ fn main() -> Result<()> {
 
             args.langs.edition = args.langs.source;
             push_filter_key_lang(&mut args.options.filter, source_as_lang);
-            let pm = PathManager::new(DictionaryType::Glossary, args);
-            make_simple_dict(DGlossary, &args.options, &pm)
         }
-        Command::GlossaryExtended(ref mut args) => {
+        Command::GlossaryExtended(ref args) => {
             ensure!(
                 args.langs.source != args.langs.target,
                 "in a glossary dictionary source must be different from target."
             );
-
-            let pm = PathManager::new(DictionaryType::GlossaryExtended, args);
-            make_simple_dict(DGlossaryExtended, &args.options, &pm)
         }
         Command::Ipa(ref mut args) => {
             args.langs.edition = args.langs.target;
             push_filter_key_lang(&mut args.options.filter, args.langs.source);
+        }
+        Command::IpaMerged(ref mut args) => {
+            args.langs.edition = Edition::All;
+            args.langs.source = args.langs.target;
+            push_filter_key_lang(&mut args.options.filter, args.langs.source);
+        }
+        Command::Iso => (),
+    }
+
+    debug!("{:#?}", cli.command);
+
+    match &cli.command {
+        Command::Main(args) => {
+            let pm = PathManager::new(DictionaryType::Main, args);
+            make_dict_main(args, &pm)
+        }
+        Command::Glossary(args) => {
+            let pm = PathManager::new(DictionaryType::Glossary, args);
+            make_simple_dict(DGlossary, &args.options, &pm)
+        }
+        Command::GlossaryExtended(args) => {
+            let pm = PathManager::new(DictionaryType::GlossaryExtended, args);
+            make_simple_dict(DGlossaryExtended, &args.options, &pm)
+        }
+        Command::Ipa(args) => {
             let pm = PathManager::new(DictionaryType::Ipa, args);
             make_simple_dict(DIpa, &args.options, &pm)
+        }
+        Command::IpaMerged(args) => {
+            let pm = PathManager::new(DictionaryType::IpaMerged, args);
+            make_simple_dict(DIpaMerged, &args.options, &pm)
         }
         Command::Iso => {
             println!("{}", Lang::help_supported_isos_coloured());

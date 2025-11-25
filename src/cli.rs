@@ -35,6 +35,9 @@ pub enum Command {
     /// Phonetic transcription dictionary. Uses target for the edition
     Ipa(IpaArgs),
 
+    /// Phonetic transcription dictionary. Uses all editions
+    IpaMerged(IpaMergedArgs),
+
     /// Show supported iso codes, with coloured editions
     Iso,
 }
@@ -57,19 +60,6 @@ pub struct MainArgs {
 }
 
 #[derive(Parser, Debug, Default)]
-pub struct IpaArgs {
-    #[command(flatten)]
-    pub langs: MainLangs,
-
-    /// Dictionary name
-    #[arg(default_value = "kty")]
-    pub dict_name: String,
-
-    #[command(flatten)]
-    pub options: ArgsOptions,
-}
-
-#[derive(Parser, Debug, Default)]
 pub struct GlossaryArgs {
     #[command(flatten)]
     pub langs: GlossaryLangs,
@@ -86,6 +76,32 @@ pub struct GlossaryArgs {
 pub struct GlossaryExtendedArgs {
     #[command(flatten)]
     pub langs: GlossaryExtendedLangs,
+
+    /// Dictionary name
+    #[arg(default_value = "kty")]
+    pub dict_name: String,
+
+    #[command(flatten)]
+    pub options: ArgsOptions,
+}
+
+#[derive(Parser, Debug, Default)]
+pub struct IpaArgs {
+    #[command(flatten)]
+    pub langs: MainLangs,
+
+    /// Dictionary name
+    #[arg(default_value = "kty")]
+    pub dict_name: String,
+
+    #[command(flatten)]
+    pub options: ArgsOptions,
+}
+
+#[derive(Parser, Debug, Default)]
+pub struct IpaMergedArgs {
+    #[command(flatten)]
+    pub langs: IpaMergedLangs,
 
     /// Dictionary name
     #[arg(default_value = "kty")]
@@ -130,6 +146,21 @@ pub struct GlossaryExtendedLangs {
     pub edition: Edition,
 
     /// Source language
+    pub source: Lang,
+
+    /// Target language
+    pub target: Lang,
+}
+
+/// Langs-like struct that only takes one language.
+#[derive(Parser, Debug, Default)]
+pub struct IpaMergedLangs {
+    /// Edition language
+    #[arg(skip)]
+    pub edition: Edition,
+
+    /// Source language
+    #[arg(skip)]
     pub source: Lang,
 
     /// Target language
@@ -260,6 +291,9 @@ pub struct DGlossaryExtended;
 #[derive(Debug, Clone, Copy)]
 pub struct DIpa;
 
+#[derive(Debug, Clone, Copy)]
+pub struct DIpaMerged;
+
 /// Enum used by `PathManager` to dispatch filetree operations (folder names etc.)
 #[derive(Debug, Clone, Copy)]
 pub enum DictionaryType {
@@ -267,8 +301,10 @@ pub enum DictionaryType {
     Glossary,
     GlossaryExtended,
     Ipa,
+    IpaMerged,
 }
 
+/// Used only for the temporary files folder (`dir_temp`).
 impl fmt::Display for DictionaryType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -276,6 +312,7 @@ impl fmt::Display for DictionaryType {
             Self::Glossary => write!(f, "glossary"),
             Self::GlossaryExtended => write!(f, "glossary-ext"), // should be just glossary
             Self::Ipa => write!(f, "ipa"),
+            Self::IpaMerged => write!(f, "ipa-merged"),
         }
     }
 }
@@ -299,6 +336,18 @@ impl Langs for MainLangs {
     }
 }
 
+impl Langs for GlossaryLangs {
+    fn edition(&self) -> Edition {
+        Edition::EditionLang(self.edition)
+    }
+    fn source(&self) -> Lang {
+        self.source.into()
+    }
+    fn target(&self) -> Lang {
+        self.target
+    }
+}
+
 impl Langs for GlossaryExtendedLangs {
     fn edition(&self) -> Edition {
         self.edition
@@ -311,12 +360,12 @@ impl Langs for GlossaryExtendedLangs {
     }
 }
 
-impl Langs for GlossaryLangs {
+impl Langs for IpaMergedLangs {
     fn edition(&self) -> Edition {
-        Edition::EditionLang(self.edition)
+        self.edition
     }
     fn source(&self) -> Lang {
-        self.source.into()
+        self.source
     }
     fn target(&self) -> Lang {
         self.target
@@ -377,6 +426,18 @@ impl SimpleArgs for IpaArgs {
     }
 }
 
+impl SimpleArgs for IpaMergedArgs {
+    fn dict_name(&self) -> &str {
+        &self.dict_name
+    }
+    fn langs(&self) -> &impl Langs {
+        &self.langs
+    }
+    fn options(&self) -> &ArgsOptions {
+        &self.options
+    }
+}
+
 /// Helper struct to manage paths.
 //
 // It could have done directly with args, but tracking dict_ty is quite tricky. Also, this makes
@@ -418,9 +479,11 @@ impl PathManager {
     }
     /// Example: `data/dict/el/el`
     fn dir_dict(&self) -> PathBuf {
-        self.root_dir
-            .join("dict")
-            .join(format!("{}/{}", self.source, self.target))
+        self.root_dir.join("dict").join(match self.dict_ty {
+            // For merged dictionaries, use the edition (displays as "all")
+            DictionaryType::IpaMerged => format!("{}/{}", self.target, self.edition),
+            _ => format!("{}/{}", self.source, self.target),
+        })
     }
     /// Depends on the type of dictionary being made.
     ///
@@ -518,6 +581,7 @@ impl PathManager {
             DictionaryType::Ipa => {
                 format!("{}-{}-{}-ipa", self.dict_name, self.source, self.target)
             }
+            DictionaryType::IpaMerged => format!("{}-{}-ipa", self.dict_name, self.target),
         }
     }
 
