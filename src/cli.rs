@@ -281,8 +281,14 @@ impl Cli {
 }
 
 impl ArgsOptions {
+    // TODO: this won't work for GlossaryExtended. Although it makes little sense there...
+    //
+    /// Check if there are any (extra) filter parameters.
+    ///
+    /// It depends on the dictionary type, since some dictionaries may add the LangCode filter to
+    /// self.filter at main init.
     pub const fn has_filter_params(&self) -> bool {
-        !self.filter.is_empty() || !self.reject.is_empty() || self.first != -1
+        (self.filter.len() > 1) || !self.reject.is_empty() || self.first != -1
     }
 }
 

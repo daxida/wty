@@ -71,7 +71,7 @@ fn filter_jsonl(
     // English edition already gives them filtered.
     // Yet don't skip if we have filter arguments (forced filtering).
     if matches!(edition, EditionLang::En) && !options.has_filter_params() {
-        println!("{SKIP_C} Skipping filtering: english edition detected");
+        println!("{SKIP_C} Skipping filtering: English edition detected, with no extra filters");
         return Ok(path_jsonl);
     }
 
