@@ -212,5 +212,193 @@
         ]
       ]
     }
+  },
+  "命令": {
+    "めいれい": {
+      "noun": [
+        "extracted",
+        [
+          "transliteration"
+        ]
+      ]
+    },
+    "し": {
+      "noun": [
+        "extracted",
+        [
+          "continuative",
+          "imperfective"
+        ]
+      ]
+    },
+    "せ": {
+      "noun": [
+        "extracted",
+        [
+          "imperfective"
+        ]
+      ]
+    },
+    "さ": {
+      "noun": [
+        "extracted",
+        [
+          "imperfective"
+        ]
+      ]
+    },
+    "する": {
+      "noun": [
+        "extracted",
+        [
+          "attributive",
+          "terminal"
+        ]
+      ]
+    },
+    "すれ": {
+      "noun": [
+        "extracted",
+        [
+          "hypothetical"
+        ]
+      ]
+    },
+    "しろ": {
+      "noun": [
+        "extracted",
+        [
+          "imperative"
+        ]
+      ]
+    },
+    "せよ": {
+      "noun": [
+        "extracted",
+        [
+          "imperative"
+        ]
+      ]
+    },
+    "命令しない": {
+      "noun": [
+        "extracted",
+        [
+          "negative"
+        ]
+      ]
+    },
+    "未然形 + ない": {
+      "noun": [
+        "extracted",
+        [
+          "negative"
+        ]
+      ]
+    },
+    "命令される": {
+      "noun": [
+        "extracted",
+        [
+          "active passive possibly honorific"
+        ]
+      ]
+    },
+    "未然形 + れる": {
+      "noun": [
+        "extracted",
+        [
+          "active passive possibly honorific"
+        ]
+      ]
+    },
+    "命令します": {
+      "noun": [
+        "extracted",
+        [
+          "polite"
+        ]
+      ]
+    },
+    "連用形 + ます": {
+      "noun": [
+        "extracted",
+        [
+          "polite"
+        ]
+      ]
+    },
+    "命令した": {
+      "noun": [
+        "extracted",
+        [
+          "past completive"
+        ]
+      ]
+    },
+    "連用形 + た": {
+      "noun": [
+        "extracted",
+        [
+          "past completive"
+        ]
+      ]
+    },
+    "命令する": {
+      "noun": [
+        "extracted",
+        [
+          "definitive"
+        ]
+      ]
+    },
+    "終止形のみ": {
+      "noun": [
+        "extracted",
+        [
+          "definitive"
+        ]
+      ]
+    },
+    "命令すること": {
+      "noun": [
+        "extracted",
+        [
+          "noun-from-verb"
+        ]
+      ]
+    },
+    "連体形 + こと": {
+      "noun": [
+        "extracted",
+        [
+          "noun-from-verb"
+        ]
+      ]
+    },
+    "命令しろ": {
+      "noun": [
+        "extracted",
+        [
+          "imperative"
+        ]
+      ]
+    },
+    "命令せよ": {
+      "noun": [
+        "extracted",
+        [
+          "imperative"
+        ]
+      ]
+    },
+    "命令形のみ": {
+      "noun": [
+        "extracted",
+        [
+          "imperative"
+        ]
+      ]
+    }
   }
 }

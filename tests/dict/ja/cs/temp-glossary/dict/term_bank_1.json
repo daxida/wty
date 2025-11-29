@@ -1,0 +1,43 @@
+[
+  [
+    "命令",
+    "めいれい",
+    "n",
+    "n",
+    0,
+    [
+      "rozkaz",
+      {
+        "type": "structured-content",
+        "content": {
+          "tag": "div",
+          "content": [
+            {
+              "tag": "span",
+              "content": "命じる"
+            },
+            {
+              "tag": "ul",
+              "content": [
+                {
+                  "tag": "li",
+                  "content": "kázat"
+                },
+                {
+                  "tag": "li",
+                  "content": "nařídit"
+                },
+                {
+                  "tag": "li",
+                  "content": "vyslovit"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    0,
+    ""
+  ]
+]

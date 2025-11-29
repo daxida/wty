@@ -1,0 +1,66 @@
+[
+  [
+    "命令",
+    "めいれい",
+    "n",
+    "n",
+    0,
+    [
+      "order",
+      "command",
+      "directions",
+      {
+        "type": "structured-content",
+        "content": {
+          "tag": "div",
+          "content": [
+            {
+              "tag": "span",
+              "content": "コンピュータ"
+            },
+            {
+              "tag": "ul",
+              "content": [
+                {
+                  "tag": "li",
+                  "content": "instruction"
+                }
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "type": "structured-content",
+        "content": {
+          "tag": "div",
+          "content": [
+            {
+              "tag": "span",
+              "content": "命じる"
+            },
+            {
+              "tag": "ul",
+              "content": [
+                {
+                  "tag": "li",
+                  "content": "order"
+                },
+                {
+                  "tag": "li",
+                  "content": "command"
+                },
+                {
+                  "tag": "li",
+                  "content": "direct"
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    0,
+    ""
+  ]
+]

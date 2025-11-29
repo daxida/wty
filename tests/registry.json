@@ -34135,6 +34135,526 @@
             }
           ]
         }
+      },
+      {
+        "url": "https://kaikki.org/jawiktionary/All%20languages%20combined/meaning/命/命令/命令.html",
+        "download_url": "https://kaikki.org/jawiktionary/All%20languages%20combined/meaning/命/命令/命令.jsonl",
+        "json": {
+          "word": "命令",
+          "lang_code": "ja",
+          "lang": "日本語",
+          "pos": "noun",
+          "pos_title": "名詞",
+          "senses": [
+            {
+              "glosses": [
+                "上位者が相手に対してあることをするよう強く言うこと。またその発言や伝達。"
+              ]
+            },
+            {
+              "glosses": [
+                "国などの行政機関が法律を実施するため、命じることやその内容。"
+              ]
+            },
+            {
+              "glosses": [
+                "コンピューターに指示して処理をさせるための文字列。コマンド。"
+              ]
+            }
+          ],
+          "categories": [
+            "日本語",
+            "日本語 動詞",
+            "日本語 動詞 サ変",
+            "日本語 名詞",
+            "日本語 名詞 サ変動詞",
+            "日本語 国際音声記号あり"
+          ],
+          "forms": [
+            {
+              "form": "めいれい",
+              "tags": [
+                "transliteration"
+              ]
+            },
+            {
+              "form": "命令",
+              "raw_tags": [
+                "サ行変格活用",
+                "語幹"
+              ]
+            },
+            {
+              "form": "し",
+              "tags": [
+                "imperfective"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "せ",
+              "tags": [
+                "imperfective"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "さ",
+              "tags": [
+                "imperfective"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "し",
+              "tags": [
+                "continuative"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "する",
+              "tags": [
+                "terminal"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "する",
+              "tags": [
+                "attributive"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "すれ",
+              "tags": [
+                "hypothetical"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "しろ",
+              "tags": [
+                "imperative"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "せよ",
+              "tags": [
+                "imperative"
+              ],
+              "raw_tags": [
+                "サ行変格活用"
+              ]
+            },
+            {
+              "form": "命令しない",
+              "tags": [
+                "negative"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "未然形 + ない",
+              "tags": [
+                "negative"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            },
+            {
+              "form": "命令せず",
+              "tags": [
+                "negative",
+                "archaic"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "未然形 + ず",
+              "tags": [
+                "negative",
+                "archaic"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            },
+            {
+              "form": "命令される",
+              "tags": [
+                "active",
+                "passive",
+                "possibly",
+                "honorific"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "未然形 + れる",
+              "tags": [
+                "active",
+                "passive",
+                "possibly",
+                "honorific"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            },
+            {
+              "form": "命令します",
+              "tags": [
+                "polite"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "連用形 + ます",
+              "tags": [
+                "polite"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            },
+            {
+              "form": "命令した",
+              "tags": [
+                "past",
+                "completive"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "連用形 + た",
+              "tags": [
+                "past",
+                "completive"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            },
+            {
+              "form": "命令する",
+              "tags": [
+                "definitive"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "終止形のみ",
+              "tags": [
+                "definitive"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            },
+            {
+              "form": "命令すること",
+              "tags": [
+                "noun-from-verb"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "連体形 + こと",
+              "tags": [
+                "noun-from-verb"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            },
+            {
+              "form": "命令すれば",
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形",
+                "仮定条件"
+              ]
+            },
+            {
+              "form": "仮定形 + ば",
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合",
+                "仮定条件"
+              ]
+            },
+            {
+              "form": "命令しろ",
+              "tags": [
+                "imperative"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "命令せよ",
+              "tags": [
+                "imperative"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "語形"
+              ]
+            },
+            {
+              "form": "命令形のみ",
+              "tags": [
+                "imperative"
+              ],
+              "raw_tags": [
+                "各活用形の基礎的な結合例",
+                "結合"
+              ]
+            }
+          ],
+          "sounds": [
+            {
+              "tags": [
+                "Heiban",
+                "Tokyo"
+              ],
+              "other": "めーれー",
+              "roman": "[mèéréé]"
+            },
+            {
+              "ipa": "[me̞ːɾe̞ː]"
+            }
+          ],
+          "translations": [
+            {
+              "lang_code": "en",
+              "lang": "英語",
+              "word": "order"
+            },
+            {
+              "lang_code": "en",
+              "lang": "英語",
+              "word": "command"
+            },
+            {
+              "lang_code": "en",
+              "lang": "英語",
+              "word": "directions"
+            },
+            {
+              "lang_code": "cs",
+              "lang": "チェコ語",
+              "word": "rozkaz",
+              "tags": [
+                "masculine"
+              ]
+            },
+            {
+              "lang_code": "pl",
+              "lang": "ポーランド語",
+              "word": "rozkaz",
+              "tags": [
+                "masculine"
+              ]
+            },
+            {
+              "lang_code": "lt",
+              "lang": "リトアニア語",
+              "word": "įsakymas",
+              "tags": [
+                "masculine"
+              ]
+            },
+            {
+              "lang_code": "en",
+              "lang": "英語",
+              "word": "instruction",
+              "sense": "コンピュータ"
+            },
+            {
+              "lang_code": "nl",
+              "lang": "オランダ語",
+              "word": "instructie",
+              "sense": "コンピュータ",
+              "tags": [
+                "feminine"
+              ]
+            },
+            {
+              "lang_code": "sv",
+              "lang": "スウェーデン語",
+              "word": "instruktion",
+              "sense": "コンピュータ",
+              "tags": [
+                "common"
+              ]
+            },
+            {
+              "lang_code": "de",
+              "lang": "ドイツ語",
+              "word": "Instruktion",
+              "sense": "コンピュータ",
+              "tags": [
+                "feminine"
+              ]
+            },
+            {
+              "lang_code": "pl",
+              "lang": "ポーランド語",
+              "word": "instrukcja",
+              "sense": "コンピュータ",
+              "tags": [
+                "feminine"
+              ]
+            },
+            {
+              "lang_code": "en",
+              "lang": "英語",
+              "word": "order",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "en",
+              "lang": "英語",
+              "word": "command",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "en",
+              "lang": "英語",
+              "word": "direct",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "cs",
+              "lang": "チェコ語",
+              "word": "kázat",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "cs",
+              "lang": "チェコ語",
+              "word": "nařídit",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "cs",
+              "lang": "チェコ語",
+              "word": "vyslovit",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "pl",
+              "lang": "ポーランド語",
+              "word": "rozkazywać",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "pl",
+              "lang": "ポーランド語",
+              "word": "rozkazać",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "lt",
+              "lang": "リトアニア語",
+              "word": "įsakýti",
+              "sense": "命じる"
+            },
+            {
+              "lang_code": "lt",
+              "lang": "リトアニア語",
+              "word": "liẽpti",
+              "sense": "命じる"
+            }
+          ],
+          "synonyms": [
+            {
+              "word": "指令"
+            }
+          ],
+          "related": [
+            {
+              "word": "命"
+            },
+            {
+              "word": "令"
+            },
+            {
+              "word": "卩"
+            },
+            {
+              "word": "号令"
+            }
+          ],
+          "proverbs": [
+            {
+              "word": "委任命令"
+            },
+            {
+              "word": "救済命令"
+            },
+            {
+              "word": "行政命令"
+            },
+            {
+              "word": "緊急命令"
+            },
+            {
+              "word": "執行命令"
+            }
+          ]
+        }
       }
     ]
   },
