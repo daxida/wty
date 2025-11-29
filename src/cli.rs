@@ -285,7 +285,7 @@ impl ArgsOptions {
     //
     /// Check if there are any (extra) filter parameters.
     ///
-    /// It depends on the dictionary type, since some dictionaries may add the LangCode filter to
+    /// It depends on the dictionary type, since some dictionaries may add the `LangCode` filter to
     /// self.filter at main init.
     pub const fn has_filter_params(&self) -> bool {
         (self.filter.len() > 1) || !self.reject.is_empty() || self.first != -1

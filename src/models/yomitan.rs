@@ -1,4 +1,4 @@
-use crate::{models::kaikki::Tag, Map};
+use crate::{Map, models::kaikki::Tag};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Clone)]
