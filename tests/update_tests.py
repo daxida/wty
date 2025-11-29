@@ -15,9 +15,10 @@ from typing import Any, Literal, TypedDict, cast, get_args
 
 import requests
 
-TESTS_DIR_PATH = Path("tests")
-TESTS_PATH = TESTS_DIR_PATH / "kaikki"
-REGISTRY_PATH = TESTS_DIR_PATH / "registry.json"
+PATH_TESTS_DIR = Path("tests")
+PATH_TESTS_INPUT = PATH_TESTS_DIR / "kaikki"
+PATH_REGISTRY = PATH_TESTS_DIR / "registry.json"
+PATH_REGISTRY_TIMESTAMPS = PATH_TESTS_DIR / "registry_timestamps.json"
 
 L = Literal[
     "cs",
@@ -36,9 +37,11 @@ L = Literal[
     "th",
     "zh",
 ]
-"""A language code."""
+"""A language code that appears in the testsuite."""
 
 ALLOWED_LANGS = frozenset(get_args(L))
+
+LangPairs = dict[L, list[L]]
 
 
 class RegValue(TypedDict):
@@ -49,6 +52,9 @@ class RegValue(TypedDict):
 
 Reg = dict[L, dict[L, list[RegValue]]]
 """A registry that we will dump as JSON at REGISTRY_PATH."""
+
+Timestamp = str
+Timestamps = dict[L, dict[L, list[Timestamp]]]
 
 
 def read_jsonl(text: str) -> list[Any]:
@@ -77,7 +83,7 @@ def json_similarity(a: Any, b: Any) -> float:
 
 
 def get_test_path(source: L, target: L) -> Path:
-    return TESTS_PATH / f"{source}-{target}-extract.jsonl"
+    return PATH_TESTS_INPUT / f"{source}-{target}-extract.jsonl"
 
 
 def add_to_registry(registry: Reg, source: L, target: L, value: RegValue) -> None:
@@ -86,12 +92,18 @@ def add_to_registry(registry: Reg, source: L, target: L, value: RegValue) -> Non
     registry[source][target].append(value)
 
 
-def update_registry_for_pair(source: L, target: L) -> Reg:
+def update_registry_for_pair(source: L, target: L) -> tuple[Reg, Timestamps]:
+    """Get registry and timestamps for the source-target language pair.
+
+    Timestamps are given separatedly so that they can be also writen as such. Preventing
+    noise in the registry diffs.
+    """
     print(f"Updating {source}-{target} (registry)", flush=True)
     tests_path = get_test_path(source, target)
     tests = read_jsonl(tests_path.read_text())
 
     registry: Reg = {}
+    timestamps: Timestamps = {}
 
     for test in tests:
         word = test["word"]
@@ -120,6 +132,11 @@ def update_registry_for_pair(source: L, target: L) -> Reg:
             add_to_registry(registry, source, target, custom_test)
             continue
 
+        last_modified = resp.headers.get("Last-Modified", "None")
+        if source not in timestamps:
+            timestamps[source] = {target: []}
+        timestamps[source][target].append(last_modified)
+
         text = resp.content.decode("utf-8")
         jsonl = read_jsonl(text)
 
@@ -127,7 +144,7 @@ def update_registry_for_pair(source: L, target: L) -> Reg:
             (i, json_similarity(test, cand), cand) for i, cand in enumerate(jsonl)
         ]
         scores.sort(reverse=True, key=lambda x: x[1])
-        best_index, _, best_match = scores[0]
+        _, _, best_match = scores[0]
 
         registry_value: RegValue = {
             "url": url.replace(".jsonl", ".html"),
@@ -136,7 +153,7 @@ def update_registry_for_pair(source: L, target: L) -> Reg:
         }
         add_to_registry(registry, source, target, registry_value)
 
-    return registry
+    return (registry, timestamps)
 
 
 def validate_lang(lang: str) -> L:
@@ -148,16 +165,22 @@ def validate_lang(lang: str) -> L:
 FNAME_RE = re.compile(r"^([a-zA-Z]+)-([a-zA-Z]+)-extract\.jsonl$")
 
 
-def get_lang_pairs_to_update() -> dict[L, list[L]]:
-    lang_pairs: dict[L, list[L]] = {}
+def get_lang_pairs_to_update(target_filter: str) -> LangPairs:
+    lang_pairs: LangPairs = {}
 
-    for file in TESTS_PATH.iterdir():
+    for file in PATH_TESTS_INPUT.iterdir():
         m = FNAME_RE.match(file.name)
         if not m:
-            raise ValueError(f"Unexpected filename in {TESTS_PATH}: {file.name}")
+            raise ValueError(f"Unexpected filename in {PATH_TESTS_INPUT}: {file.name}")
 
-        source = validate_lang(m.group(1))
-        target = validate_lang(m.group(2))
+        source_raw = m.group(1)
+        target_raw = m.group(2)
+
+        if target_raw != target_filter:
+            continue
+
+        source = validate_lang(source_raw)
+        target = validate_lang(target_raw)
 
         if source not in lang_pairs:
             lang_pairs[source] = []
@@ -168,25 +191,51 @@ def get_lang_pairs_to_update() -> dict[L, list[L]]:
     return lang_pairs
 
 
-def update_registry() -> None:
+def update_registry(lang_pairs: LangPairs, load_prev_registry: bool) -> None:
+    """Update the registry with the given language pairs.
+
+    Note that this loads the previous registry, if any, to prevent deleting every
+    entry that did not match the --target filter, it some was passed via the CLI.
+
+    It has the drawback that if we ever deleted some test from the testsuite, it
+    will still appear in the registry. This never happened, so we opt for a middle
+    way solution, of only loading the registry if some filter was passed. Again, this
+    is not infallible.
+    """
     registry: Reg = {}
-    for source, targets in get_lang_pairs_to_update().items():
+    timestamps: Timestamps = {}
+
+    if load_prev_registry:
+        if PATH_REGISTRY.exists():
+            with PATH_REGISTRY.open() as f:
+                registry = json.load(f)
+        if PATH_REGISTRY_TIMESTAMPS.exists():
+            with PATH_REGISTRY_TIMESTAMPS.open() as f:
+                timestamps = json.load(f)
+
+    for source, targets in lang_pairs.items():
         if source not in registry:
             registry[source] = {}
+        if source not in timestamps:
+            timestamps[source] = {}
 
         for target in targets:
-            registry_for_pair = update_registry_for_pair(source, target)
-            registry[source][target] = registry_for_pair[source][target]
+            pair_registry, pair_timestamps = update_registry_for_pair(source, target)
+            registry[source][target] = pair_registry[source][target]
+            timestamps[source][target] = pair_timestamps[source][target]
 
-    REGISTRY_PATH.write_text(json.dumps(registry, indent=2, ensure_ascii=False))
+    PATH_REGISTRY.write_text(json.dumps(registry, indent=2, ensure_ascii=False))
+    PATH_REGISTRY_TIMESTAMPS.write_text(
+        json.dumps(timestamps, indent=2, ensure_ascii=False)
+    )
 
 
 def update_tests() -> None:
-    if not REGISTRY_PATH.exists():
-        print(f"{REGISTRY_PATH} not found. Run with flag '--update-registry' first.")
+    if not PATH_REGISTRY.exists():
+        print(f"{PATH_REGISTRY} not found. Run with flag '--update-registry' first.")
         return
 
-    registry: Reg = json.loads(REGISTRY_PATH.read_text())
+    registry: Reg = json.loads(PATH_REGISTRY.read_text())
 
     for source, target in registry.items():
         for target, registry_values in target.items():
@@ -201,20 +250,27 @@ def update_tests() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Update and manage Kaikki tests.",
+        description="Update and manage Kaikki tests",
+    )
+    parser.add_argument(
+        "--target",
+        help="update the registry only with target languages matching this value",
     )
     parser.add_argument(
         "--update-registry",
         action="store_true",
-        help="Update the registry before updating tests.",
+        help="update the registry before updating tests",
     )
     args = parser.parse_args()
 
     if args.update_registry:
-        print(f"Updating registry at {REGISTRY_PATH}")
-        update_registry()
+        print(f"Updating registry at {PATH_REGISTRY}")
+        target_filter = args.target or ""  # args.target can be None
+        lang_pairs = get_lang_pairs_to_update(target_filter)
+        load_prev_registry = bool(target_filter)  # Load previous if there are filters
+        update_registry(lang_pairs, load_prev_registry)
 
-    print(f"Updating tests at {TESTS_PATH}")
+    print(f"Updating tests at {PATH_TESTS_INPUT}")
     update_tests()
 
 

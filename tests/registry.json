@@ -33519,13 +33519,22 @@
           ],
           "forms": [
             {
-              "form": "りつめい"
+              "form": "りつめい",
+              "tags": [
+                "transliteration"
+              ]
             },
             {
-              "form": "りゅうめい"
+              "form": "りゅうめい",
+              "tags": [
+                "transliteration"
+              ]
             },
             {
-              "form": "りゅうみょう"
+              "form": "りゅうみょう",
+              "tags": [
+                "transliteration"
+              ]
             }
           ],
           "phrases": [
@@ -34050,7 +34059,10 @@
           ],
           "forms": [
             {
-              "form": "ぜんぜん"
+              "form": "ぜんぜん",
+              "tags": [
+                "transliteration"
+              ]
             }
           ],
           "synonyms": [

@@ -1,5 +1,29 @@
 {
   "立命": {
+    "りつめい": {
+      "noun": [
+        "extracted",
+        [
+          "transliteration"
+        ]
+      ]
+    },
+    "りゅうめい": {
+      "noun": [
+        "extracted",
+        [
+          "transliteration"
+        ]
+      ]
+    },
+    "りゅうみょう": {
+      "noun": [
+        "extracted",
+        [
+          "transliteration"
+        ]
+      ]
+    },
     "し": {
       "verb": [
         "extracted",
@@ -175,6 +199,16 @@
         "extracted",
         [
           "imperative"
+        ]
+      ]
+    }
+  },
+  "全然": {
+    "ぜんぜん": {
+      "adv": [
+        "extracted",
+        [
+          "transliteration"
         ]
       ]
     }
