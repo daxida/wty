@@ -9,8 +9,7 @@ It offers no releases: every dictionary must be built locally. It is still a wor
 This example use German (de) to English (en).
 
 ```
-$ git clone https://github.com/daxida/kty
-$ cargo install --path=kty
+$ cargo install --git https://github.com/daxida/kty
 $ kty main de en
 ...
 ✓ Wrote yomitan dict @ data/dict/de/en/kty-de-en.zip (20.94 MB)
@@ -54,7 +53,7 @@ Skip:
 Tests are run with `cargo test`. If you only want to run tests for the main dictionary in a single language pair, without capturing output:
 
 ```
-cargo run -- main ja en --root-dir=tests --keep-files --pretty
+cargo run -- main ja en --root-dir=tests --save-temps --pretty
 ```
 
 To add a word to the testsuite, besides copy pasting it, you can run:
