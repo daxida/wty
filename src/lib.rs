@@ -24,9 +24,7 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use crate::cli::{
-    ArgsOptions, DGlossary, DGlossaryExtended, DIpa, DIpaMerged, MainArgs, MainLangs, PathManager,
-};
+use crate::cli::{ArgsOptions, MainArgs, MainLangs, PathManager};
 use crate::download::download_jsonl;
 use crate::lang::{EditionLang, Lang};
 use crate::locale::get_locale_examples_string;
@@ -2041,6 +2039,18 @@ impl SimpleDictionary for DIpaMerged {
         make_yomitan_ipa(tidy)
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct DGlossary;
+
+#[derive(Debug, Clone, Copy)]
+pub struct DGlossaryExtended;
+
+#[derive(Debug, Clone, Copy)]
+pub struct DIpa;
+
+#[derive(Debug, Clone, Copy)]
+pub struct DIpaMerged;
 
 // Ideally this should support Main at some point
 //

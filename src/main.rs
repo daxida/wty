@@ -1,10 +1,8 @@
 use anyhow::{Result, ensure};
 
-use kty::cli::{
-    Cli, Command, DGlossary, DGlossaryExtended, DIpa, DIpaMerged, DictionaryType, FilterKey,
-    PathManager,
-};
+use kty::cli::{Cli, Command, DictionaryType, FilterKey, PathManager};
 use kty::lang::{Edition, Lang};
+use kty::{DGlossary, DGlossaryExtended, DIpa, DIpaMerged};
 use kty::{make_dict_main, make_simple_dict, setup_tracing};
 
 fn push_filter_key_lang(filter: &mut Vec<(FilterKey, String)>, lang: Lang) {
