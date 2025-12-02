@@ -1643,6 +1643,8 @@ fn make_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
         // There was some hypotheses lingo here in the original that I didn't fully understand
         // and it didn't seem to do anything for the testsuite...
 
+        // NOTE: There needs to be DetailedDefinition per tag because yomitan reads multiple tags
+        // in a single Inflection as a causal inflection chain.
         let deinflection_definitions: Vec<_> = tags
             .iter()
             .map(|tag| {
@@ -1863,20 +1865,22 @@ fn write_banks(
         let bank_name = format!("{bank_name_prefix}_{bank_index}.json");
         let file_path = out_dir.join(&bank_name);
 
-        let mut writer: Box<dyn Write> = match out_sink {
-            BankSink::Disk => Box::new(BufWriter::new(File::create(&file_path)?)),
-            BankSink::Zip(ref mut zip, zip_options) => {
-                zip.start_file(&bank_name, zip_options)?;
-                Box::new(BufWriter::new(zip))
-            }
+        let json_bytes = if pretty {
+            serde_json::to_vec_pretty(&bank)?
+        } else {
+            serde_json::to_vec(&bank)?
         };
 
-        if pretty {
-            serde_json::to_writer_pretty(&mut writer, &bank)?;
-        } else {
-            serde_json::to_writer(&mut writer, &bank)?;
+        match out_sink {
+            BankSink::Disk => {
+                let mut file = File::create(&file_path)?;
+                file.write_all(&json_bytes)?;
+            }
+            BankSink::Zip(ref mut zip, zip_options) => {
+                zip.start_file(&bank_name, zip_options)?;
+                zip.write_all(&json_bytes)?;
+            }
         }
-        writer.flush()?;
 
         if bank_num > 1 {
             print!("\r\x1b[K");
