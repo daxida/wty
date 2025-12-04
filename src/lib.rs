@@ -26,7 +26,8 @@ use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
 use crate::cli::{ArgsOptions, MainArgs, MainLangs, PathManager};
-use crate::download::download_jsonl;
+#[cfg(feature = "html")]
+use crate::download::html::download_jsonl;
 use crate::lang::{EditionLang, Lang};
 use crate::locale::get_locale_examples_string;
 use crate::models::kaikki::{Example, Form, HeadTemplate, Pos, Sense, Tag, WordEntry};
@@ -2190,7 +2191,10 @@ pub fn make_simple_dict<D: SimpleDictionary>(
     let mut entries = Vec::new();
 
     for (edition, path_jsonl_raw) in dict.paths_jsonl_raw(pm) {
-        download_jsonl(edition, source, &path_jsonl_raw, options.redownload)?;
+        #[cfg(feature = "html")]
+        {
+            download_jsonl(edition, source, &path_jsonl_raw, options.redownload)?;
+        }
 
         let reader_path = path_jsonl_raw;
         let reader_file = File::open(&reader_path)?;
@@ -2535,12 +2539,16 @@ pub fn make_dict_main(args: &MainArgs, pm: &PathManager) -> Result<()> {
     pm.setup_dirs()?;
 
     let path_jsonl_raw = pm.path_jsonl_raw();
-    download_jsonl(
-        args.langs.edition,
-        args.langs.source,
-        &path_jsonl_raw,
-        args.options.redownload,
-    )?;
+
+    #[cfg(feature = "html")]
+    {
+        download_jsonl(
+            args.langs.edition,
+            args.langs.source,
+            &path_jsonl_raw,
+            args.options.redownload,
+        )?;
+    }
 
     let mut path_jsonl = pm.path_jsonl(args.langs.source, args.langs.target.into());
     if !args.skip.filtering {

@@ -1,6 +1,6 @@
 [package]
 name = "kty"
-version = "0.2.5"
+version = "0.2.6"
 edition = "2024"
 
 [lib]
@@ -15,7 +15,6 @@ path = "src/main.rs"
 anyhow = "1.0.100"
 chrono = { version = "0.4.42", default-features = false, features = ["now"] }
 clap = { version = "4.5.51", features = ["derive"] }
-flate2 = "1.1.5"
 fxhash = "0.2.1"
 indexmap = { version = "2.12.0", features = ["serde"] }
 regex = "1.12.2"
@@ -24,11 +23,22 @@ serde_json = "1.0.145"
 tracing = { version = "0.1.41" }
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 unicode-normalization = "0.1.25"
+zip = { version = "6.0.0", default-features = false, features = ["deflate"] }
+
+# Optional
+
+# Only used to ungzip the download
+flate2 = { version = "1.1.5", optional = true }
 # We are not using the gzip feature; instead, we directly use flat2
 # https://docs.rs/ureq/latest/ureq/#features
-ureq = { version = "3.1.4", default-features = false, features = ["rustls"] }
-zip = { version = "6.0.0", default-features = false, features = ["deflate"] }
+ureq = { version = "3.1.4", default-features = false, features = ["rustls"], optional = true }
 
 [profile.release]
 debug = true
 panic = "abort"
+
+[features]
+default = ["html"]
+
+# Provide download utilities for kaikki/wiktextract generated jsonlines
+html = ["ureq", "flate2"]
