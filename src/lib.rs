@@ -32,7 +32,7 @@ use crate::locale::get_locale_examples_string;
 use crate::models::kaikki::{Example, Form, HeadTemplate, Pos, Sense, Tag, WordEntry};
 use crate::models::yomitan::{
     BacklinkContent, DetailedDefinition, GenericNode, Ipa, NTag, Node, NodeData,
-    PhoneticTranscription, TermBank, TermBankMeta, YomitanEntry, wrap,
+    PhoneticTranscription, TermBank, TermBankMeta, TermPhoneticTranscription, YomitanEntry, wrap,
 };
 use crate::tags::{
     BLACKLISTED_TAGS, IDENTITY_TAGS, REDUNDANT_TAGS, find_pos, find_tag_in_bank,
@@ -2458,10 +2458,8 @@ fn make_ir_ipa(edition: EditionLang, source: Lang, word_entry: &WordEntry) -> Ve
 
 fn make_yomitan_ipa(ir: IIpa) -> YomitanEntry {
     let (lemma, phonetic_transcription) = ir;
-    YomitanEntry::TermBankMeta(TermBankMeta(
-        lemma,
-        "ipa".to_string(),
-        phonetic_transcription,
+    YomitanEntry::TermBankMeta(TermBankMeta::TermPhoneticTranscription(
+        TermPhoneticTranscription(lemma, "ipa".to_string(), phonetic_transcription),
     ))
 }
 

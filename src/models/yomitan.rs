@@ -24,11 +24,18 @@ pub struct TermBank(
     pub String,                  // term_tags
 );
 
+// There are other variants that we don't use at the moment.
+#[derive(Debug, Serialize, Clone)]
+#[serde(untagged)]
+pub enum TermBankMeta {
+    TermPhoneticTranscription(TermPhoneticTranscription),
+}
+
 // https://github.com/yomidevs/yomitan/blob/f271fc0da3e55a98fa91c9834d75fccc96deae27/ext/data/schemas/dictionary-term-meta-bank-v3-schema.json
 //
 // https://github.com/MarvNC/yomichan-dict-builder/blob/master/src/types/yomitan/termbankmeta.ts
 #[derive(Debug, Serialize, Clone)]
-pub struct TermBankMeta(
+pub struct TermPhoneticTranscription(
     pub String,                // term
     pub String,                // static: "ipa"
     pub PhoneticTranscription, // phonetic transcription
