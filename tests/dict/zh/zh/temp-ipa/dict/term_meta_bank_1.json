@@ -1,0 +1,280 @@
+[
+  [
+    "命令",
+    "ipa",
+    {
+      "reading": "命令",
+      "transcriptions": [
+        {
+          "ipa": "/miŋ⁵¹⁻⁵³ liŋ⁵¹/",
+          "tags": [
+            "Mandarin",
+            "Standard-Chinese",
+            "Sinological-IPA"
+          ]
+        },
+        {
+          "ipa": "/miŋ⁵¹ liŋ¹/",
+          "tags": [
+            "Mandarin",
+            "Standard-Chinese",
+            "Sinological-IPA"
+          ]
+        },
+        {
+          "ipa": "/min²¹³ nin²¹³/",
+          "tags": [
+            "Mandarin",
+            "Chengdu",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/mɪŋ²² lɪŋ²²/",
+          "tags": [
+            "Cantonese",
+            "Standard-Cantonese",
+            "Guangzhou",
+            "Hong Kong",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/min⁵⁵ lin⁵⁵/",
+          "tags": [
+            "Hakka",
+            "Sixian",
+            "Miaoli",
+            "Neipu",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/mĩŋ⁴⁵ lĩŋ⁴⁵/",
+          "tags": [
+            "Jin",
+            "Taiyuan",
+            "IPA",
+            "dated"
+          ]
+        },
+        {
+          "ipa": "/bi̯ɪŋ³³⁻²¹ li̯ɪŋ³³/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "Taiwanese",
+            "general",
+            "IPA",
+            "Kaohsiung"
+          ]
+        },
+        {
+          "ipa": "/bi̯ɪŋ⁴¹⁻²² li̯ɪŋ⁴¹/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "Taiwanese",
+            "general",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/bi̯ɪŋ³³⁻¹¹ li̯ɪŋ³³/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "Taiwanese",
+            "general",
+            "IPA",
+            "Taibei"
+          ]
+        },
+        {
+          "ipa": "/bi̯ɪŋ²²⁻²¹ li̯ɪŋ²²/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "Taiwanese",
+            "general",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/bin⁵³⁻¹¹ lin⁵³/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/meŋ³⁵⁻¹¹ leŋ³⁵/",
+          "tags": [
+            "Min-Nan",
+            "Teochew",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/min²² lin⁴⁴/",
+          "tags": [
+            "Wu",
+            "Northern",
+            "Shanghai",
+            "IPA"
+          ]
+        }
+      ]
+    }
+  ],
+  [
+    "啤酒",
+    "ipa",
+    {
+      "reading": "啤酒",
+      "transcriptions": [
+        {
+          "ipa": "/pʰi³⁵ t͡ɕi̯oʊ̯²¹⁴⁻²¹⁽⁴⁾/",
+          "tags": [
+            "Mandarin",
+            "Standard-Chinese",
+            "Sinological-IPA"
+          ]
+        },
+        {
+          "ipa": "/pʰi⁵⁵ t͡ɕiəu⁵³/",
+          "tags": [
+            "Mandarin",
+            "Chengdu",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pʰi²⁴ t͡ɕiou⁵¹/",
+          "tags": [
+            "Mandarin",
+            "Dongan",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pɛː⁵⁵ t͡sɐu̯³⁵/",
+          "tags": [
+            "Cantonese",
+            "Standard-Cantonese",
+            "Guangzhou",
+            "Hong Kong",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pʰiɛ⁵⁵ tiu⁵⁵/",
+          "tags": [
+            "Cantonese",
+            "Taishanese",
+            "Taicheng",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pi⁴⁴⁻³⁵ t͡ɕiu³¹/",
+          "tags": [
+            "Hakka",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pʰxi¹¹ t͡ɕiəu⁵³/",
+          "tags": [
+            "Jin",
+            "Taiyuan",
+            "IPA",
+            "dated"
+          ]
+        },
+        {
+          "ipa": "/pi⁵³⁻³³ ^((t͡s-))ʒieu³³/",
+          "tags": [
+            "Min-Dong",
+            "Fuzhou",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pi²⁴⁻²² t͡si̯u⁵⁵⁴/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pi²⁴⁻²² t͡si̯u⁵³/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pi²⁴⁻¹² t͡si̯u⁵³/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pi¹³⁻²² t͡si̯u⁵³/",
+          "tags": [
+            "Min-Nan",
+            "Hokkien",
+            "Xiamen",
+            "Quanzhou",
+            "Zhangzhou",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/pi⁵⁵⁻¹¹ t͡siu⁵²/",
+          "tags": [
+            "Min-Nan",
+            "Teochew",
+            "IPA"
+          ]
+        },
+        {
+          "ipa": "/bi²² t͡ɕiɤ⁴⁴/",
+          "tags": [
+            "Wu",
+            "Northern",
+            "Shanghai",
+            "IPA"
+          ]
+        }
+      ]
+    }
+  ]
+]
