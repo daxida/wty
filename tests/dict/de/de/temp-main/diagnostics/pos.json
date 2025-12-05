@@ -1,8 +1,13 @@
 {
-  "rejected": {},
+  "rejected": {
+    "name": [
+      1,
+      "Peter"
+    ]
+  },
   "accepted": {
     "noun": [
-      4,
+      3,
       "Rock"
     ],
     "verb": [
