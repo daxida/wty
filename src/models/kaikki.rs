@@ -145,20 +145,13 @@ impl WordEntry {
             }
 
             // blacklisted forms (happens at least in English)
-            // Usually it has the meaning of "empty cell" in an inflection table
-            if form.form == "-" {
+            // * "-" usually denotes an empty cell in some table in most editions.
+            // * forms starting with hyphens are more likely than not garbage from inflections
+            //   suffixes.
+            // We deal with both at the same time.
+            if form.form.starts_with(&['-', '‑']) {
                 return false;
             }
-
-            // https://github.com/tatuylonen/wiktextract/issues/1494
-            // this should fix it, but it is hacky
-            // * wait until the editor's answer: https://en.wiktionary.org/wiki/User_talk:Saltmarsh
-            //   in case they fix the template and this is not needed.
-            // if matches!(args.source, Lang::El) {
-            //     if form.form == "ο" || form.form == "η" {
-            //         return false;
-            //     }
-            // }
 
             // blacklisted tags (happens at least in Russian: romanization)
             let is_blacklisted = form
