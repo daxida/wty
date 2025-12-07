@@ -38,6 +38,9 @@ pub enum Command {
     /// Phonetic transcription dictionary. Uses all editions
     IpaMerged(IpaMergedArgs),
 
+    /// Download a Kaikki jsonline
+    Download(MainArgs),
+
     /// Show supported iso codes, with coloured editions
     Iso,
 }

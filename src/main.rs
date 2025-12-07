@@ -1,7 +1,8 @@
 use anyhow::{Result, ensure};
 
-use kty::cli::{Cli, Command, DictionaryType, FilterKey, PathManager};
-use kty::lang::{Edition, Lang};
+use kty::cli::{Cli, Command, DictionaryType, FilterKey, Langs, PathManager, SimpleArgs};
+use kty::download::html::download_jsonl;
+use kty::lang::{Edition, EditionLang, Lang};
 use kty::{DGlossary, DGlossaryExtended, DIpa, DIpaMerged};
 use kty::{make_dict_main, make_simple_dict, setup_tracing};
 
@@ -45,6 +46,9 @@ fn prepare_command(cli: &mut Cli) -> Result<()> {
             args.langs.source = args.langs.target;
             push_filter_key_lang(&mut args.options.filter, args.langs.source);
         }
+        Command::Download(ref mut args) => {
+            args.langs.edition = args.langs.target;
+        }
         Command::Iso => (),
     }
 
@@ -86,6 +90,17 @@ fn main() -> Result<()> {
         Command::IpaMerged(args) => {
             let pm = PathManager::new(DictionaryType::IpaMerged, args);
             make_simple_dict(DIpaMerged, &args.options, &pm)
+        }
+        Command::Download(args) => {
+            let pm = PathManager::new(DictionaryType::Main, args);
+            let langs = args.langs();
+            let edition_lang: EditionLang = langs.edition().try_into().unwrap();
+            download_jsonl(
+                edition_lang,
+                langs.source(),
+                &pm.path_jsonl_raw(),
+                args.options.redownload,
+            )
         }
         Command::Iso => {
             println!("{}", Lang::help_supported_isos_coloured());
