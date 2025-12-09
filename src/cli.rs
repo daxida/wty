@@ -56,10 +56,6 @@ pub struct MainArgs {
 
     #[command(flatten)]
     pub options: ArgsOptions,
-
-    // contains these extra skip parameters
-    #[command(flatten)]
-    pub skip: ArgsSkip,
 }
 
 #[derive(Parser, Debug, Default)]
@@ -217,6 +213,10 @@ pub struct ArgsOptions {
     #[arg(short, long)]
     pub pretty: bool,
 
+    /// Skip converting to yomitan (to speed up testing)
+    #[arg(long)]
+    pub skip_yomitan: bool,
+
     /// Include experimental features
     #[arg(short, long)]
     pub experimental: bool,
@@ -224,22 +224,6 @@ pub struct ArgsOptions {
     /// Change the root directory
     #[arg(long, default_value = "data")]
     pub root_dir: PathBuf,
-}
-
-/// Skip arguments. Only relevant for the main dictionary.
-#[derive(Parser, Debug, Default)]
-pub struct ArgsSkip {
-    /// Skip filtering the jsonl
-    #[arg(long = "skip-filtering", help_heading = "Skip")]
-    pub filtering: bool,
-
-    /// Skip running tidy (IR generation)
-    #[arg(long = "skip-tidy", help_heading = "Skip")]
-    pub tidy: bool,
-
-    /// Skip running yomitan (mainly for testing)
-    #[arg(long = "skip-yomitan", help_heading = "Skip")]
-    pub yomitan: bool,
 }
 
 fn parse_tuple(s: &str) -> Result<(FilterKey, String), String> {

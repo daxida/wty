@@ -67,3 +67,8 @@ cat data/kaikki/de-en-extract.tmp.jsonl >> tests/kaikki/de-en-extract.jsonl
 cargo run --release -- main de de --skip-tidy --skip-yomitan --filter word,faul
 cat data/kaikki/de-de-extract.jsonl >> tests/kaikki/de-de-extract.jsonl
 ```
+
+## Similar converting projects
+
+- For ebooks there is [ebook_dictionary_creator](https://github.com/Vuizur/ebook_dictionary_creator) that uses [pyglossary](https://github.com/ilius/pyglossary)
+

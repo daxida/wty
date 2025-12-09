@@ -6,11 +6,10 @@ pub mod models;
 pub mod tags;
 pub mod utils;
 
-use anyhow::{Context, Ok, Result, bail, ensure};
+use anyhow::{Context, Ok, Result};
 use fxhash::FxBuildHasher;
 use indexmap::{IndexMap, IndexSet};
 use regex::Regex;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 #[allow(unused)]
 use tracing::{Level, debug, error, info, span, trace, warn};
@@ -25,7 +24,7 @@ use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::sync::LazyLock;
 
-use crate::cli::{ArgsOptions, MainArgs, MainLangs, PathManager};
+use crate::cli::{ArgsOptions, PathManager};
 #[cfg(feature = "html")]
 use crate::download::html::download_jsonl;
 use crate::lang::{EditionLang, Lang};
@@ -39,138 +38,12 @@ use crate::tags::{
     REDUNDANT_FORM_TAGS, find_pos, find_tag_in_bank, get_tag_bank_as_tag_info, merge_person_tags,
     remove_redundant_tags, sort_tags, sort_tags_by_similar,
 };
-use crate::utils::{CHECK_C, SKIP_C, pretty_print_at_path, pretty_println_at_path};
+use crate::utils::{CHECK_C, pretty_print_at_path, pretty_println_at_path};
 
 pub type Map<K, V> = IndexMap<K, V, FxBuildHasher>; // Preserve insertion order
 pub type Set<K> = IndexSet<K, FxBuildHasher>;
 
-// Schema of the main dictionary.
-//
-// ```text
-// +--------------------+-----------------------------------------------+--------------------------------------+
-// | Step               | En edition                                    | Non-En edition                       |
-// |                    | (target = en)                                 |                                      |
-// +--------------------+-----------------------------------------------+--------------------------------------+
-// | Download           | <source>-<target>-extract.jsonl               | <target>-extract.jsonl               |
-// +--------------------+-----------------------------------------------+--------------------------------------+
-// | Filter             | unchanged (already filtered)                  | <source>-<target>-extract.jsonl      |
-// |                    |                                               |                                      |
-// |                    | if filter params are provided:                |                                      |
-// |                    | → <source>-<target>-extract.tmp.jsonl         |                                      |
-// |                    |-----------------------------------------------+--------------------------------------|
-// |                    | The filtered file path (either .jsonl or .tmp.jsonl) is passed to Tidy.              |
-// +--------------------+-----------------------------------------------+--------------------------------------+
-// | Tidy (common)      | output to temp/tidy or kept in memory                                                |
-// +--------------------+--------------------------------------------------------------------------------------+
-// | Yomitan (common)   | output to temp/dict or directly to .zip                                              |
-// +--------------------+--------------------------------------------------------------------------------------+
-// ```
-
 const CONSOLE_PRINT_INTERVAL: i32 = 10000;
-
-/// Filter by source language iso and other input-given key-value pairs.
-///
-/// For the English edition, it is a bit tricky. The downloaded jsonl is already filtered. We
-/// skip filtering again, unless we are given extra filter parameters.
-///
-/// In that case, we write a new filtered tmp.jsonl file, and we return its path, different from
-/// the default <source>-<target>.extract.jsonl, to be passed to the tidy function.
-#[tracing::instrument(skip_all, fields(source = %source))]
-fn filter_jsonl(
-    edition: EditionLang,
-    source: Lang,
-    options: &ArgsOptions,
-    path_jsonl_raw: &Path,
-    path_jsonl: PathBuf,
-) -> Result<PathBuf> {
-    // English edition already gives them filtered.
-    // Yet don't skip if we have filter arguments (forced filtering).
-    if matches!(edition, EditionLang::En) && !options.has_filter_params() {
-        println!("{SKIP_C} Skipping filtering: English edition detected, with no extra filters");
-        return Ok(path_jsonl);
-    }
-
-    // rust default is 8 * (1 << 10) := 8KB
-    let capacity = 256 * (1 << 10);
-
-    let reader_path = path_jsonl_raw;
-    let reader_file = File::open(reader_path)?;
-    let mut reader = BufReader::with_capacity(capacity, reader_file);
-
-    let writer_path = match edition {
-        EditionLang::En => path_jsonl.with_extension("tmp.jsonl"),
-        _ => path_jsonl,
-    };
-    debug_assert_ne!(reader_path, writer_path);
-    let writer_file = File::create(&writer_path)?;
-    let mut writer = BufWriter::with_capacity(capacity, writer_file);
-    debug!("Filtering: {reader_path:?} > {writer_path:?}",);
-
-    let mut line_count = 1;
-    let mut extracted_lines_counter = 0;
-    let mut printed_progress = false;
-
-    let mut line = String::with_capacity(1 << 10);
-
-    loop {
-        line.clear();
-        if reader.read_line(&mut line)? == 0 {
-            break; // EOF
-        }
-
-        line_count += 1;
-
-        let word_entry: WordEntry =
-            serde_json::from_str(&line).with_context(|| "Error decoding JSON @ filter")?;
-
-        if line_count % CONSOLE_PRINT_INTERVAL == 0 {
-            printed_progress = true;
-            print!("Processed {line_count} lines...\r");
-            std::io::stdout().flush()?;
-        }
-
-        if line_count == options.first {
-            break;
-        }
-
-        if options
-            .reject
-            .iter()
-            .any(|(k, v)| k.field_value(&word_entry) == v)
-        {
-            continue;
-        }
-
-        if !options
-            .filter
-            .iter()
-            .all(|(k, v)| k.field_value(&word_entry) == v)
-        {
-            continue;
-        }
-
-        extracted_lines_counter += 1;
-        writer.write_all(line.as_bytes())?;
-    }
-
-    if printed_progress {
-        println!();
-    }
-
-    writer.flush()?;
-
-    if fs::metadata(&writer_path)?.len() == 0 {
-        fs::remove_file(&writer_path)?;
-        bail!("no valid entries for these filters. Exiting.");
-    }
-
-    pretty_println_at_path(
-        &format!("{CHECK_C} Filtered {extracted_lines_counter} lines out of {line_count}"),
-        &writer_path,
-    );
-
-    Ok(writer_path)
-}
 
 // Tidy: internal types
 
@@ -345,7 +218,7 @@ struct GlossInfo {
 
 /// Intermediate representation: used for snapshots and debugging.
 #[derive(Debug, Default)]
-struct Tidy {
+pub struct Tidy {
     lemma_map: LemmaMap,
     form_map: FormMap,
 }
@@ -403,105 +276,37 @@ fn postprocess_forms(form_map: &mut FormMap) {
     }
 }
 
-#[tracing::instrument(skip_all)]
-fn tidy(
-    langs: &MainLangs,
-    options: &ArgsOptions,
-    pm: &PathManager,
-    path_jsonl: &Path,
-) -> Result<Tidy> {
-    if !path_jsonl.exists() {
-        bail!("{:?} does not exist @ tidy", path_jsonl.display())
+fn tidy_process(edition: EditionLang, source: Lang, word_entry: &WordEntry, ret: &mut Tidy) {
+    // rg searchword
+    // debug (with only relevant, as in, deserialized, information)
+    // if matches!(edition, EditionLang::Ja) && word_entry.word == "立命" {
+    //     warn!("{:?}", langs);
+    //     warn!("{}", get_link_kaikki(edition, source, &word_entry.word));
+    //     warn!("{}", serde_json::to_string_pretty(&word_entry)?);
+    // }
+
+    process_forms(word_entry, ret);
+
+    process_alt_forms(word_entry, ret);
+
+    // Don't push a lemma if the word_entry has no glosses (f.e. if it is an inflection etc.)
+    if word_entry.contains_no_gloss() {
+        process_no_gloss(edition, word_entry, ret);
+        return;
     }
 
-    debug!("Reading jsonlines @ {}", path_jsonl.display());
-
-    let ret = tidy_run(langs, options, path_jsonl)?;
-
-    let n_lemmas = lemma_map_len(&ret.lemma_map);
-    let n_forms = form_map_len(&ret.form_map);
-    let n_forms_inflection = form_map_len_inflection(&ret.form_map);
-    let n_forms_extracted = form_map_len_extracted(&ret.form_map);
-    let n_forms_alt_of = form_map_len_alt_of(&ret.form_map);
-    debug_assert_eq!(
-        n_forms,
-        n_forms_inflection + n_forms_extracted + n_forms_alt_of,
-        "mismatch in form counts"
-    );
-    let n_entries = n_lemmas + n_forms;
-    println!(
-        "Found {n_entries} entries: {n_lemmas} lemmas, {n_forms} forms \
-({n_forms_inflection} inflections, {n_forms_extracted} extracted, {n_forms_alt_of} alt_of)"
-    );
-
-    if options.save_temps {
-        debug!("Writing Tidy result to disk");
-        write_tidy(options, pm, &ret)?;
+    // rg insertlemma handleline
+    let reading = get_reading(edition, source, word_entry);
+    if let Some(raw_sense_entry) = process_word_entry(edition, source, word_entry) {
+        debug_assert!(!raw_sense_entry.gloss_tree.is_empty());
+        ret.insert_lemma_entry(&word_entry.word, &reading, &word_entry.pos, raw_sense_entry);
     }
-
-    Ok(ret)
-}
-
-static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\(.+?\)").unwrap());
-
-#[tracing::instrument(skip_all)]
-fn tidy_run(langs: &MainLangs, options: &ArgsOptions, reader_path: &Path) -> Result<Tidy> {
-    let (edition, source, target) = (langs.edition, langs.source, langs.target);
-    debug_assert_eq!(edition, target);
-
-    let mut ret = Tidy::default();
-
-    let reader_file = File::open(reader_path)?;
-    let mut reader = BufReader::new(reader_file);
-    let mut line = String::with_capacity(1 << 10);
-
-    loop {
-        line.clear();
-        if reader.read_line(&mut line)? == 0 {
-            break; // EOF
-        }
-
-        let mut word_entry: WordEntry =
-            serde_json::from_str(&line).with_context(|| "Error decoding JSON @ tidy")?;
-
-        // rg searchword
-        // debug (with only relevant, as in, deserialized, information)
-        // if matches!(edition, EditionLang::Ja) && word_entry.word == "立命" {
-        //     warn!("{:?}", langs);
-        //     warn!("{}", get_link_kaikki(edition, source, &word_entry.word));
-        //     warn!("{}", serde_json::to_string_pretty(&word_entry)?);
-        // }
-
-        // Everything that mutates word_entry
-        preprocess_word_entry(source, target, options, &mut word_entry, &mut ret);
-
-        process_forms(&word_entry, &mut ret);
-
-        process_alt_forms(&word_entry, &mut ret);
-
-        // Don't push a lemma if the word_entry has no glosses (f.e. if it is an inflection etc.)
-        if word_entry.contains_no_gloss() {
-            process_no_gloss(target, &word_entry, &mut ret);
-            continue;
-        }
-
-        // rg insertlemma handleline
-        let reading = get_reading(edition, source, &word_entry);
-        if let Some(raw_sense_entry) = process_word_entry(edition, source, &word_entry) {
-            debug_assert!(!raw_sense_entry.gloss_tree.is_empty());
-            ret.insert_lemma_entry(&word_entry.word, &reading, &word_entry.pos, raw_sense_entry);
-        }
-    }
-
-    postprocess_forms(&mut ret.form_map);
-
-    Ok(ret)
 }
 
 // Everything that mutates word_entry
-fn preprocess_word_entry(
+fn tidy_preprocess(
+    edition: EditionLang,
     source: Lang,
-    target: EditionLang,
     options: &ArgsOptions,
     word_entry: &mut WordEntry,
     ret: &mut Tidy,
@@ -537,7 +342,7 @@ fn preprocess_word_entry(
     // [en]
     // the original fetched them from head_templates but it is better not to touch that
     // and we can do the same by looking at the tags of the canonical form.
-    if matches!(target, EditionLang::En) {
+    if matches!(edition, EditionLang::En) {
         let tag_matches = [
             "perfective",
             "imperfective",
@@ -565,7 +370,7 @@ fn preprocess_word_entry(
     // [ru]
     // This is a good idea that should probably go to every language where it makes sense.
     // Below there is a "safest" version for Greek (where the tags that we propagate are narrowed).
-    if matches!(target, EditionLang::Ru) {
+    if matches!(edition, EditionLang::Ru) {
         for sense in &mut word_entry.senses {
             for tag in &word_entry.tags {
                 if !sense.tags.contains(tag) {
@@ -578,7 +383,7 @@ fn preprocess_word_entry(
     // WARN: mutates word_entry::senses::sense::tags
     //
     // [el] Fetch gender from a matching form
-    if matches!(target, EditionLang::El) {
+    if matches!(edition, EditionLang::El) {
         let gender_tags = ["masculine", "feminine", "neuter"];
         for form in &word_entry.forms {
             if form.form == word_entry.word {
@@ -619,10 +424,10 @@ fn preprocess_word_entry(
     let old_senses = std::mem::take(&mut word_entry.senses);
     let mut senses_without_inflections = Vec::new();
     for sense in old_senses {
-        if is_inflection_gloss(target, word_entry, &sense)
+        if is_inflection_gloss(edition, word_entry, &sense)
             && (!options.experimental || word_entry.non_trivial_forms().next().is_none())
         {
-            handle_inflection_gloss(source, target, word_entry, &sense, ret);
+            handle_inflection_gloss(source, edition, word_entry, &sense, ret);
         } else {
             senses_without_inflections.push(sense);
         }
@@ -900,6 +705,8 @@ fn get_ipas(word_entry: &WordEntry) -> Vec<Ipa> {
 
     ipas_grouped
 }
+
+static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\(.+?\)").unwrap());
 
 // rg: getheadinfo
 fn get_head_info(head_templates: &[HeadTemplate]) -> Option<String> {
@@ -1242,7 +1049,7 @@ type Counter = Map<Key, CounterValue>;
 
 // For debugging purposes
 #[derive(Debug, Default)]
-struct Diagnostics {
+pub struct Diagnostics {
     /// Tags found in bank
     accepted_tags: Counter,
     /// Tags not found in bank
@@ -1301,11 +1108,12 @@ fn normalize_orthography(source: Lang, term: &str) -> String {
 }
 
 // NOTE: do NOT use the json! macro as it does not preserve insertion order
+//       > it needs the indexmap feature..
 
 // rg: yomitango yomitan_go
 #[tracing::instrument(skip_all)]
 fn make_yomitan_lemmas(
-    langs: &MainLangs,
+    edition: EditionLang,
     options: &ArgsOptions,
     lemma_map: LemmaMap,
     diagnostics: &mut Diagnostics,
@@ -1317,7 +1125,7 @@ fn make_yomitan_lemmas(
             for (pos, etyms) in pos_word {
                 for (_etym_number, info) in etyms {
                     let yomitan_entry = make_yomitan_lemma(
-                        langs,
+                        edition,
                         options,
                         &lemma,
                         &reading,
@@ -1336,7 +1144,7 @@ fn make_yomitan_lemmas(
 
 // TODO: consume info
 fn make_yomitan_lemma(
-    langs: &MainLangs,
+    edition: EditionLang,
     options: &ArgsOptions,
     lemma: &str,
     reading: &str,
@@ -1374,7 +1182,7 @@ fn make_yomitan_lemma(
     }
 
     let structured_glosses = get_structured_glosses(
-        langs.target.into(),
+        edition.into(),
         &info.gloss_tree,
         &common_short_tags_recognized,
     );
@@ -1678,73 +1486,10 @@ fn make_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
     yomitan_entries
 }
 
-fn load_json<T: DeserializeOwned>(path: &Path) -> Result<T> {
-    let file = File::open(path)?;
-    let reader = std::io::BufReader::new(file);
-    serde_json::from_reader(reader)
-        .with_context(|| format!("Failed to parse JSON @ {}", path.display()))
-}
-
-// Return default in case of path not found
-//
-// was used for tag_banks/pos that are language-specific but we use English everywhere so...
-//
-// fn load_json_optional<T>(path: &Path) -> Result<T>
-// where
-//     T: DeserializeOwned + Default + Sized,
-// {
-//     if path.exists() {
-//         load_json(path)
-//     } else {
-//         debug!("Optional file not found @ {}", path.display());
-//         Ok(T::default())
-//     }
-// }
-
-/// Write index, entries (term banks), styles.css and tag banks.
-#[tracing::instrument(skip_all)]
-fn make_yomitan(
-    langs: &MainLangs,
-    options: &ArgsOptions,
-    pm: &PathManager,
-    diagnostics: &mut Diagnostics,
-    tidy_cache: Option<Tidy>,
-) -> Result<()> {
-    println!("Making yomitan dict...");
-
-    let (lemma_map, form_map) = if let Some(ret) = tidy_cache {
-        debug!("Skip loading Tidy result: passing it instead");
-        (ret.lemma_map, ret.form_map)
-    } else {
-        debug!("Loading Tidy result from disk");
-        let lemmas_path = pm.path_lemmas();
-        let forms_path = pm.path_forms();
-
-        ensure!(
-            lemmas_path.exists() && forms_path.exists(),
-            "can not proceed with make_yomitan. Are you running --skip-tidy without --save-temps?"
-        );
-
-        let lemma_map: LemmaMap = load_json(&lemmas_path)?;
-        let form_map: FormMap = load_json(&forms_path)?;
-        (lemma_map, form_map)
-    };
-
-    let yomitan_entries = make_yomitan_lemmas(langs, options, lemma_map, diagnostics);
-    let yomitan_forms = make_yomitan_forms(langs.source, form_map);
-    let labelled_entries = [("lemma", yomitan_entries), ("form", yomitan_forms)];
-
-    write_yomitan(
-        langs.source,
-        langs.target.into(),
-        options,
-        pm,
-        &labelled_entries,
-    )
-}
-
 const STYLES_CSS: &[u8] = include_bytes!("../assets/styles.css");
 const STYLES_CSS_EXPERIMENTAL: &[u8] = include_bytes!("../assets/styles_experimental.css");
+
+type LabelledYomitanEntry = (&'static str, Vec<YomitanEntry>);
 
 /// Write lemma / form / whatever banks to either disk or zip.
 ///
@@ -1754,7 +1499,7 @@ fn write_yomitan(
     target: Lang,
     options: &ArgsOptions,
     pm: &PathManager,
-    labelled_entries: &[(&str, Vec<YomitanEntry>)],
+    labelled_entries: &[LabelledYomitanEntry],
 ) -> Result<()> {
     let mut bank_index = 0;
 
@@ -1901,17 +1646,7 @@ fn write_banks(
 }
 
 impl SimpleDictionary for DGlossary {
-    type I = YomitanEntry; // default: when we don't want tidy
-
-    fn process(
-        &self,
-        edition: EditionLang,
-        _source: Lang,
-        target: Lang,
-        entry: &WordEntry,
-    ) -> Vec<Self::I> {
-        make_yomitan_entries_glossary(edition, target, entry)
-    }
+    type I = Vec<YomitanEntry>;
 
     fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
         let (edition, source, _) = pm.langs();
@@ -1919,13 +1654,32 @@ impl SimpleDictionary for DGlossary {
         vec![(edition_lang, pm.path_jsonl(source, source))]
     }
 
-    fn to_yomitan(&self, tidy: Self::I) -> YomitanEntry {
-        tidy
+    fn process(
+        &self,
+        edition: EditionLang,
+        _source: Lang,
+        target: Lang,
+        entry: &WordEntry,
+        irs: &mut Self::I,
+    ) {
+        make_yomitan_entries_glossary(edition, target, entry, irs);
+    }
+
+    fn to_yomitan(
+        &self,
+        _edition: EditionLang,
+        _source: Lang,
+        _target: Lang,
+        _options: &ArgsOptions,
+        _diagnostics: &mut Diagnostics,
+        irs: Self::I,
+    ) -> Vec<LabelledYomitanEntry> {
+        vec![("term", irs)]
     }
 }
 
 impl SimpleDictionary for DGlossaryExtended {
-    type I = IGlossaryExtended;
+    type I = Vec<IGlossaryExtended>;
 
     fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
         let (edition, _, _) = pm.langs();
@@ -1943,18 +1697,15 @@ impl SimpleDictionary for DGlossaryExtended {
         source: Lang,
         target: Lang,
         entry: &WordEntry,
-    ) -> Vec<Self::I> {
-        make_ir_glossary_extended(edition, source, target, entry)
+        irs: &mut Self::I,
+    ) {
+        make_ir_glossary_extended(edition, source, target, entry, irs);
     }
 
-    fn write_temp(&self) -> bool {
-        true
-    }
-
-    fn compact(&self, tidies: &mut Vec<Self::I>) {
+    fn postprocess(&self, irs: &mut Self::I) {
         let mut map = Map::default();
 
-        for (lemma, pos, edition, translations) in tidies.drain(..) {
+        for (lemma, pos, edition, translations) in irs.drain(..) {
             let entry = map
                 .entry(lemma.clone())
                 .or_insert_with(|| (pos.clone(), edition, Set::default()));
@@ -1964,28 +1715,26 @@ impl SimpleDictionary for DGlossaryExtended {
             }
         }
 
-        tidies.extend(map.into_iter().map(|(lemma, (pos, edition, set))| {
+        irs.extend(map.into_iter().map(|(lemma, (pos, edition, set))| {
             (lemma, pos, edition, set.into_iter().collect::<Vec<_>>())
         }));
     }
 
-    fn to_yomitan(&self, tidy: Self::I) -> YomitanEntry {
-        make_yomitan_glossary_extended(tidy)
+    fn to_yomitan(
+        &self,
+        _edition: EditionLang,
+        _source: Lang,
+        _target: Lang,
+        _options: &ArgsOptions,
+        _diagnostics: &mut Diagnostics,
+        irs: Self::I,
+    ) -> Vec<LabelledYomitanEntry> {
+        vec![("term", make_yomitan_glossary_extended(irs))]
     }
 }
 
 impl SimpleDictionary for DIpa {
-    type I = IIpa;
-
-    fn process(
-        &self,
-        edition: EditionLang,
-        source: Lang,
-        _target: Lang,
-        entry: &WordEntry,
-    ) -> Vec<Self::I> {
-        make_ir_ipa(edition, source, entry)
-    }
+    type I = Vec<IIpa>;
 
     fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
         let (edition, source, target) = pm.langs();
@@ -1993,23 +1742,32 @@ impl SimpleDictionary for DIpa {
         vec![(edition_lang, pm.path_jsonl(source, target))]
     }
 
-    fn to_yomitan(&self, tidy: Self::I) -> YomitanEntry {
-        make_yomitan_ipa(tidy)
-    }
-}
-
-impl SimpleDictionary for DIpaMerged {
-    type I = IIpa;
-
     fn process(
         &self,
         edition: EditionLang,
         source: Lang,
         _target: Lang,
         entry: &WordEntry,
-    ) -> Vec<Self::I> {
-        make_ir_ipa(edition, source, entry)
+        irs: &mut Self::I,
+    ) {
+        make_ir_ipa(edition, source, entry, irs)
     }
+
+    fn to_yomitan(
+        &self,
+        _edition: EditionLang,
+        _source: Lang,
+        _target: Lang,
+        _options: &ArgsOptions,
+        _diagnostics: &mut Diagnostics,
+        irs: Self::I,
+    ) -> Vec<LabelledYomitanEntry> {
+        vec![("term", make_yomitan_ipa(irs))]
+    }
+}
+
+impl SimpleDictionary for DIpaMerged {
+    type I = Vec<IIpa>;
 
     fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
         let (edition, _, _) = pm.langs();
@@ -2021,7 +1779,18 @@ impl SimpleDictionary for DIpaMerged {
         paths
     }
 
-    fn compact(&self, irs: &mut Vec<Self::I>) {
+    fn process(
+        &self,
+        edition: EditionLang,
+        source: Lang,
+        _target: Lang,
+        entry: &WordEntry,
+        irs: &mut Self::I,
+    ) {
+        make_ir_ipa(edition, source, entry, irs);
+    }
+
+    fn postprocess(&self, irs: &mut Self::I) {
         // Keep only unique entries
         let mut seen = IndexSet::new();
         seen.extend(irs.drain(..));
@@ -2030,10 +1799,21 @@ impl SimpleDictionary for DIpaMerged {
         irs.sort_by(|a, b| a.0.cmp(&b.0));
     }
 
-    fn to_yomitan(&self, tidy: Self::I) -> YomitanEntry {
-        make_yomitan_ipa(tidy)
+    fn to_yomitan(
+        &self,
+        _edition: EditionLang,
+        _source: Lang,
+        _target: Lang,
+        _options: &ArgsOptions,
+        _diagnostics: &mut Diagnostics,
+        tidy: Self::I,
+    ) -> Vec<LabelledYomitanEntry> {
+        vec![("term", make_yomitan_ipa(tidy))]
     }
 }
+
+#[derive(Debug, Clone, Copy)]
+pub struct DMain;
 
 #[derive(Debug, Clone, Copy)]
 pub struct DGlossary;
@@ -2046,6 +1826,139 @@ pub struct DIpa;
 
 #[derive(Debug, Clone, Copy)]
 pub struct DIpaMerged;
+
+/// Trait for Intermediate representation. Used for postprocessing (merge, etc.) and debugging via snapshots.
+///
+/// The simplest form is a Vec<YomitanEntry> if we don't want to do anything fancy, cf. DGlossary
+pub trait Intermediate: Default {
+    fn len(&self) -> usize;
+    fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    /// How to write Self::I to disk. This is only called if options.save_temps is set and
+    /// SimpleDictionary::write_ir returns true
+    ///
+    /// The default blank implementation does nothing.
+    #[allow(unused_variables)]
+    fn write(&self, pm: &PathManager, options: &ArgsOptions) -> Result<()> {
+        Ok(())
+    }
+}
+
+impl<T> Intermediate for Vec<T>
+where
+    T: Serialize,
+{
+    fn len(&self) -> usize {
+        Vec::len(self)
+    }
+
+    fn write(&self, pm: &PathManager, options: &ArgsOptions) -> Result<()> {
+        let writer_path = pm.dir_tidy().join("tidy.jsonl");
+        let writer_file = File::create(&writer_path)?;
+        let writer = BufWriter::new(&writer_file);
+        if options.pretty {
+            serde_json::to_writer_pretty(writer, self)?;
+        } else {
+            serde_json::to_writer(writer, self)?;
+        }
+        pretty_print_at_path("Wrote tidy", &writer_path);
+        Ok(())
+    }
+}
+
+impl Intermediate for Tidy {
+    fn len(&self) -> usize {
+        let n_lemmas = lemma_map_len(&self.lemma_map);
+        let n_forms = form_map_len(&self.form_map);
+        n_lemmas + n_forms
+    }
+
+    fn write(&self, pm: &PathManager, options: &ArgsOptions) -> Result<()> {
+        write_tidy(options, pm, self)
+    }
+}
+
+impl SimpleDictionary for DMain {
+    type I = Tidy;
+
+    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
+        // NOTE: this is copy pasted and wont work
+        let (edition, source, _) = pm.langs();
+        let edition_lang = edition.try_into().unwrap(); // edition is never Edition::All
+        vec![(edition_lang, pm.path_jsonl(source, edition_lang.into()))]
+    }
+
+    fn preprocess(
+        &self,
+        edition: EditionLang,
+        source: Lang,
+        _target: Lang,
+        word_entry: &mut WordEntry,
+        options: &ArgsOptions,
+        irs: &mut Self::I,
+    ) {
+        tidy_preprocess(edition, source, options, word_entry, irs);
+    }
+
+    fn process(
+        &self,
+        edition: EditionLang,
+        source: Lang,
+        _target: Lang,
+        word_entry: &WordEntry,
+        irs: &mut Self::I,
+    ) {
+        tidy_process(edition, source, word_entry, irs);
+    }
+
+    fn postprocess(&self, irs: &mut Self::I) {
+        postprocess_forms(&mut irs.form_map);
+    }
+
+    fn found_ir_message(&self, irs: &Self::I) {
+        // A bit hacky to have it here
+        let n_lemmas = lemma_map_len(&irs.lemma_map);
+        let n_forms = form_map_len(&irs.form_map);
+        let n_forms_inflection = form_map_len_inflection(&irs.form_map);
+        let n_forms_extracted = form_map_len_extracted(&irs.form_map);
+        let n_forms_alt_of = form_map_len_alt_of(&irs.form_map);
+        debug_assert_eq!(
+            n_forms,
+            n_forms_inflection + n_forms_extracted + n_forms_alt_of,
+            "mismatch in form counts"
+        );
+        let n_entries = n_lemmas + n_forms;
+        println!(
+            "Found {n_entries} entries: {n_lemmas} lemmas, {n_forms} forms \
+({n_forms_inflection} inflections, {n_forms_extracted} extracted, {n_forms_alt_of} alt_of)"
+        );
+    }
+
+    fn write_ir(&self) -> bool {
+        true
+    }
+
+    fn to_yomitan(
+        &self,
+        edition: EditionLang,
+        source: Lang,
+        _target: Lang,
+        options: &ArgsOptions,
+        diagnostics: &mut Diagnostics,
+        irs: Self::I,
+    ) -> Vec<LabelledYomitanEntry> {
+        let yomitan_entries = make_yomitan_lemmas(edition, options, irs.lemma_map, diagnostics);
+        let yomitan_forms = make_yomitan_forms(source, irs.form_map);
+        let labelled_entries = vec![("lemma", yomitan_entries), ("form", yomitan_forms)];
+        labelled_entries
+    }
+
+    fn write_diagnostics(&self, pm: &PathManager, diagnostics: &Diagnostics) -> Result<()> {
+        write_diagnostics(pm, diagnostics)
+    }
+}
 
 // Ideally this should support Main at some point
 //
@@ -2060,17 +1973,38 @@ pub struct DIpaMerged;
 // and rewrite write_simple_dict to instead just store YomitanEntries.
 //
 /// Trait to abstract the process of writing a dictionary.
+///
+/// TODO: rename to Dictionary
 pub trait SimpleDictionary {
-    /// Intermediate representation. Used for postprocessing (merge, etc.) and debugging via snapshots.
-    ///
-    /// It can be set to `YomitanEntry` if we don't want to do anything fancy.
-    type I: Serialize;
+    type I: Intermediate;
 
     /// Vector of paths to jsonl raw dumps.
     ///
     /// Most dictionaries only use a single path. For instance, Glossary will only use the `source`
     /// edition.
     fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)>;
+
+    // TODO: support filter (cache)
+
+    // NOTE:Maybe in the future we can get rid of this. It requires cleaning up the legacy mutable
+    // behaviour of the main dictionary.
+    //
+    /// How to preprocess a `WordEntry`.
+    ///
+    /// Inspired by the Main dictionary, everything that mutates word_entry should go here.
+    ///
+    /// The default blank implementation does nothing.
+    #[allow(unused_variables)]
+    fn preprocess(
+        &self,
+        edition: EditionLang,
+        source: Lang,
+        target: Lang,
+        word_entry: &mut WordEntry,
+        options: &ArgsOptions,
+        irs: &mut Self::I,
+    ) {
+    }
 
     /// How to transform a `WordEntry` into intermediate representation.
     ///
@@ -2081,46 +2015,88 @@ pub trait SimpleDictionary {
         source: Lang,
         target: Lang,
         word_entry: &WordEntry,
-    ) -> Vec<Self::I>;
+        irs: &mut Self::I,
+    );
 
-    /// Whether to write or not the Vec<Self::I> to disk
-    fn write_temp(&self) -> bool {
+    /// Console message for found entries.
+    ///
+    /// It happens to be customized for the main dictionary.
+    fn found_ir_message(&self, irs: &Self::I) {
+        println!("Found {} entries", irs.len());
+    }
+
+    /// Whether to write or not Self::I to disk
+    ///
+    /// Compare to save_temp, that rules if Self::I AND the term_banks are written to disk.
+    ///
+    /// This is mainly a debug function, in order to allow not writing the ir Self::I to disk for
+    /// minor dictionaries in the testsuite. It is only set to true in the main dictionary.
+    fn write_ir(&self) -> bool {
         false
     }
 
-    /// How to compact the intermediate representation.
+    /// How to postprocess the intermediate representation.
     ///
-    /// This can be implemented, for instance, to merge entries from different editions.
+    /// This can be implemented, for instance, to merge entries from different editions, or to
+    /// postprocess forms, tags etc.
     ///
-    /// If left unimplemented, it does nothing.
+    /// The default blank implementation does nothing.
     #[allow(unused_variables)]
-    fn compact(&self, irs: &mut Vec<Self::I>) {}
+    fn postprocess(&self, irs: &mut Self::I) {}
 
     // Does not have access to WordEntry!
-    fn to_yomitan(&self, ir: Self::I) -> YomitanEntry;
+    //
+    // Returns a Vec<LabelledYomitanEntry> instead of Vec<YomitanEntry> because that is the
+    // argument type of write_yomitan, but it should be doable to change it back to
+    // Vec<YomitanEntry>
+    fn to_yomitan(
+        &self,
+        edition: EditionLang,
+        source: Lang,
+        target: Lang,
+        options: &ArgsOptions,
+        diagnostics: &mut Diagnostics,
+        irs: Self::I,
+    ) -> Vec<LabelledYomitanEntry>;
+
+    /// How to write diagnostics, if any.
+    ///
+    /// The default blank implementation does nothing.
+    #[allow(unused_variables)]
+    fn write_diagnostics(&self, pm: &PathManager, diagnostics: &Diagnostics) -> Result<()> {
+        Ok(())
+    }
 }
 
-pub fn make_simple_dict<D: SimpleDictionary>(
+pub fn make_dict_simple<D: SimpleDictionary>(
     dict: D,
     options: &ArgsOptions,
     pm: &PathManager,
 ) -> Result<()> {
-    let (_, source, target) = pm.langs();
+    let (edition_pm, source_pm, target_pm) = pm.langs();
 
     pm.setup_dirs()?;
 
     // rust default is 8 * (1 << 10) := 8KB
     let capacity = 256 * (1 << 10);
     let mut line = String::with_capacity(1 << 10);
-    let mut entries = Vec::new();
+    let mut entries = D::I::default();
 
     for (edition, path_jsonl_raw) in dict.paths_jsonl_raw(pm) {
         #[cfg(feature = "html")]
         {
-            download_jsonl(edition, source, &path_jsonl_raw, options.redownload)?;
+            download_jsonl(edition, source_pm, &path_jsonl_raw, options.redownload)?;
         }
 
+        // Something like
+        // let (cache_path, cached) = if let Some(cache_path) = cache(path_jsonl_raw) {
+        //     (cache_path, true)
+        // } else {
+        //     (path_jsonl_raw, false)
+        // };
+
         let reader_path = path_jsonl_raw;
+
         let reader_file = File::open(&reader_path)?;
         let mut reader = BufReader::with_capacity(capacity, reader_file);
 
@@ -2135,8 +2111,8 @@ pub fn make_simple_dict<D: SimpleDictionary>(
 
             line_count += 1;
 
-            let word_entry: WordEntry =
-                serde_json::from_str(&line).with_context(|| "Error decoding JSON @ filter")?;
+            let mut word_entry: WordEntry = serde_json::from_str(&line)
+                .with_context(|| "Error decoding JSON @ make_dict_simple")?;
 
             if line_count % CONSOLE_PRINT_INTERVAL == 0 {
                 printed_progress = true;
@@ -2148,6 +2124,14 @@ pub fn make_simple_dict<D: SimpleDictionary>(
                 break;
             }
 
+            if options
+                .reject
+                .iter()
+                .any(|(k, v)| k.field_value(&word_entry) == v)
+            {
+                continue;
+            }
+
             if !options
                 .filter
                 .iter()
@@ -2156,16 +2140,25 @@ pub fn make_simple_dict<D: SimpleDictionary>(
                 continue;
             }
 
-            let entry = dict.process(edition, source, target, &word_entry);
-            entries.extend(entry);
+            dict.preprocess(
+                edition,
+                source_pm,
+                target_pm,
+                &mut word_entry,
+                options,
+                &mut entries,
+            );
+
+            dict.process(edition, source_pm, target_pm, &word_entry, &mut entries);
         }
 
         if printed_progress {
-            println!();
+            println!("Processed {} lines...", line_count - 1);
         }
     }
 
-    println!("Found {} entries", entries.len());
+    dict.found_ir_message(&entries);
+
     if entries.is_empty() {
         // Compared to filter_jsonl, this is not an error since it does not prevent any code that
         // comes after (there is nothing after! this function does *everything*).
@@ -2173,29 +2166,30 @@ pub fn make_simple_dict<D: SimpleDictionary>(
         return Ok(());
     }
 
-    dict.compact(&mut entries);
-    println!("Compacted down to {} entries", entries.len());
+    dict.postprocess(&mut entries);
+    // println!("Postprocessed down to {} entries", entries.len());
 
     // dump ir if some flag is passed, save_temps I guess
-    if options.save_temps && dict.write_temp() {
-        let writer_path = pm.dir_tidy().join("tidy.jsonl");
-        let writer_file = File::create(&writer_path)?;
-        let writer = BufWriter::new(&writer_file);
-        if options.pretty {
-            serde_json::to_writer_pretty(writer, &entries)?;
-        } else {
-            serde_json::to_writer(writer, &entries)?;
-        }
-        pretty_print_at_path("Wrote tidy", &writer_path);
+    if options.save_temps && dict.write_ir() {
+        entries.write(pm, options)?;
     }
 
-    let yomitan_entries: Vec<YomitanEntry> = entries
-        .into_iter()
-        .map(|entry| dict.to_yomitan(entry))
-        .collect();
+    if !options.skip_yomitan {
+        let mut diagnostics = Diagnostics::new();
 
-    let labelled_entries = [("term", yomitan_entries)];
-    write_yomitan(source, target, options, pm, &labelled_entries)?;
+        let labelled_entries = dict.to_yomitan(
+            edition_pm.try_into().unwrap(), // FIX: will fail for GlossaryExtended!
+            source_pm,
+            target_pm,
+            options,
+            &mut diagnostics,
+            entries,
+        );
+
+        dict.write_diagnostics(pm, &diagnostics)?;
+
+        write_yomitan(source_pm, target_pm, options, pm, &labelled_entries)?;
+    }
 
     Ok(())
 }
@@ -2204,7 +2198,8 @@ fn make_yomitan_entries_glossary(
     source: EditionLang,
     target: Lang,
     word_entry: &WordEntry,
-) -> Vec<YomitanEntry> {
+    irs: &mut Vec<YomitanEntry>,
+) {
     // rg: process translations processtranslations
     let target_str = target.to_string();
 
@@ -2227,7 +2222,7 @@ fn make_yomitan_entries_glossary(
     }
 
     if translations.is_empty() {
-        return vec![];
+        return;
     }
 
     let mut definitions = Vec::new();
@@ -2268,7 +2263,7 @@ fn make_yomitan_entries_glossary(
     };
     let definition_tags = found_pos.clone();
 
-    vec![YomitanEntry::TermBank(TermBank(
+    let ir = YomitanEntry::TermBank(TermBank(
         word_entry.word.clone(),
         reading,
         definition_tags,
@@ -2277,7 +2272,8 @@ fn make_yomitan_entries_glossary(
         definitions,
         0,
         String::new(),
-    ))]
+    ));
+    irs.push(ir);
 }
 
 type IGlossaryExtended = (String, String, EditionLang, Vec<String>);
@@ -2288,7 +2284,8 @@ fn make_ir_glossary_extended(
     source: Lang,
     target: Lang,
     word_entry: &WordEntry,
-) -> Vec<IGlossaryExtended> {
+    irs: &mut Vec<IGlossaryExtended>,
+) {
     let target_str = target.to_string();
     let source_str = source.to_string();
 
@@ -2317,7 +2314,7 @@ fn make_ir_glossary_extended(
     translations.retain(|_, (targets, sources)| !targets.is_empty() && !sources.is_empty());
 
     if translations.is_empty() {
-        return vec![];
+        return;
     }
 
     let found_pos = match find_pos(&word_entry.pos) {
@@ -2344,36 +2341,40 @@ fn make_ir_glossary_extended(
         }
     }
 
-    translations_product
+    irs.extend(translations_product)
 }
 
-fn make_yomitan_glossary_extended(ir: IGlossaryExtended) -> YomitanEntry {
-    let (lemma, found_pos, _, translations) = ir;
+fn make_yomitan_glossary_extended(irs: Vec<IGlossaryExtended>) -> Vec<YomitanEntry> {
+    irs.into_iter()
+        .map(|ir| {
+            let (lemma, found_pos, _, translations) = ir;
 
-    let mut definitions = Vec::new();
-    for translation in &translations {
-        definitions.push(DetailedDefinition::Text(translation.to_string()));
-    }
+            let mut definitions = Vec::new();
+            for translation in &translations {
+                definitions.push(DetailedDefinition::Text(translation.to_string()));
+            }
 
-    YomitanEntry::TermBank(TermBank(
-        lemma,
-        String::new(),
-        found_pos.clone(),
-        found_pos,
-        0,
-        definitions,
-        0,
-        String::new(),
-    ))
+            YomitanEntry::TermBank(TermBank(
+                lemma,
+                String::new(),
+                found_pos.clone(),
+                found_pos,
+                0,
+                definitions,
+                0,
+                String::new(),
+            ))
+        })
+        .collect()
 }
 
 type IIpa = (String, PhoneticTranscription);
 
-fn make_ir_ipa(edition: EditionLang, source: Lang, word_entry: &WordEntry) -> Vec<IIpa> {
+fn make_ir_ipa(edition: EditionLang, source: Lang, word_entry: &WordEntry, irs: &mut Vec<IIpa>) {
     let ipas = get_ipas(word_entry);
 
     if ipas.is_empty() {
-        return vec![];
+        return;
     }
 
     let phonetic_transcription = PhoneticTranscription {
@@ -2381,14 +2382,19 @@ fn make_ir_ipa(edition: EditionLang, source: Lang, word_entry: &WordEntry) -> Ve
         transcriptions: ipas,
     };
 
-    vec![(word_entry.word.clone(), phonetic_transcription)]
+    let ir: IIpa = (word_entry.word.clone(), phonetic_transcription);
+    irs.push(ir);
 }
 
-fn make_yomitan_ipa(ir: IIpa) -> YomitanEntry {
-    let (lemma, phonetic_transcription) = ir;
-    YomitanEntry::TermBankMeta(TermBankMeta::TermPhoneticTranscription(
-        TermPhoneticTranscription(lemma, "ipa".to_string(), phonetic_transcription),
-    ))
+fn make_yomitan_ipa(irs: Vec<IIpa>) -> Vec<YomitanEntry> {
+    irs.into_iter()
+        .map(|ir| {
+            let (lemma, phonetic_transcription) = ir;
+            YomitanEntry::TermBankMeta(TermBankMeta::TermPhoneticTranscription(
+                TermPhoneticTranscription(lemma, "ipa".to_string(), phonetic_transcription),
+            ))
+        })
+        .collect()
 }
 
 fn write_diagnostics(pm: &PathManager, diagnostics: &Diagnostics) -> Result<()> {
@@ -2457,51 +2463,6 @@ fn write_sorted_json(
     Ok(())
 }
 
-pub fn make_dict_main(args: &MainArgs, pm: &PathManager) -> Result<()> {
-    debug_assert_eq!(args.langs.edition, args.langs.target);
-
-    pm.setup_dirs()?;
-
-    let path_jsonl_raw = pm.path_jsonl_raw();
-
-    #[cfg(feature = "html")]
-    {
-        download_jsonl(
-            args.langs.edition,
-            args.langs.source,
-            &path_jsonl_raw,
-            args.options.redownload,
-        )?;
-    }
-
-    let mut path_jsonl = pm.path_jsonl(args.langs.source, args.langs.target.into());
-    if !args.skip.filtering {
-        path_jsonl = filter_jsonl(
-            args.langs.edition,
-            args.langs.source,
-            &args.options,
-            &path_jsonl_raw,
-            path_jsonl,
-        )?;
-    }
-
-    let tidy_cache = if args.skip.tidy {
-        None
-    } else {
-        let ret = tidy(&args.langs, &args.options, pm, &path_jsonl)?;
-        Some(ret)
-    };
-
-    let mut diagnostics = Diagnostics::new();
-    if !args.skip.yomitan {
-        make_yomitan(&args.langs, &args.options, pm, &mut diagnostics, tidy_cache)?;
-    }
-
-    write_diagnostics(pm, &diagnostics)?;
-
-    Ok(())
-}
-
 pub fn setup_tracing(verbose: bool) {
     // tracing_subscriber::fmt::init();
     // Same defaults as the above, without timestamps
@@ -2528,7 +2489,7 @@ pub fn setup_tracing(verbose: bool) {
 mod tests {
     use super::*;
 
-    use crate::cli::{DictionaryType, GlossaryArgs, GlossaryLangs};
+    use crate::cli::{DictionaryType, GlossaryArgs, GlossaryLangs, MainArgs, MainLangs};
 
     use anyhow::{Ok, Result, bail, ensure};
 
@@ -2680,7 +2641,7 @@ mod tests {
             for possible_target in &langs_in_testsuite {
                 let args = fixture_glossary_args(source, source, *possible_target, &fixture_dir);
                 let pm = PathManager::new(DictionaryType::Glossary, &args);
-                make_simple_dict(DGlossary, &args.options, &pm).unwrap();
+                make_dict_simple(DGlossary, &args.options, &pm).unwrap();
             }
         }
 
@@ -2691,7 +2652,7 @@ mod tests {
             };
             let args = fixture_main_args(target, *source, target, &fixture_dir);
             let pm = PathManager::new(DictionaryType::Ipa, &args);
-            make_simple_dict(DIpa, &args.options, &pm).unwrap();
+            make_dict_simple(DIpa, &args.options, &pm).unwrap();
         }
 
         cleanup(&fixture_dir.join("dict"));
@@ -2723,10 +2684,12 @@ mod tests {
 
         pm.setup_dirs().unwrap(); // this makes some noise but ok
 
-        tidy(langs, options, pm, &fixture_path)?;
-        let mut diagnostics = Diagnostics::new();
-        make_yomitan(langs, options, pm, &mut diagnostics, None)?;
-        write_diagnostics(pm, &diagnostics)?;
+        // tidy(langs, options, pm, &fixture_path)?;
+        // let mut diagnostics = Diagnostics::new();
+        // make_yomitan(langs, options, pm, &mut diagnostics, None)?;
+        // write_diagnostics(pm, &diagnostics)?;
+
+        make_dict_simple(DMain, options, pm)?;
 
         check_git_diff(pm)
     }
