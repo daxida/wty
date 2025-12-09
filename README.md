@@ -50,22 +50,16 @@ Skip:
 
 ## Tests
 
-Tests are run with `cargo test`. If you only want to run tests for the main dictionary in a single language pair, without capturing output:
+Tests are run with `cargo test`, benchmarks with `cargo bench`. If you only want to run tests for the main dictionary in a single language pair, without capturing output:
 
 ```
 cargo run -- main ja en --root-dir=tests --save-temps --pretty
 ```
 
-To add a word to the testsuite, besides copy pasting it, you can run:
+To add a word to the testsuite, besides copy pasting it, you can run (requires [just](https://github.com/casey/just)):
 
 ```
-# If the target is English
-cargo run --release -- main de en --skip-tidy --skip-yomitan --filter word,faul
-cat data/kaikki/de-en-extract.tmp.jsonl >> tests/kaikki/de-en-extract.jsonl
-
-# Otherwise
-cargo run --release -- main de de --skip-tidy --skip-yomitan --filter word,faul
-cat data/kaikki/de-de-extract.jsonl >> tests/kaikki/de-de-extract.jsonl
+just add de en faul
 ```
 
 ## Similar converting projects

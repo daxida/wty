@@ -82,6 +82,7 @@ fn run_command(cmd: &Command) -> Result<()> {
                 langs.source(),
                 &pm.path_jsonl_raw(),
                 args.options.redownload,
+                args.options.quiet,
             )
         }
         Command::Iso => {

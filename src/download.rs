@@ -44,14 +44,19 @@ pub mod html {
         source: Lang,
         path_jsonl_raw: &Path,
         redownload: bool,
+        quiet: bool,
     ) -> Result<()> {
         if path_jsonl_raw.exists() && !redownload {
-            skip_because_file_exists("download", path_jsonl_raw);
+            if !quiet {
+                skip_because_file_exists("download", path_jsonl_raw);
+            }
             return Ok(());
         }
 
         let url = url_raw_jsonl_gz(edition, source);
-        println!("⬇ Downloading {url}");
+        if !quiet {
+            println!("⬇ Downloading {url}");
+        }
 
         let response = ureq::get(url).call()?;
 
@@ -67,7 +72,9 @@ pub mod html {
         let mut writer = BufWriter::new(File::create(path_jsonl_raw)?);
         std::io::copy(&mut decoder, &mut writer)?;
 
-        pretty_println_at_path(&format!("{CHECK_C} Downloaded"), path_jsonl_raw);
+        if !quiet {
+            pretty_println_at_path(&format!("{CHECK_C} Downloaded"), path_jsonl_raw);
+        }
 
         Ok(())
     }

@@ -1003,7 +1003,9 @@ fn write_tidy(options: &ArgsOptions, pm: &PathManager, ret: &Tidy) -> Result<()>
     } else {
         serde_json::to_writer(writer, &ret.lemma_map)?;
     }
-    pretty_println_at_path("Wrote tidy lemmas", &opath);
+    if !options.quiet {
+        pretty_println_at_path("Wrote tidy lemmas", &opath);
+    }
 
     // Forms are written by chunks in the original (cf. mapChunks). Not sure if needed.
     // If I even change that, do NOT hardcode the forms number (i.e. the 0 in ...forms-0.json)
@@ -1016,7 +1018,9 @@ fn write_tidy(options: &ArgsOptions, pm: &PathManager, ret: &Tidy) -> Result<()>
     } else {
         serde_json::to_writer(writer, &ret.form_map)?;
     }
-    pretty_println_at_path("Wrote tidy forms", &opath);
+    if !options.quiet {
+        pretty_println_at_path("Wrote tidy forms", &opath);
+    }
 
     Ok(())
 }
@@ -1509,6 +1513,7 @@ fn write_yomitan(
         for (entry_ty, entries) in labelled_entries {
             write_banks(
                 options.pretty,
+                options.quiet,
                 entries,
                 &mut bank_index,
                 entry_ty,
@@ -1517,7 +1522,9 @@ fn write_yomitan(
             )?;
         }
 
-        pretty_println_at_path(&format!("{CHECK_C} Wrote temp data"), &out_dir);
+        if !options.quiet {
+            pretty_println_at_path(&format!("{CHECK_C} Wrote temp data"), &out_dir);
+        }
     } else {
         let writer_path = pm.path_dict();
         let writer_file = File::create(&writer_path)?;
@@ -1548,6 +1555,7 @@ fn write_yomitan(
         for (entry_ty, entries) in labelled_entries {
             write_banks(
                 options.pretty,
+                options.quiet,
                 entries,
                 &mut bank_index,
                 entry_ty,
@@ -1558,7 +1566,9 @@ fn write_yomitan(
 
         zip.finish()?;
 
-        pretty_println_at_path(&format!("{CHECK_C} Wrote yomitan dict"), &writer_path);
+        if !options.quiet {
+            pretty_println_at_path(&format!("{CHECK_C} Wrote yomitan dict"), &writer_path);
+        }
     }
 
     Ok(())
@@ -1573,6 +1583,7 @@ enum BankSink<'a> {
 #[tracing::instrument(skip_all)]
 fn write_banks(
     pretty: bool,
+    quiet: bool,
     yomitan_entries: &[YomitanEntry],
     bank_index: &mut usize,
     entry_ty: &str,
@@ -1626,19 +1637,23 @@ fn write_banks(
             }
         }
 
-        if bank_num > 1 {
-            print!("\r\x1b[K");
+        if !quiet {
+            if bank_num > 1 {
+                print!("\r\x1b[K");
+            }
+            pretty_print_at_path(
+                &format!(
+                    "Wrote yomitan {entry_ty} bank {bank_num}/{total_bank_num} ({upto} entries)"
+                ),
+                &file_path,
+            );
+            std::io::stdout().flush()?;
         }
-        pretty_print_at_path(
-            &format!("Wrote yomitan {entry_ty} bank {bank_num}/{total_bank_num} ({upto} entries)"),
-            &file_path,
-        );
-        std::io::stdout().flush()?;
 
         start = end;
     }
 
-    if bank_num == total_bank_num {
+    if !quiet && bank_num == total_bank_num {
         println!();
     }
 
@@ -1863,7 +1878,9 @@ where
         } else {
             serde_json::to_writer(writer, self)?;
         }
-        pretty_print_at_path("Wrote tidy", &writer_path);
+        if !options.quiet {
+            pretty_print_at_path("Wrote tidy", &writer_path);
+        }
         Ok(())
     }
 }
@@ -2079,42 +2096,42 @@ pub fn make_dict_simple<D: SimpleDictionary>(
 
     // rust default is 8 * (1 << 10) := 8KB
     let capacity = 256 * (1 << 10);
-    let mut line = String::with_capacity(1 << 10);
+    let mut line = Vec::with_capacity(1 << 10);
     let mut entries = D::I::default();
 
     for (edition, path_jsonl_raw) in dict.paths_jsonl_raw(pm) {
         #[cfg(feature = "html")]
         {
-            download_jsonl(edition, source_pm, &path_jsonl_raw, options.redownload)?;
+            download_jsonl(
+                edition,
+                source_pm,
+                &path_jsonl_raw,
+                options.redownload,
+                options.quiet,
+            )?;
         }
 
-        // Something like
-        // let (cache_path, cached) = if let Some(cache_path) = cache(path_jsonl_raw) {
-        //     (cache_path, true)
-        // } else {
-        //     (path_jsonl_raw, false)
-        // };
-
         let reader_path = path_jsonl_raw;
-
         let reader_file = File::open(&reader_path)?;
         let mut reader = BufReader::with_capacity(capacity, reader_file);
+
+        let mut cached_lines = Vec::new();
 
         let mut line_count = 0;
         let mut accepted_count = 0;
 
         loop {
             line.clear();
-            if reader.read_line(&mut line)? == 0 {
+            if reader.read_until(b'\n', &mut line)? == 0 {
                 break; // EOF
             }
 
             line_count += 1;
 
-            let mut word_entry: WordEntry = serde_json::from_str(&line)
+            let mut word_entry: WordEntry = serde_json::from_slice(&line)
                 .with_context(|| "Error decoding JSON @ make_dict_simple")?;
 
-            if line_count % CONSOLE_PRINT_INTERVAL == 0 {
+            if !options.quiet && line_count % CONSOLE_PRINT_INTERVAL == 0 {
                 print!("Processed {line_count} lines...\r");
                 std::io::stdout().flush()?;
             }
@@ -2135,6 +2152,10 @@ pub fn make_dict_simple<D: SimpleDictionary>(
                 continue;
             }
 
+            if options.cache_filter {
+                cached_lines.extend(line.clone());
+            }
+
             accepted_count += 1;
             if accepted_count == options.first {
                 break;
@@ -2152,10 +2173,25 @@ pub fn make_dict_simple<D: SimpleDictionary>(
             dict.process(edition, source_pm, target_pm, &word_entry, &mut entries);
         }
 
-        println!("Processed {} lines...", line_count);
+        if !options.quiet {
+            println!(
+                "Processed {} lines. Accepted {} lines.",
+                line_count, accepted_count
+            );
+        }
+
+        if options.cache_filter {
+            let mut writer_file = std::fs::OpenOptions::new()
+                .write(true)
+                .truncate(true)
+                .open(&reader_path)?;
+            writer_file.write_all(&cached_lines)?;
+        }
     }
 
-    dict.found_ir_message(&entries);
+    if !options.quiet {
+        dict.found_ir_message(&entries);
+    }
 
     if entries.is_empty() {
         // Compared to filter_jsonl, this is not an error since it does not prevent any code that

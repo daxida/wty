@@ -16,7 +16,7 @@ pub struct Cli {
 
     // NOTE: the order in which this --verbose flag appears in subcommands help seems cursed.
     //
-    /// Verbose output
+    /// Verbose output (set logging level to DEBUG)
     #[arg(long, short, global = true)]
     pub verbose: bool,
 }
@@ -208,6 +208,14 @@ pub struct ArgsOptions {
     /// Only keep entries not matching certain key–value filters
     #[arg(long, value_parser = parse_tuple)]
     pub reject: Vec<(FilterKey, String)>,
+
+    /// Replace the jsonl with the filtered lines
+    #[arg(long)]
+    pub cache_filter: bool,
+
+    /// Do not print anything to the console
+    #[arg(long, short)]
+    pub quiet: bool,
 
     /// Write jsons with whitespace
     #[arg(short, long)]
@@ -464,9 +472,15 @@ impl PathManager {
     fn dir_kaik(&self) -> PathBuf {
         self.root_dir.join("kaikki")
     }
+    /// Directory for all dictionaries.
+    ///
+    /// Example: `data/dict`
+    pub fn dir_dicts(&self) -> PathBuf {
+        self.root_dir.join("dict")
+    }
     /// Example: `data/dict/el/el`
     fn dir_dict(&self) -> PathBuf {
-        self.root_dir.join("dict").join(match self.dict_ty {
+        self.dir_dicts().join(match self.dict_ty {
             // For merged dictionaries, use the edition (displays as "all")
             DictionaryType::IpaMerged => format!("{}/{}", self.target, self.edition),
             _ => format!("{}/{}", self.source, self.target),

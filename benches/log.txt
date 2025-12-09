@@ -1,0 +1,10 @@
+main_dict_el_el         time:   [946.31 µs 950.67 µs 955.85 µs]
+Found 14 outliers among 100 measurements (14.00%)
+  4 (4.00%) high mild
+  10 (10.00%) high severe
+
+main_dict_de_de         time:   [3.1018 ms 3.1039 ms 3.1069 ms]
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+

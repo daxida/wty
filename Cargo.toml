@@ -6,10 +6,12 @@ edition = "2024"
 [lib]
 name = "kty"
 path = "src/lib.rs"
+bench = false
 
 [[bin]]
 name = "kty"
 path = "src/main.rs"
+bench = false
 
 [dependencies]
 anyhow = "1.0.100"
@@ -33,6 +35,9 @@ flate2 = { version = "1.1.5", optional = true }
 # https://docs.rs/ureq/latest/ureq/#features
 ureq = { version = "3.1.4", default-features = false, features = ["rustls"], optional = true }
 
+[dev-dependencies]
+criterion = "0.8.1"
+
 [profile.release]
 debug = true
 panic = "abort"
@@ -42,3 +47,7 @@ default = ["html"]
 
 # Provide download utilities for kaikki/wiktextract generated jsonlines
 html = ["ureq", "flate2"]
+
+[[bench]]
+name = "benchmark"
+harness = false
