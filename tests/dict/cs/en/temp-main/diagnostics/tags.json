@@ -1,9 +1,21 @@
 {
   "rejected": {},
   "accepted": {
+    "noun": [
+      1,
+      "zpráva"
+    ],
     "feminine": [
       1,
       "zpráva"
+    ],
+    "prep": [
+      1,
+      "pro"
+    ],
+    "verb": [
+      1,
+      "přít"
     ],
     "imperfective": [
       1,

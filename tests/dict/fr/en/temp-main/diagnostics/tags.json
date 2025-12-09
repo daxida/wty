@@ -1,13 +1,25 @@
 {
   "rejected": {},
   "accepted": {
+    "verb": [
+      2,
+      "prendre"
+    ],
     "intransitive": [
       1,
       "sembler"
     ],
+    "noun": [
+      1,
+      "chambre"
+    ],
     "feminine": [
       1,
       "chambre"
+    ],
+    "adv": [
+      1,
+      "d'accord"
     ]
   }
 }

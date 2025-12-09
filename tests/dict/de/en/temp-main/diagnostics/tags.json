@@ -26,6 +26,10 @@
     ]
   },
   "accepted": {
+    "noun": [
+      5,
+      "Fuchs"
+    ],
     "masculine": [
       2,
       "Fuchs"
@@ -34,6 +38,10 @@
       2,
       "Base"
     ],
+    "verb": [
+      1,
+      "pflegen"
+    ],
     "neuter": [
       1,
       "Herz"
@@ -41,6 +49,10 @@
     "rare": [
       1,
       "Herz"
+    ],
+    "prep": [
+      1,
+      "von"
     ]
   }
 }

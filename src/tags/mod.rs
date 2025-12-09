@@ -192,8 +192,6 @@ pub fn get_tag_bank_as_tag_info() -> Vec<TagInformation> {
     TAG_BANK.iter().map(TagInformation::new).collect()
 }
 
-// the bank should be shared across all languages anyway
-//
 /// Look for the tag in `TAG_BANK` (`tag_bank_terms.json`) and return the `TagInformation` if any.
 ///
 /// Note that `long_tag` is returned normalized.
@@ -207,17 +205,12 @@ pub fn find_tag_in_bank(tag: &str) -> Option<TagInformation> {
     })
 }
 
-// the pos tags should be shared across all languages anyway
-//
-/// Look for the pos in POSES (`parts_of_speech.json`) and return the short form if any.
-pub fn find_pos(pos: &str) -> Option<&'static str> {
-    POSES.iter().find_map(|entry| {
-        if entry.contains(&pos) {
-            Some(entry[0])
-        } else {
-            None
-        }
-    })
+/// Look for the short form in POSES (`tag_bank_terms.json` with category "partOfSpeech") and
+/// return the short form if any.
+pub fn find_short_pos(pos: &str) -> Option<&'static str> {
+    POSES
+        .into_iter()
+        .find_map(|(long, short)| if long == pos { Some(short) } else { None })
 }
 
 #[cfg(test)]

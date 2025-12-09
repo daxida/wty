@@ -2,12 +2,16 @@
   "rejected": {},
   "accepted": {
     "noun": [
-      1,
-      "снег"
+      3,
+      "Rock"
     ],
     "verb": [
       1,
-      "продолжать"
+      "ausmachen"
+    ],
+    "name": [
+      1,
+      "Peter"
     ]
   }
 }

@@ -29,9 +29,6 @@ class WhitelistedTag:
     popularity_score: int
 
 
-PosAliases = list[str]
-
-
 def write_warning(f) -> None:
     f.write("//! This file was generated and should not be edited directly.\n")
     f.write("//! The source code can be found at scripts/build.py\n\n")
@@ -40,7 +37,6 @@ def write_warning(f) -> None:
 def generate_tags_rs(
     tags: list[str],
     whitelisted_tags: list[WhitelistedTag],
-    poses: list[PosAliases],
     f,
 ) -> None:
     idt = " " * 4
@@ -52,6 +48,8 @@ def generate_tags_rs(
     for tag in tags:
         w(f'{idt}"{tag}",\n')
     w("];\n\n")
+
+    # Not sure why all of this was done in the original, it makes almost no sense
 
     w(
         f"pub const TAG_BANK: [(&str, &str, i32, &[&str], i32); {len(whitelisted_tags)}] = [\n"
@@ -68,10 +66,18 @@ def generate_tags_rs(
         )
     w("];\n\n")
 
-    w(f"pub const POSES: [&[&str]; {len(poses)}] = [\n")
-    for pos_aliases in poses:
-        aliases_str = str(pos_aliases).replace("'", '"')
-        w(f"{idt}&{aliases_str},\n")
+    wts_pos = []
+    for wt in whitelisted_tags:
+        if wt.category == "partOfSpeech":
+            if isinstance(wt.long_tag_aliases, list):
+                for alias in wt.long_tag_aliases:
+                    wts_pos.append((alias, wt.short_tag))
+            else:
+                wts_pos.append((wt.long_tag_aliases, wt.short_tag))
+
+    w(f"pub const POSES: [(&str, &str); {len(wts_pos)}] = [\n")
+    for long, short in wts_pos:
+        w(f'{idt}("{long}", "{short}"),\n')
     w("];\n\n")
 
 
@@ -397,13 +403,11 @@ def main() -> None:
     path_languages_json = jsons_root / "languages.json"
     path_tag_order_json = jsons_root / "tag_order.json"
     path_tag_bank_json = jsons_root / "tag_bank_term.json"
-    path_pos_json = jsons_root / "parts_of_speech.json"
 
     for path in (
         path_languages_json,
         path_tag_order_json,
         path_tag_bank_json,
-        path_pos_json,
     ):
         if not path.exists:
             print(f"Path does not exist @ {path}")
@@ -432,9 +436,6 @@ def main() -> None:
     # Overwrite to ensure formatting
     with path_tag_bank_json.open("w") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
-    with path_pos_json.open() as f:
-        data = json.load(f)
-    poses: list[PosAliases] = data
 
     # import sys
     # generate_lang_rs(langs, sys.stdout)
@@ -444,7 +445,7 @@ def main() -> None:
         generate_lang_rs(langs, f)
         print(f"Wrote rust code @ {path_lang_rs}")
     with path_tags_rs.open("w") as f:
-        generate_tags_rs(tag_order, whitelisted_tags, poses, f)
+        generate_tags_rs(tag_order, whitelisted_tags, f)
         print(f"Wrote rust code @ {path_tags_rs}")
 
 

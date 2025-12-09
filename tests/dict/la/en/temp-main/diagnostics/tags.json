@@ -30,13 +30,25 @@
     ]
   },
   "accepted": {
+    "noun": [
+      3,
+      "fama"
+    ],
     "feminine": [
       2,
       "fama"
     ],
+    "verb": [
+      2,
+      "lego"
+    ],
     "neuter": [
       1,
       "lilium"
+    ],
+    "adv": [
+      1,
+      "usque"
     ],
     "not-comparable": [
       1,

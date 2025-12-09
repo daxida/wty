@@ -35,8 +35,8 @@ use crate::models::yomitan::{
     PhoneticTranscription, TermBank, TermBankMeta, TermPhoneticTranscription, YomitanEntry, wrap,
 };
 use crate::tags::{
-    REDUNDANT_FORM_TAGS, find_pos, find_tag_in_bank, get_tag_bank_as_tag_info, merge_person_tags,
-    remove_redundant_tags, sort_tags, sort_tags_by_similar,
+    REDUNDANT_FORM_TAGS, find_short_pos, find_tag_in_bank, get_tag_bank_as_tag_info,
+    merge_person_tags, remove_redundant_tags, sort_tags, sort_tags_by_similar,
 };
 use crate::utils::{CHECK_C, pretty_print_at_path, pretty_println_at_path};
 
@@ -1064,11 +1064,6 @@ pub struct Diagnostics {
     accepted_tags: Counter,
     /// Tags not found in bank
     rejected_tags: Counter,
-
-    /// POS found in bank
-    accepted_pos: Counter,
-    /// POS not found in bank
-    rejected_pos: Counter,
 }
 
 impl Diagnostics {
@@ -1077,10 +1072,7 @@ impl Diagnostics {
     }
 
     fn is_empty(&self) -> bool {
-        self.accepted_tags.is_empty()
-            && self.rejected_tags.is_empty()
-            && self.accepted_pos.is_empty()
-            && self.rejected_pos.is_empty()
+        self.accepted_tags.is_empty() && self.rejected_tags.is_empty()
     }
 
     fn increment(map: &mut Counter, key: Key, word: Word) {
@@ -1093,14 +1085,6 @@ impl Diagnostics {
 
     fn increment_rejected_tag(&mut self, tag: Key, word: Word) {
         Self::increment(&mut self.rejected_tags, tag, word);
-    }
-
-    fn increment_accepted_pos(&mut self, pos: Key, word: Word) {
-        Self::increment(&mut self.accepted_pos, pos, word);
-    }
-
-    fn increment_rejected_pos(&mut self, pos: Key, word: Word) {
-        Self::increment(&mut self.rejected_pos, pos, word);
     }
 }
 
@@ -1162,16 +1146,9 @@ fn make_yomitan_lemma(
     info: RawSenseEntry,
     diagnostics: &mut Diagnostics,
 ) -> YomitanEntry {
-    // rg: findpartofspeech findpos
-    let found_pos: String = if let Some(short_pos) = find_pos(pos) {
-        if options.save_temps {
-            diagnostics.increment_accepted_pos(pos.to_string(), lemma.to_string());
-        }
+    let found_pos = if let Some(short_pos) = find_short_pos(pos) {
         short_pos
     } else {
-        if options.save_temps {
-            diagnostics.increment_rejected_pos(pos.to_string(), lemma.to_string());
-        }
         pos
     }
     .to_string();
@@ -1233,24 +1210,26 @@ fn get_recognized_tags(
 
     // rg: processtags process_tags
     let mut common_short_tags_recognized: Vec<Tag> = Vec::new();
+
     // we add pos (at index 0) for this search!
     for tag in std::iter::once(pos).chain(common_tags.iter()) {
         match find_tag_in_bank(tag) {
             None => {
                 // try modified tag: skip
-                if tag != pos && options.save_temps {
+                if options.save_temps {
                     diagnostics.increment_rejected_tag(tag.to_string(), lemma.to_string());
                 }
+                // common_short_tags_recognized.push(tag.to_string());
             }
             Some(res) => {
-                if tag != pos && options.save_temps {
+                if options.save_temps {
                     diagnostics.increment_accepted_tag(tag.to_string(), lemma.to_string());
                 }
                 common_short_tags_recognized.push(res.short_tag);
             }
         }
     }
-    // Some filtering here: skip
+
     common_short_tags_recognized
 }
 
@@ -2298,7 +2277,7 @@ fn make_yomitan_entries_glossary(
     }
 
     let reading = get_reading(source, target, word_entry);
-    let found_pos = match find_pos(&word_entry.pos) {
+    let found_pos = match find_short_pos(&word_entry.pos) {
         Some(short_pos) => short_pos.to_string(),
         None => word_entry.pos.clone(),
     };
@@ -2358,7 +2337,7 @@ fn make_ir_glossary_extended(
         return;
     }
 
-    let found_pos = match find_pos(&word_entry.pos) {
+    let found_pos = match find_short_pos(&word_entry.pos) {
         Some(short_pos) => short_pos.to_string(),
         None => word_entry.pos.clone(),
     };
@@ -2448,12 +2427,6 @@ fn write_diagnostics(pm: &PathManager, diagnostics: &Diagnostics) -> Result<()> 
 
     write_sorted_json(
         &dir_diagnostics,
-        "pos.json",
-        &diagnostics.accepted_pos,
-        &diagnostics.rejected_pos,
-    )?;
-    write_sorted_json(
-        &dir_diagnostics,
         "tags.json",
         &diagnostics.accepted_tags,
         &diagnostics.rejected_tags,
@@ -2532,7 +2505,7 @@ mod tests {
 
     use crate::cli::{DictionaryType, GlossaryArgs, GlossaryLangs, MainArgs, MainLangs};
 
-    use anyhow::{Ok, Result, bail, ensure};
+    use anyhow::{Ok, Result, ensure};
 
     use std::fs;
     use std::path::{Path, PathBuf};
@@ -2742,7 +2715,7 @@ mod tests {
             .output()?;
         if !output.stdout.is_empty() {
             eprintln!("{}", String::from_utf8_lossy(&output.stdout));
-            bail!("changes!")
+            anyhow::bail!("changes!")
         }
 
         Ok(())
