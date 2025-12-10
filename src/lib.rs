@@ -622,18 +622,14 @@ fn process_word_entry(
     source: Lang,
     word_entry: &WordEntry,
 ) -> Option<RawSenseEntry> {
-    // Reconvert to Option ~ a bit dumb, could deserialize it as Option, but we use defaults
-    // at most WordEntry attributes so I think it's better to be consistent
-    let etymology_text = if word_entry.etymology_text.is_empty() {
-        None
-    } else {
-        Some(word_entry.etymology_text.clone())
-    };
-
     let gloss_tree = get_gloss_tree(word_entry);
     if gloss_tree.is_empty() {
         return None;
     }
+
+    let etymology_text = word_entry
+        .etymology_texts()
+        .map(|etymology_text| etymology_text.join("\n"));
 
     Some(RawSenseEntry {
         gloss_tree,
@@ -2165,9 +2161,7 @@ pub fn make_dict_simple<D: SimpleDictionary>(
         }
 
         if !options.quiet {
-            println!(
-                "Processed {line_count} lines. Accepted {accepted_count} lines."
-            );
+            println!("Processed {line_count} lines. Accepted {accepted_count} lines.");
         }
 
         if options.cache_filter {

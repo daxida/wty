@@ -10,6 +10,41 @@
         "type": "structured-content",
         "content": [
           {
+            "tag": "div",
+            "content": [
+              {
+                "tag": "div",
+                "data": {
+                  "content": "preamble"
+                },
+                "content": [
+                  {
+                    "tag": "details",
+                    "data": {
+                      "content": "details-entry-Etymology"
+                    },
+                    "content": [
+                      {
+                        "tag": "summary",
+                        "data": {
+                          "content": "summary-entry"
+                        },
+                        "content": "Etymology"
+                      },
+                      {
+                        "tag": "div",
+                        "data": {
+                          "content": "Etymology-content"
+                        },
+                        "content": "Du sanskrit अवतार, avatāra."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "tag": "ol",
             "data": {
               "content": "glosses"

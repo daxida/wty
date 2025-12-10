@@ -1675,7 +1675,7 @@
               "examples": [
                 {
                   "text": "Der Rock ist nicht totzukriegen.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       4,
                       8
@@ -1684,21 +1684,13 @@
                 },
                 {
                   "text": "„Filme und TV-Serien, Rock, Rap und Dancepop, die kreative Zitierkultur des Internets (Mashups, Meme und Co.) werden nicht für eine edle Elite, sondern für eine demokratische Massengesellschaft geschaffen.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       22,
                       26
                     ]
                   ],
-                  "ref": "Eric T. Hansen mit Astrid Ule: Die ängstliche Supermacht. Warum Deutschland endlich erwachsen werden muss. Lübbe, Köln 2013, ISBN 978-3-431-03874-3, Seite 210.",
-                  "author": "Eric T. Hansen mit Astrid Ule",
-                  "title": "Die ängstliche Supermacht",
-                  "title_complement": "Warum Deutschland endlich erwachsen werden muss",
-                  "pages": "210.",
-                  "year": "2013",
-                  "publisher": "Lübbe",
-                  "place": "Köln",
-                  "isbn": "978-3-431-03874-3"
+                  "ref": "Eric T. Hansen mit Astrid Ule: Die ängstliche Supermacht. Warum Deutschland endlich erwachsen werden muss. Lübbe, Köln 2013, ISBN 978-3-431-03874-3, Seite 210."
                 }
               ],
               "sense_index": "1"
@@ -2181,7 +2173,7 @@
               "examples": [
                 {
                   "text": "Sindbad band sich, um seinem Schicksal auf einer abgelegenen Insel zu entkommen, an ein Bein des Vogels Rock.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       104,
                       109
@@ -2190,7 +2182,7 @@
                 },
                 {
                   "text": "„Er erinnerte fich. daß ihm die Schiffer fchon längft vom Riefenvogel Rock erzählt hatten. der fo groß und ftark wäre. daß er einen Elefanten mit fich zu tragen imftande wäre.“ ()",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       70,
                       74
@@ -2333,7 +2325,7 @@
               "examples": [
                 {
                   "text": "Ich werde das Auto in die Garage schaffen.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       26,
                       32
@@ -2342,7 +2334,7 @@
                 },
                 {
                   "text": "„Vor kurzem wurde ein Mann in Rustenberg auf grausame Weise ermordet, als Einbrecher ihn in der Garage an sein Auto fesselten und es in Brand setzten.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       96,
                       102
@@ -2352,76 +2344,43 @@
                 },
                 {
                   "text": "„Ein Mann steht vor seinem Opel allein in einer Garage.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       48,
                       54
                     ]
                   ],
-                  "ref": "Björn Kuhligk, Tom Schulz: Rheinfahrt. Ein Fluss. Seine Menschen. Seine Geschichten. Orell Füssli, Zürich 2017, ISBN 978-3-280-05630-1, Seite 90.",
-                  "author": "Björn Kuhligk, Tom Schulz",
-                  "title": "Rheinfahrt",
-                  "title_complement": "Ein Fluss. Seine Menschen. Seine Geschichten",
-                  "pages": "90.",
-                  "year": "2017",
-                  "publisher": "Orell Füssli",
-                  "place": "Zürich",
-                  "isbn": "978-3-280-05630-1"
+                  "ref": "Björn Kuhligk, Tom Schulz: Rheinfahrt. Ein Fluss. Seine Menschen. Seine Geschichten. Orell Füssli, Zürich 2017, ISBN 978-3-280-05630-1, Seite 90."
                 },
                 {
                   "text": "„Leo stand schon draußen vor der Garage und blickte ängstlich auf seine Armbanduhr.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       33,
                       39
                     ]
                   ],
-                  "ref": "Heinrich Böll: Ansichten eines Clowns. Roman. Insel, Leipzig 1990, ISBN 3-7351-0161-5, Seite 68.",
-                  "author": "Heinrich Böll",
-                  "title": "Ansichten eines Clowns",
-                  "title_complement": "Roman",
-                  "pages": "68.",
-                  "year": "1990",
-                  "publisher": "Insel",
-                  "place": "Leipzig",
-                  "isbn": "3-7351-0161-5"
+                  "ref": "Heinrich Böll: Ansichten eines Clowns. Roman. Insel, Leipzig 1990, ISBN 3-7351-0161-5, Seite 68."
                 },
                 {
                   "text": "„Als ich zur Garage gehe, sehe ich die Post auf dem Wohnzimmertisch.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       13,
                       19
                     ]
                   ],
-                  "ref": "Rolf W. Brednich: www.worldwidewitz.com. Humor im Cyberspace. Herder, Freiburg/Basel/Wien 2005, ISBN 3-451-05547-3, Seite 145.",
-                  "author": "Rolf W. Brednich",
-                  "title": "www.worldwidewitz.com",
-                  "title_complement": "Humor im Cyberspace",
-                  "pages": "145.",
-                  "year": "2005",
-                  "publisher": "Herder",
-                  "place": "Freiburg/Basel/Wien",
-                  "isbn": "3-451-05547-3"
+                  "ref": "Rolf W. Brednich: www.worldwidewitz.com. Humor im Cyberspace. Herder, Freiburg/Basel/Wien 2005, ISBN 3-451-05547-3, Seite 145."
                 },
                 {
                   "text": "„Er ging zur Garage, um nach Guiseppe zu sehen.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       13,
                       19
                     ]
                   ],
-                  "ref": "Erich Maria Remarque: Der Himmel kennt keine Günstlinge. Roman. 1. Auflage. Kiepenheuer & Witsch, Köln 2018, ISBN 978-3-462-05236-7, Seite 51. Zuerst 1961.",
-                  "author": "Erich Maria Remarque",
-                  "title": "Der Himmel kennt keine Günstlinge",
-                  "title_complement": "Roman",
-                  "pages": "51.",
-                  "year": "2018",
-                  "publisher": "Kiepenheuer & Witsch",
-                  "place": "Köln",
-                  "edition": "1.",
-                  "isbn": "978-3-462-05236-7"
+                  "ref": "Erich Maria Remarque: Der Himmel kennt keine Günstlinge. Roman. 1. Auflage. Kiepenheuer & Witsch, Köln 2018, ISBN 978-3-462-05236-7, Seite 51. Zuerst 1961."
                 }
               ],
               "sense_index": "1"
@@ -2433,76 +2392,43 @@
               "examples": [
                 {
                   "text": "„Ein Mann steht vor seinem Opel allein in einer Garage.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       48,
                       54
                     ]
                   ],
-                  "ref": "Björn Kuhligk, Tom Schulz: Rheinfahrt. Ein Fluss. Seine Menschen. Seine Geschichten. Orell Füssli, Zürich 2017, ISBN 978-3-280-05630-1, Seite 90.",
-                  "author": "Björn Kuhligk, Tom Schulz",
-                  "title": "Rheinfahrt",
-                  "title_complement": "Ein Fluss. Seine Menschen. Seine Geschichten",
-                  "pages": "90.",
-                  "year": "2017",
-                  "publisher": "Orell Füssli",
-                  "place": "Zürich",
-                  "isbn": "978-3-280-05630-1"
+                  "ref": "Björn Kuhligk, Tom Schulz: Rheinfahrt. Ein Fluss. Seine Menschen. Seine Geschichten. Orell Füssli, Zürich 2017, ISBN 978-3-280-05630-1, Seite 90."
                 },
                 {
                   "text": "„Leo stand schon draußen vor der Garage und blickte ängstlich auf seine Armbanduhr.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       33,
                       39
                     ]
                   ],
-                  "ref": "Heinrich Böll: Ansichten eines Clowns. Roman. Insel, Leipzig 1990, ISBN 3-7351-0161-5, Seite 68.",
-                  "author": "Heinrich Böll",
-                  "title": "Ansichten eines Clowns",
-                  "title_complement": "Roman",
-                  "pages": "68.",
-                  "year": "1990",
-                  "publisher": "Insel",
-                  "place": "Leipzig",
-                  "isbn": "3-7351-0161-5"
+                  "ref": "Heinrich Böll: Ansichten eines Clowns. Roman. Insel, Leipzig 1990, ISBN 3-7351-0161-5, Seite 68."
                 },
                 {
                   "text": "„Als ich zur Garage gehe, sehe ich die Post auf dem Wohnzimmertisch.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       13,
                       19
                     ]
                   ],
-                  "ref": "Rolf W. Brednich: www.worldwidewitz.com. Humor im Cyberspace. Herder, Freiburg/Basel/Wien 2005, ISBN 3-451-05547-3, Seite 145.",
-                  "author": "Rolf W. Brednich",
-                  "title": "www.worldwidewitz.com",
-                  "title_complement": "Humor im Cyberspace",
-                  "pages": "145.",
-                  "year": "2005",
-                  "publisher": "Herder",
-                  "place": "Freiburg/Basel/Wien",
-                  "isbn": "3-451-05547-3"
+                  "ref": "Rolf W. Brednich: www.worldwidewitz.com. Humor im Cyberspace. Herder, Freiburg/Basel/Wien 2005, ISBN 3-451-05547-3, Seite 145."
                 },
                 {
                   "text": "„Er ging zur Garage, um nach Guiseppe zu sehen.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       13,
                       19
                     ]
                   ],
-                  "ref": "Erich Maria Remarque: Der Himmel kennt keine Günstlinge. Roman. 1. Auflage. Kiepenheuer & Witsch, Köln 2018, ISBN 978-3-462-05236-7, Seite 51. Zuerst 1961.",
-                  "author": "Erich Maria Remarque",
-                  "title": "Der Himmel kennt keine Günstlinge",
-                  "title_complement": "Roman",
-                  "pages": "51.",
-                  "year": "2018",
-                  "publisher": "Kiepenheuer & Witsch",
-                  "place": "Köln",
-                  "edition": "1.",
-                  "isbn": "978-3-462-05236-7"
+                  "ref": "Erich Maria Remarque: Der Himmel kennt keine Günstlinge. Roman. 1. Auflage. Kiepenheuer & Witsch, Köln 2018, ISBN 978-3-462-05236-7, Seite 51. Zuerst 1961."
                 }
               ],
               "sense_index": "2"
@@ -2531,7 +2457,7 @@
               "examples": [
                 {
                   "text": "„Selbstverständlich werden in der Garage auch künftig Fremdmarken repariert.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       34,
                       40
@@ -3437,7 +3363,7 @@
               "examples": [
                 {
                   "text": "Er macht den Fernseher aus.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       3,
                       8
@@ -3450,7 +3376,7 @@
                 },
                 {
                   "text": "Hast du die Heizung ausgemacht?",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       20,
                       31
@@ -3459,7 +3385,7 @@
                 },
                 {
                   "text": "Ich mache die Kerze aus.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       4,
                       9
@@ -3480,7 +3406,7 @@
               "examples": [
                 {
                   "text": "Es war ausgemacht, im Anzug zu erscheinen.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       7,
                       18
@@ -3489,7 +3415,7 @@
                 },
                 {
                   "text": "„Sie war Trudis Vorschlag gefolgt und hatte einen Termin beim Friseur Riss ausgemacht.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       38,
                       43
@@ -3499,16 +3425,7 @@
                       86
                     ]
                   ],
-                  "ref": "Katharina Adler: Ida. Roman. 1. Auflage. Rowohlt Verlag, Reinbek bei Hamburg 2018, ISBN 978-3-498-00093-6, Seite 384 .",
-                  "author": "Katharina Adler",
-                  "title": "Ida",
-                  "title_complement": "Roman",
-                  "pages": "384",
-                  "year": "2018",
-                  "publisher": "Rowohlt Verlag",
-                  "place": "Reinbek bei Hamburg",
-                  "edition": "1.",
-                  "isbn": "978-3-498-00093-6"
+                  "ref": "Katharina Adler: Ida. Roman. 1. Auflage. Rowohlt Verlag, Reinbek bei Hamburg 2018, ISBN 978-3-498-00093-6, Seite 384 ."
                 }
               ],
               "sense_index": "2"
@@ -3520,7 +3437,7 @@
               "examples": [
                 {
                   "text": "Wenn man mit einem Buben ausmacht, sagt man Maumau.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       25,
                       34
@@ -3529,7 +3446,7 @@
                 },
                 {
                   "text": "Sie machten den Streit schließlich doch vor Gericht aus.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       4,
                       11
@@ -3550,7 +3467,7 @@
               "examples": [
                 {
                   "text": "Was unsere Freundschaft ausmachte? Dass wir immer für einander da waren!",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       24,
                       34
@@ -3559,7 +3476,7 @@
                 },
                 {
                   "text": "„Dass die genaue Benennung eins echten Gründungsjahres so schwierig ist, liegt vor allem daran, dass es keine anerkannte Interpretation gibt, was eine Liga denn eigentlich ausmacht.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       172,
                       181
@@ -3577,7 +3494,7 @@
               "examples": [
                 {
                   "text": "Kinder machen nur einen geringen Anteil der deutschen Bevölkerung aus.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       7,
                       13
@@ -3590,7 +3507,7 @@
                 },
                 {
                   "text": "„Den größten Anteil am touristischen CO₂-Fußabdruck macht die Luftfahrt aus, gefolgt von An- und Abreisen mit dem Privatauto.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       52,
                       57
@@ -3612,7 +3529,7 @@
               "examples": [
                 {
                   "text": "Es macht mir überhaupt nichts aus, dass es heute regnet.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       3,
                       8
@@ -3633,7 +3550,7 @@
               "examples": [
                 {
                   "text": "Am anderen Ufer konnte der Forscher eine Gruppe Krokodile ausmachen.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       58,
                       68
@@ -3642,7 +3559,7 @@
                 },
                 {
                   "text": "„Kürzlich hat die Polizei an der Grenze zu Niger Personen ausgemacht, die Englisch und Haussa sprachen, einen nordnigerianischen Dialekt.“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       10,
                       13
@@ -3656,7 +3573,7 @@
                 },
                 {
                   "text": "„An besagtem Morgen kam der alte Mann erregt von seinem Spaziergang zurück und berichtete seiner Frau, ein Zug von Kranichen sei so niedrig über ihn hinweggeflogen, dass selbst seine schwachen Augen die Vögel hätten ausmachen können. “",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       216,
                       225
@@ -3674,7 +3591,7 @@
               "examples": [
                 {
                   "text": "Die Bauern machten nun wie jedes Jahr die Kartoffeln aus.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       11,
                       18
@@ -3687,7 +3604,7 @@
                 },
                 {
                   "text": "„Beim nächsten Haus war ein Gemüsegarten. Ein junges Mädchen machte Unkraut aus, …“",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       16,
                       19
@@ -3701,14 +3618,7 @@
                       79
                     ]
                   ],
-                  "ref": "Ursula Wölfel: Die grauen und die grünen Felder. Wahre Geschichten. Neithard Anrich Verlag, Mühlheim an der Ruhr 1970, Die anderen Kinder, Seite 8, DNB 458688606",
-                  "author": "Ursula Wölfel",
-                  "title": "Die grauen und die grünen Felder",
-                  "title_complement": "Wahre Geschichten",
-                  "pages": "8",
-                  "year": "1970",
-                  "publisher": "Neithard Anrich Verlag",
-                  "place": "Mühlheim an der Ruhr"
+                  "ref": "Ursula Wölfel: Die grauen und die grünen Felder. Wahre Geschichten. Neithard Anrich Verlag, Mühlheim an der Ruhr 1970, Die anderen Kinder, Seite 8, DNB 458688606"
                 }
               ],
               "sense_index": "8"
@@ -3720,7 +3630,7 @@
               "examples": [
                 {
                   "text": "Das muss er mit seinem Gewissen ausmachen.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       32,
                       41
@@ -7832,7 +7742,7 @@
               "examples": [
                 {
                   "text": "Anna und Peter haben sieben Kinder.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       9,
                       14
@@ -7841,7 +7751,7 @@
                 },
                 {
                   "text": "Peter spielt gern.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       0,
                       5
@@ -7850,7 +7760,7 @@
                 },
                 {
                   "text": "Peter Müller wollte uns kein Interview geben.",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       0,
                       5
@@ -7859,7 +7769,7 @@
                 },
                 {
                   "text": "Kennen sie den Vornamen Peter?",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       24,
                       29
@@ -18044,7 +17954,7 @@
               "examples": [
                 {
                   "text": "\"Connolly was chosen for the case by prosecutors because the sheriff and Bristol District Attorney C. Samuel Sutter are “close professional and personal friends,” said Sutter spokesman Gregg Miliote.\"",
-                  "italic_text_offsets": [
+                  "bold_text_offsets": [
                     [
                       14,
                       20
@@ -24505,7 +24415,9 @@
               ]
             }
           ],
-          "etymology_text": "Del inglés medio fast, del inglés antiguo fæst.",
+          "etymology_texts": [
+            "Del inglés medio fast, del inglés antiguo fæst."
+          ],
           "raw_tags": [
             "corto"
           ],
@@ -48003,11 +47915,7 @@
                       45
                     ]
                   ],
-                  "ref": "М. Ю. Лермонтов, «Герой нашего времени», 1839–1840 гг. [НКРЯ]",
-                  "author": "Лермонтов",
-                  "title": "Герой нашего времени",
-                  "date": "1839–1840",
-                  "source": "НКРЯ"
+                  "ref": "М. Ю. Лермонтов, «Герой нашего времени», 1839–1840 гг. [НКРЯ]"
                 },
                 {
                   "text": "К утру выпал снег и, не тая, пролежал до полудня.",
@@ -48017,11 +47925,7 @@
                       17
                     ]
                   ],
-                  "ref": "В. С. Гроссман, «Жизнь и судьба», 1960 г. [НКРЯ]",
-                  "author": "Василий Гроссман",
-                  "title": "Жизнь и судьба",
-                  "date": "1960",
-                  "source": "НКРЯ"
+                  "ref": "В. С. Гроссман, «Жизнь и судьба», 1960 г. [НКРЯ]"
                 },
                 {
                   "text": "В воздухе тихо кружились хлопья мокрого снега…",
@@ -48031,11 +47935,7 @@
                       45
                     ]
                   ],
-                  "ref": "Д. Н. Мамин-Сибиряк, «Вольный человек Яшка», 1893 г. [НКРЯ]",
-                  "author": "Мамин-Сибиряк",
-                  "title": "Вольный человек Яшка",
-                  "date": "1893",
-                  "source": "НКРЯ"
+                  "ref": "Д. Н. Мамин-Сибиряк, «Вольный человек Яшка», 1893 г. [НКРЯ]"
                 },
                 {
                   "text": "Снег бил в окна и клочьями прилипал к стёклам.",
@@ -48045,11 +47945,7 @@
                       4
                     ]
                   ],
-                  "ref": "И. А. Гончаров, «Обыкновенная история», 1847 г. [НКРЯ]",
-                  "author": "Гончаров",
-                  "title": "Обыкновенная история",
-                  "date": "1847",
-                  "source": "НКРЯ"
+                  "ref": "И. А. Гончаров, «Обыкновенная история», 1847 г. [НКРЯ]"
                 },
                 {
                   "text": "С нетерпением ожидал он минуты, когда можно ему будет идти играть на двор, но весь тот день, как нарочно, шёл сильный снег, и нельзя было и подумать, чтоб выйти из дому.",
@@ -48059,11 +47955,7 @@
                       122
                     ]
                   ],
-                  "ref": "А. Погорельский, «Чёрная курица», 1829 г. [НКРЯ]",
-                  "author": "Антоний Погорельский",
-                  "title": "Чёрная курица",
-                  "date": "1829",
-                  "source": "НКРЯ"
+                  "ref": "А. Погорельский, «Чёрная курица», 1829 г. [НКРЯ]"
                 },
                 {
                   "text": "Мелькает, вьётся первый снег, звездами падая на брег.",
@@ -48073,11 +47965,7 @@
                       28
                     ]
                   ],
-                  "ref": "А. С. Пушкин, «Евгений Онегин», 1823–1831 гг. [НКРЯ]",
-                  "author": "Пушкин",
-                  "title": "Евгений Онегин",
-                  "date": "1823–1831",
-                  "source": "НКРЯ"
+                  "ref": "А. С. Пушкин, «Евгений Онегин», 1823–1831 гг. [НКРЯ]"
                 }
               ]
             },
@@ -48097,11 +47985,7 @@
                       31
                     ]
                   ],
-                  "ref": "А. В. Кольцов, «Русская песня», 1838 г. [НКРЯ]",
-                  "author": "Кольцов",
-                  "title": "Русская песня",
-                  "date": "1838",
-                  "source": "НКРЯ"
+                  "ref": "А. В. Кольцов, «Русская песня», 1838 г. [НКРЯ]"
                 },
                 {
                   "text": "Но не все знают, что самая-самая хорошая клюква, сладкая, как у нас говорят, бывает, когда она перележит зиму под снегом.",
@@ -48111,11 +47995,7 @@
                       120
                     ]
                   ],
-                  "ref": "М. М. Пришвин, «Кладовая солнца», 1945 г. [НКРЯ]",
-                  "author": "Пришвин",
-                  "title": "Кладовая солнца",
-                  "date": "1945",
-                  "source": "НКРЯ"
+                  "ref": "М. М. Пришвин, «Кладовая солнца», 1945 г. [НКРЯ]"
                 },
                 {
                   "text": "Между тем зима установилась. Густые снега завалили сугробами ущелья.",
@@ -48125,11 +48005,7 @@
                       41
                     ]
                   ],
-                  "ref": "А. А. Бестужев-Марлинский, «Письма из Дагестана», 1831 г. [НКРЯ]",
-                  "author": "Бестужев-Марлинский",
-                  "title": "Письма из Дагестана",
-                  "date": "1831",
-                  "source": "НКРЯ"
+                  "ref": "А. А. Бестужев-Марлинский, «Письма из Дагестана», 1831 г. [НКРЯ]"
                 },
                 {
                   "text": "Сани заскрипели по снегу, а на дворе ещё было темно.",
@@ -48139,11 +48015,7 @@
                       24
                     ]
                   ],
-                  "ref": "Н. С. Лесков, «Житие одной бабы», 1863 г. [НКРЯ]",
-                  "author": "Лесков",
-                  "title": "Житие одной бабы",
-                  "date": "1863",
-                  "source": "НКРЯ"
+                  "ref": "Н. С. Лесков, «Житие одной бабы», 1863 г. [НКРЯ]"
                 },
                 {
                   "text": "Глубокий снег лежит на улицах и через белые, как сахар, пласты его, прочные и крепкие, протоптаны узкие дорожки.",
@@ -48153,11 +48025,7 @@
                       13
                     ]
                   ],
-                  "ref": "П. Н. Краснов, «От Двуглавого Орла к красному знамени», 1922 г. [НКРЯ]",
-                  "author": "П. Н. Краснов",
-                  "title": "От Двуглавого Орла к красному знамени",
-                  "date": "1922",
-                  "source": "НКРЯ"
+                  "ref": "П. Н. Краснов, «От Двуглавого Орла к красному знамени», 1922 г. [НКРЯ]"
                 },
                 {
                   "text": "За окнами чернота и белизна ― сплошные чёрные леса в белых глубоких снегах.",
@@ -48167,11 +48035,7 @@
                       74
                     ]
                   ],
-                  "ref": "И. А. Бунин, «Нобелевские дни», 1933 г. [НКРЯ]",
-                  "author": "Бунин",
-                  "title": "Нобелевские дни",
-                  "date": "1933",
-                  "source": "НКРЯ"
+                  "ref": "И. А. Бунин, «Нобелевские дни», 1933 г. [НКРЯ]"
                 }
               ]
             },
@@ -51788,10 +51652,7 @@
                       170
                     ]
                   ],
-                  "ref": "Валерий Даниленко, «История русского языкознания», 2013 г.",
-                  "author": "Валерий Даниленко",
-                  "title": "История русского языкознания",
-                  "date": "2013"
+                  "ref": "Валерий Даниленко, «История русского языкознания», 2013 г."
                 }
               ]
             },
@@ -57525,7 +57386,9 @@
           "lang_code": "zh",
           "lang": "漢語",
           "pos_title": "名詞",
-          "etymology_text": "源自啤 (pí, “英語 beer 或德語 Bier 的音譯，經由上海話”) + 酒 (jiǔ)。",
+          "etymology_texts": [
+            "源自啤 (pí, “英語 beer 或德語 Bier 的音譯，經由上海話”) + 酒 (jiǔ)。"
+          ],
           "senses": [
             {
               "glosses": [

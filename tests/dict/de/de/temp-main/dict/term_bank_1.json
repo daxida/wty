@@ -10,6 +10,41 @@
         "type": "structured-content",
         "content": [
           {
+            "tag": "div",
+            "content": [
+              {
+                "tag": "div",
+                "data": {
+                  "content": "preamble"
+                },
+                "content": [
+                  {
+                    "tag": "details",
+                    "data": {
+                      "content": "details-entry-Etymology"
+                    },
+                    "content": [
+                      {
+                        "tag": "summary",
+                        "data": {
+                          "content": "summary-entry"
+                        },
+                        "content": "Etymology"
+                      },
+                      {
+                        "tag": "div",
+                        "data": {
+                          "content": "Etymology-content"
+                        },
+                        "content": "in den 50er Jahren des 20. Jahrhunderts von englisch rock ^(→ en) Rock 'n' Roll entlehnt, einem amerikanischen Slang-Ausdruck, nach den Schaukelbewegungen der Schiffe (to rock = stampfen und to roll = rollen)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "tag": "ol",
             "data": {
               "content": "glosses"
@@ -94,6 +129,41 @@
         "type": "structured-content",
         "content": [
           {
+            "tag": "div",
+            "content": [
+              {
+                "tag": "div",
+                "data": {
+                  "content": "preamble"
+                },
+                "content": [
+                  {
+                    "tag": "details",
+                    "data": {
+                      "content": "details-entry-Etymology"
+                    },
+                    "content": [
+                      {
+                        "tag": "summary",
+                        "data": {
+                          "content": "summary-entry"
+                        },
+                        "content": "Etymology"
+                      },
+                      {
+                        "tag": "div",
+                        "data": {
+                          "content": "Etymology-content"
+                        },
+                        "content": "von arabisch/persisch ruh, roh entlehnt, = arabisch: الرُخّ (ar-ruchch, aus dem Persischen)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
             "tag": "ol",
             "data": {
               "content": "glosses"
@@ -177,6 +247,41 @@
       {
         "type": "structured-content",
         "content": [
+          {
+            "tag": "div",
+            "content": [
+              {
+                "tag": "div",
+                "data": {
+                  "content": "preamble"
+                },
+                "content": [
+                  {
+                    "tag": "details",
+                    "data": {
+                      "content": "details-entry-Etymology"
+                    },
+                    "content": [
+                      {
+                        "tag": "summary",
+                        "data": {
+                          "content": "summary-entry"
+                        },
+                        "content": "Etymology"
+                      },
+                      {
+                        "tag": "div",
+                        "data": {
+                          "content": "Etymology-content"
+                        },
+                        "content": "seit dem 20. Jahrhundert bezeugte Entlehnung aus gleichbedeutendem französisch garage ^(→ fr) m, eigentlich „(das) Ausweichen, Ausweichstelle“; dieses ist eine deverbative Ableitung von französisch garer ^(→ fr) „in eine sichere Verwahrstelle bringen; in Sicherheit bringen; ausweichen“, das seinerseits aus okzitanisch garar ^(→ oc) „Acht geben, bewahren“ übernommen wurde; dieses entstammt entweder mit Übergang von w- zu g- der (nicht belegbaren, aber rekonstruierten) germanischen Form *war-ō- „beachten“ (vergleiche »wahren«) oder dem lateinischen varāre ^(→ la) „ausweichen“ (zu lateinisch vārus ^(→ la) „auseinandergebogen“)"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
           {
             "tag": "ol",
             "data": {
@@ -530,6 +635,41 @@
       {
         "type": "structured-content",
         "content": [
+          {
+            "tag": "div",
+            "content": [
+              {
+                "tag": "div",
+                "data": {
+                  "content": "preamble"
+                },
+                "content": [
+                  {
+                    "tag": "details",
+                    "data": {
+                      "content": "details-entry-Etymology"
+                    },
+                    "content": [
+                      {
+                        "tag": "summary",
+                        "data": {
+                          "content": "summary-entry"
+                        },
+                        "content": "Etymology"
+                      },
+                      {
+                        "tag": "div",
+                        "data": {
+                          "content": "Etymology-content"
+                        },
+                        "content": "gebildet aus der Partikel aus als Verbzusatz und dem Verb machen"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
           {
             "tag": "ol",
             "data": {
@@ -1095,6 +1235,41 @@
       {
         "type": "structured-content",
         "content": [
+          {
+            "tag": "div",
+            "content": [
+              {
+                "tag": "div",
+                "data": {
+                  "content": "preamble"
+                },
+                "content": [
+                  {
+                    "tag": "details",
+                    "data": {
+                      "content": "details-entry-Etymology"
+                    },
+                    "content": [
+                      {
+                        "tag": "summary",
+                        "data": {
+                          "content": "summary-entry"
+                        },
+                        "content": "Etymology"
+                      },
+                      {
+                        "tag": "div",
+                        "data": {
+                          "content": "Etymology-content"
+                        },
+                        "content": "Der Name Peter hat sich aus dem lateinischen Petrus ^(→ la) entwickelt. Der biblische Petrus hieß eigentlich Simon und bekam dann von Jesus den aramäischen Beinamen כיפא (kefa) ^(→ arc), was für Felsbrocken und Edelstein stand. Im Griechischen wurde dies als Kēphás wiedergegeben und im Neuen Testament mit dem altgriechischen Namen Πέτρος (Petros^☆) ^(→ grc) gleichgesetzt, welcher seinerseits von πέτρα (petra^☆) ^(→ grc) „Fels, Felsstück“ abstammt. Dieser Name gelangte dann als Petrus ins Lateinische."
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
           {
             "tag": "ol",
             "data": {

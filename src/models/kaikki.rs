@@ -28,7 +28,9 @@ pub struct WordEntry {
 
     pub head_templates: Vec<HeadTemplate>,
 
-    pub etymology_text: String,
+    // Not pub because unstable: use the getter method
+    etymology_text: String, // En, El editions still use this
+    etymology_texts: Vec<String>,
 
     pub sounds: Vec<Sound>,
 
@@ -171,5 +173,15 @@ impl WordEntry {
 
             true
         })
+    }
+
+    pub fn etymology_texts<'a>(&'a self) -> Option<Vec<&'a str>> {
+        if !self.etymology_texts.is_empty() {
+            Some(self.etymology_texts.iter().map(|s| s.as_ref()).collect())
+        } else if !self.etymology_text.is_empty() {
+            Some(vec![&self.etymology_text])
+        } else {
+            None
+        }
     }
 }

@@ -1,6 +1,9 @@
 build:
   python3 scripts/build.py
 
+update *args:
+  python3 tests/update_tests.py {{args}}
+
 # Add a word to the testsuite
 add fr to word:
   @cargo run --release -- download {{fr}} {{to}}
