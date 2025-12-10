@@ -444,7 +444,7 @@ fn tidy_preprocess(
 /// Add Extracted forms. That is, forms from `word_entry.forms`.
 fn process_forms(word_entry: &WordEntry, ret: &mut Tidy) {
     for form in word_entry.non_trivial_forms() {
-        let mut filtered_tags: Vec<Tag> = form
+        let filtered_tags: Vec<Tag> = form
             .tags
             .clone()
             .into_iter()
@@ -453,8 +453,6 @@ fn process_forms(word_entry: &WordEntry, ret: &mut Tidy) {
         if filtered_tags.is_empty() {
             continue;
         }
-
-        sort_tags(&mut filtered_tags);
 
         ret.insert_form(
             &word_entry.word,

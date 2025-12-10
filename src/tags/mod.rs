@@ -44,12 +44,12 @@ pub const REDUNDANT_FORM_TAGS: [&str; 1] = ["combined-form"];
 /// Sort tags by their position in the tag bank.
 ///
 /// Expects (but does not check) tags WITHOUT spaces.
-pub fn sort_tags<T: AsRef<str>>(tags: &mut [T]) {
+pub fn sort_tags(tags: &mut [&str]) {
     // debug_assert!(tags.iter().all(|tag| !tag.contains(' ')));
 
     tags.sort_by(|a, b| {
-        let index_a = TAG_ORDER.iter().position(|&x| x == a.as_ref());
-        let index_b = TAG_ORDER.iter().position(|&x| x == b.as_ref());
+        let index_a = TAG_ORDER.iter().position(|&x| x == *a);
+        let index_b = TAG_ORDER.iter().position(|&x| x == *b);
 
         match (index_a, index_b) {
             (Some(i), Some(j)) => i.cmp(&j),   // both found → compare positions
@@ -91,7 +91,17 @@ pub fn sort_tags_by_similar(tags: &mut [Tag]) {
 ///
 /// Expects (but does not check) tags WITH spaces.
 pub fn remove_redundant_tags(tags: &mut Vec<Tag>) {
-    tags.sort();
+    // We can't just sort because lexicographical sort does not guarantee the correct order to then
+    // dedup.
+    // cf. tags = ["ne", "ne s no", "no", "s no ne"] (this is sorted by "tags.sort()")
+    tags.sort_by(|a, b| {
+        let by_count = a.matches(' ').count().cmp(&b.matches(' ').count());
+        if by_count != Ordering::Equal {
+            by_count
+        } else {
+            a.cmp(b)
+        }
+    });
     // We can't just call dedup, because the inner words may not be sorted
     // cf. tags = ["a b", "b a"]
     tags.dedup_by(|a, b| {
@@ -336,6 +346,14 @@ mod tests {
     fn remove_redundant_tags_duplicates3() {
         let mut received = to_string_vec(&["a b", "c a b", "b a", "b a c", "c b a"]);
         let expected = to_string_vec(&["b a c"]);
+        remove_redundant_tags(&mut received);
+        assert_eq!(received, expected);
+    }
+
+    #[test]
+    fn remove_redundant_tags_duplicates4() {
+        let mut received = to_string_vec(&["s no ne", "ne s no", "ne", "no"]);
+        let expected = to_string_vec(&["ne s no"]);
         remove_redundant_tags(&mut received);
         assert_eq!(received, expected);
     }
