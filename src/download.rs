@@ -4,21 +4,23 @@ use crate::lang::{EditionLang, Lang};
 ///
 /// Example (el):    `https://kaikki.org/elwiktionary/raw-wiktextract-data.jsonl.gz`
 /// Example (sh-en): `https://kaikki.org/dictionary/Serbo-Croatian/kaikki.org-dictionary-SerboCroatian.jsonl.gz`
-pub fn url_raw_jsonl_gz(edition: EditionLang, source: Lang) -> String {
+pub fn url_jsonl_raw_gz(edition: EditionLang, source: Lang) -> String {
     let root = "https://kaikki.org";
 
     match edition {
+        // Depends on source
         // Default download name is: kaikki.org-dictionary-TARGET_LANGUAGE.jsonl.gz
         EditionLang::En => {
             let long = source.long();
             // Serbo-Croatian, Ancient Greek and such cases
-            let language_no_special_chars: String =
+            let long_no_special_chars: String =
                 long.chars().filter(|c| *c != ' ' && *c != '-').collect();
-            let source_long_esc = long.replace(' ', "%20");
+            let long_escaped = long.replace(' ', "%20");
             format!(
-                "{root}/dictionary/{source_long_esc}/kaikki.org-dictionary-{language_no_special_chars}.jsonl.gz"
+                "{root}/dictionary/{long_escaped}/kaikki.org-dictionary-{long_no_special_chars}.jsonl.gz"
             )
         }
+        // Does not depend on source
         // Default download name is: raw-wiktextract-data.jsonl.gz
         other => format!("{root}/{other}wiktionary/raw-wiktextract-data.jsonl.gz",),
     }
@@ -26,7 +28,7 @@ pub fn url_raw_jsonl_gz(edition: EditionLang, source: Lang) -> String {
 
 #[cfg(feature = "html")]
 pub mod html {
-    use super::{EditionLang, Lang, url_raw_jsonl_gz};
+    use super::{EditionLang, Lang, url_jsonl_raw_gz};
 
     use anyhow::Result;
     use flate2::read::GzDecoder;
@@ -34,7 +36,9 @@ pub mod html {
     use std::io::BufWriter;
     use std::path::Path;
 
-    use crate::utils::{CHECK_C, pretty_println_at_path, skip_because_file_exists};
+    use crate::utils::{CHECK_C, pretty_println_at_path};
+
+    // TODO: This is not skipping properly!
 
     /// Download the raw jsonl from kaikki and write it to `path_jsonl_raw`.
     ///
@@ -43,17 +47,9 @@ pub mod html {
         edition: EditionLang,
         source: Lang,
         path_jsonl_raw: &Path,
-        redownload: bool,
         quiet: bool,
     ) -> Result<()> {
-        if path_jsonl_raw.exists() && !redownload {
-            if !quiet {
-                skip_because_file_exists("download", path_jsonl_raw);
-            }
-            return Ok(());
-        }
-
-        let url = url_raw_jsonl_gz(edition, source);
+        let url = url_jsonl_raw_gz(edition, source);
         if !quiet {
             println!("⬇ Downloading {url}");
         }

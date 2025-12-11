@@ -3,6 +3,7 @@ pub mod download;
 pub mod lang;
 pub mod locale;
 pub mod models;
+pub mod path;
 pub mod tags;
 pub mod utils;
 
@@ -21,10 +22,10 @@ use zip::write::SimpleFileOptions;
 
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::LazyLock;
 
-use crate::cli::{ArgsOptions, PathManager};
+use crate::cli::ArgsOptions;
 #[cfg(feature = "html")]
 use crate::download::html::download_jsonl;
 use crate::lang::{EditionLang, Lang};
@@ -34,11 +35,14 @@ use crate::models::yomitan::{
     BacklinkContent, DetailedDefinition, GenericNode, Ipa, NTag, Node, NodeData,
     PhoneticTranscription, TermBank, TermBankMeta, TermPhoneticTranscription, YomitanEntry, wrap,
 };
+use crate::path::PathManager;
 use crate::tags::{
     REDUNDANT_FORM_TAGS, find_short_pos, find_tag_in_bank, get_tag_bank_as_tag_info,
     merge_person_tags, remove_redundant_tags, sort_tags, sort_tags_by_similar,
 };
-use crate::utils::{CHECK_C, pretty_print_at_path, pretty_println_at_path};
+use crate::utils::{
+    CHECK_C, pretty_print_at_path, pretty_println_at_path, skip_because_file_exists,
+};
 
 pub type Map<K, V> = IndexMap<K, V, FxBuildHasher>; // Preserve insertion order
 pub type Set<K> = IndexSet<K, FxBuildHasher>;
@@ -1652,12 +1656,6 @@ fn write_banks(
 impl SimpleDictionary for DGlossary {
     type I = Vec<YomitanEntry>;
 
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
-        let (edition, source, _) = pm.langs();
-        let edition_lang = edition.try_into().unwrap(); // edition is never Edition::All
-        vec![(edition_lang, pm.path_jsonl(source, source))]
-    }
-
     fn process(
         &self,
         edition: EditionLang,
@@ -1684,16 +1682,6 @@ impl SimpleDictionary for DGlossary {
 
 impl SimpleDictionary for DGlossaryExtended {
     type I = Vec<IGlossaryExtended>;
-
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
-        let (edition, _, _) = pm.langs();
-        let mut paths = Vec::new();
-        for edition_lang in edition.variants() {
-            let lang = edition_lang.into();
-            paths.push((edition_lang, pm.path_jsonl(lang, lang)));
-        }
-        paths
-    }
 
     fn process(
         &self,
@@ -1740,12 +1728,6 @@ impl SimpleDictionary for DGlossaryExtended {
 impl SimpleDictionary for DIpa {
     type I = Vec<IIpa>;
 
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
-        let (edition, source, target) = pm.langs();
-        let edition_lang = edition.try_into().unwrap(); // edition is never Edition::All
-        vec![(edition_lang, pm.path_jsonl(source, target))]
-    }
-
     fn process(
         &self,
         edition: EditionLang,
@@ -1772,16 +1754,6 @@ impl SimpleDictionary for DIpa {
 
 impl SimpleDictionary for DIpaMerged {
     type I = Vec<IIpa>;
-
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
-        let (edition, _, _) = pm.langs();
-        let mut paths = Vec::new();
-        for edition_lang in edition.variants() {
-            let lang = edition_lang.into();
-            paths.push((edition_lang, pm.path_jsonl(lang, lang)));
-        }
-        paths
-    }
 
     fn process(
         &self,
@@ -1890,13 +1862,6 @@ impl Intermediate for Tidy {
 impl SimpleDictionary for DMain {
     type I = Tidy;
 
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)> {
-        // NOTE: this is copy pasted and wont work
-        let (edition, source, _) = pm.langs();
-        let edition_lang = edition.try_into().unwrap(); // edition is never Edition::All
-        vec![(edition_lang, pm.path_jsonl(source, edition_lang.into()))]
-    }
-
     fn preprocess(
         &self,
         edition: EditionLang,
@@ -1985,12 +1950,6 @@ impl SimpleDictionary for DMain {
 pub trait SimpleDictionary {
     type I: Intermediate;
 
-    /// Vector of paths to jsonl raw dumps.
-    ///
-    /// Most dictionaries only use a single path. For instance, Glossary will only use the `source`
-    /// edition.
-    fn paths_jsonl_raw(&self, pm: &PathManager) -> Vec<(EditionLang, PathBuf)>;
-
     // TODO: support filter (cache)
 
     // NOTE:Maybe in the future we can get rid of this. It requires cleaning up the legacy mutable
@@ -2075,6 +2034,16 @@ pub trait SimpleDictionary {
     }
 }
 
+#[allow(unused)]
+pub fn should_skip_download<D: SimpleDictionary>(
+    dict: &D,
+    redownload: bool,
+    pm: &PathManager,
+    path_jsonl_raw: &Path,
+) -> bool {
+    true
+}
+
 pub fn make_dict_simple<D: SimpleDictionary>(
     dict: D,
     options: &ArgsOptions,
@@ -2089,17 +2058,31 @@ pub fn make_dict_simple<D: SimpleDictionary>(
     let mut line = Vec::with_capacity(1 << 10);
     let mut entries = D::I::default();
 
-    for (edition, path_jsonl_raw) in dict.paths_jsonl_raw(pm) {
-        #[cfg(feature = "html")]
-        {
-            download_jsonl(
-                edition,
-                source_pm,
-                &path_jsonl_raw,
-                options.redownload,
-                options.quiet,
-            )?;
-        }
+    for (edition, paths) in pm.paths_jsonl_raw() {
+        let first_path_found = paths.iter().find(|pbuf| pbuf.exists());
+        let path_jsonl_raw = match (options.redownload, first_path_found) {
+            (false, Some(pbuf)) => {
+                if !options.quiet {
+                    skip_because_file_exists("download", pbuf);
+                };
+                pbuf
+            }
+            _ => {
+                let path_jsonl_raw_of_download = paths.last().unwrap();
+                #[cfg(feature = "html")]
+                {
+                    download_jsonl(
+                        edition,
+                        source_pm,
+                        &path_jsonl_raw_of_download,
+                        options.quiet,
+                    )?;
+                }
+                path_jsonl_raw_of_download
+            }
+        };
+
+        tracing::debug!("path_jsonl_raw: {}", path_jsonl_raw.display());
 
         let reader_path = path_jsonl_raw;
         let reader_file = File::open(&reader_path)?;
@@ -2199,7 +2182,7 @@ pub fn make_dict_simple<D: SimpleDictionary>(
         let mut diagnostics = Diagnostics::new();
 
         let labelled_entries = dict.to_yomitan(
-            // This unwrap_or is only for GlossaryExtended and works as a filler
+            // HACK: This unwrap_or is only for GlossaryExtended and works as a filler
             // because the edition is not used in the implementation of to_yomitan for that dict.
             // It is basically here to not crash the code. Happy face.
             edition_pm.try_into().unwrap_or(EditionLang::En),
@@ -2507,9 +2490,10 @@ pub fn setup_tracing(verbose: bool) {
 mod tests {
     use super::*;
 
-    use crate::cli::{DictionaryType, GlossaryArgs, GlossaryLangs, MainArgs, MainLangs};
+    use crate::cli::{GlossaryArgs, GlossaryLangs, MainArgs, MainLangs};
+    use crate::path::DictionaryType;
 
-    use anyhow::{Ok, Result, ensure};
+    use anyhow::{Ok, Result};
 
     use std::fs;
     use std::path::{Path, PathBuf};
@@ -2641,7 +2625,7 @@ mod tests {
             let args = fixture_main_args(target, *source, target, &fixture_dir);
             let pm = PathManager::new(DictionaryType::Main, &args);
 
-            if let Err(e) = shapshot_main(&args.langs, &args.options, &pm) {
+            if let Err(e) = shapshot_main(&args.options, &pm) {
                 panic!("({source}): {e}");
             }
         }
@@ -2690,16 +2674,10 @@ mod tests {
     // NOTE: but we do, to validate links, matches etc. so this *can't* take an 'impl SimpleArgs'
     //
     // Read the expected result in the snapshot first, then compare
-    fn shapshot_main(langs: &MainLangs, options: &ArgsOptions, pm: &PathManager) -> Result<()> {
-        let fixture_path = pm.path_jsonl(langs.source, langs.target.into());
-        ensure!(
-            fixture_path.exists(),
-            "Fixture path {fixture_path:?} does not exist"
-        );
-        eprintln!("------ Starting test @ {fixture_path:?}");
-
+    fn shapshot_main(options: &ArgsOptions, pm: &PathManager) -> Result<()> {
         delete_previous_output(pm)?;
         make_dict_simple(DMain, options, pm)?;
+
         check_git_diff(pm)?;
 
         Ok(())

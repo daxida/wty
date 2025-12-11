@@ -1,7 +1,5 @@
 use anyhow::{Ok, Result, bail};
 use clap::{Parser, Subcommand};
-use std::fmt;
-use std::fs;
 use std::path::PathBuf;
 
 use crate::lang::Edition;
@@ -269,44 +267,55 @@ impl FilterKey {
     }
 }
 
-impl Cli {
-    pub fn parse_cli() -> Self {
-        Self::parse()
-    }
+fn push_filter_key_lang(filter: &mut Vec<(FilterKey, String)>, lang: Lang) {
+    filter.push((FilterKey::LangCode, lang.to_string()));
 }
 
-impl ArgsOptions {
-    // TODO: this won't work for GlossaryExtended. Although it makes little sense there...
-    //
-    /// Check if there are any (extra) filter parameters.
-    ///
-    /// It depends on the dictionary type, since some dictionaries may add the `LangCode` filter to
-    /// self.filter at main init.
-    pub const fn has_filter_params(&self) -> bool {
-        (self.filter.len() > 1) || !self.reject.is_empty() || self.first != -1
-    }
-}
-
-/// Enum used by `PathManager` to dispatch filetree operations (folder names etc.)
-#[derive(Debug, Clone, Copy)]
-pub enum DictionaryType {
-    Main,
-    Glossary,
-    GlossaryExtended,
-    Ipa,
-    IpaMerged,
-}
-
-/// Used only for the temporary files folder (`dir_temp`).
-impl fmt::Display for DictionaryType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Main => write!(f, "main"),
-            Self::Glossary => write!(f, "glossary"),
-            Self::GlossaryExtended => write!(f, "glossary-ext"), // should be just glossary
-            Self::Ipa => write!(f, "ipa"),
-            Self::IpaMerged => write!(f, "ipa-merged"),
+fn prepare_command(cmd: &mut Command) -> Result<()> {
+    match cmd {
+        Command::Main(args) => {
+            args.langs.edition = args.langs.target;
+            push_filter_key_lang(&mut args.options.filter, args.langs.source);
         }
+        Command::Glossary(args) => {
+            let source_as_lang: Lang = args.langs.source.into();
+            anyhow::ensure!(
+                source_as_lang != args.langs.target,
+                "in a glossary dictionary source must be different from target."
+            );
+
+            args.langs.edition = args.langs.source;
+            push_filter_key_lang(&mut args.options.filter, source_as_lang);
+        }
+        Command::GlossaryExtended(args) => {
+            anyhow::ensure!(
+                args.langs.source != args.langs.target,
+                "in a glossary dictionary source must be different from target."
+            );
+        }
+        Command::Ipa(args) => {
+            args.langs.edition = args.langs.target;
+            push_filter_key_lang(&mut args.options.filter, args.langs.source);
+        }
+        Command::IpaMerged(args) => {
+            args.langs.edition = Edition::All;
+            args.langs.source = args.langs.target;
+            push_filter_key_lang(&mut args.options.filter, args.langs.source);
+        }
+        Command::Download(args) => {
+            args.langs.edition = args.langs.target;
+        }
+        Command::Iso => (),
+    }
+
+    Ok(())
+}
+
+impl Cli {
+    pub fn parse_cli() -> Result<Self> {
+        let mut cli = Self::parse();
+        prepare_command(&mut cli.command)?;
+        Ok(cli)
     }
 }
 
@@ -353,6 +362,8 @@ impl Langs for GlossaryExtendedLangs {
     }
 }
 
+// IpaLangs reuses MainLangs
+
 impl Langs for IpaMergedLangs {
     fn edition(&self) -> Edition {
         self.edition
@@ -371,241 +382,22 @@ pub trait SimpleArgs {
     fn options(&self) -> &ArgsOptions;
 }
 
-impl SimpleArgs for MainArgs {
-    fn dict_name(&self) -> &str {
-        &self.dict_name
-    }
-    fn langs(&self) -> &impl Langs {
-        &self.langs
-    }
-    fn options(&self) -> &ArgsOptions {
-        &self.options
-    }
+/// Implement the SimpleArgs trait.
+macro_rules! simple_args {
+    ($($ty:ty),* $(,)?) => {
+        $( impl SimpleArgs for $ty {
+            fn dict_name(&self) -> &str { &self.dict_name }
+            fn langs(&self) -> &impl Langs { &self.langs }
+            fn options(&self) -> &ArgsOptions { &self.options }
+        } )*
+    };
 }
 
-impl SimpleArgs for GlossaryArgs {
-    fn dict_name(&self) -> &str {
-        &self.dict_name
-    }
-    fn langs(&self) -> &impl Langs {
-        &self.langs
-    }
-    fn options(&self) -> &ArgsOptions {
-        &self.options
-    }
-}
-
-impl SimpleArgs for GlossaryExtendedArgs {
-    fn dict_name(&self) -> &str {
-        &self.dict_name
-    }
-    fn langs(&self) -> &impl Langs {
-        &self.langs
-    }
-    fn options(&self) -> &ArgsOptions {
-        &self.options
-    }
-}
-
-impl SimpleArgs for IpaArgs {
-    fn dict_name(&self) -> &str {
-        &self.dict_name
-    }
-    fn langs(&self) -> &impl Langs {
-        &self.langs
-    }
-    fn options(&self) -> &ArgsOptions {
-        &self.options
-    }
-}
-
-impl SimpleArgs for IpaMergedArgs {
-    fn dict_name(&self) -> &str {
-        &self.dict_name
-    }
-    fn langs(&self) -> &impl Langs {
-        &self.langs
-    }
-    fn options(&self) -> &ArgsOptions {
-        &self.options
-    }
-}
-
-/// Helper struct to manage paths.
-//
-// It could have done directly with args, but tracking dict_ty is quite tricky. Also, this makes
-// the intent of every call to either args or pm (PathManager) clearer. And better autocomplete!
-#[derive(Debug)]
-pub struct PathManager {
-    dict_name: String,
-    dict_ty: DictionaryType,
-
-    edition: Edition,
-    source: Lang,
-    target: Lang,
-
-    root_dir: PathBuf,
-    save_temps: bool,
-    experimental: bool,
-}
-
-impl PathManager {
-    pub fn new(dict_ty: DictionaryType, args: &impl SimpleArgs) -> Self {
-        Self {
-            dict_name: args.dict_name().to_string(),
-            dict_ty,
-            edition: args.langs().edition(),
-            source: args.langs().source(),
-            target: args.langs().target(),
-            root_dir: args.options().root_dir.clone(),
-            save_temps: args.options().save_temps,
-            experimental: args.options().experimental,
-        }
-    }
-
-    // Seems a bit hacky to get it from the PathManager...
-    pub const fn langs(&self) -> (Edition, Lang, Lang) {
-        (self.edition, self.source, self.target)
-    }
-
-    /// Example: `data/kaikki`
-    fn dir_kaik(&self) -> PathBuf {
-        self.root_dir.join("kaikki")
-    }
-    /// Directory for all dictionaries.
-    ///
-    /// Example: `data/dict`
-    pub fn dir_dicts(&self) -> PathBuf {
-        self.root_dir.join("dict")
-    }
-    /// Example: `data/dict/el/el`
-    fn dir_dict(&self) -> PathBuf {
-        self.dir_dicts().join(match self.dict_ty {
-            // For merged dictionaries, use the edition (displays as "all")
-            DictionaryType::IpaMerged => format!("{}/{}", self.target, self.edition),
-            _ => format!("{}/{}", self.source, self.target),
-        })
-    }
-    /// Depends on the type of dictionary being made.
-    ///
-    /// Example: `data/dict/el/el/temp-main`
-    /// Example: `data/dict/el/el/temp-glossary`
-    fn dir_temp(&self) -> PathBuf {
-        // Maybe remove the "temp-" altogether?
-        self.dir_dict().join(format!("temp-{}", self.dict_ty))
-    }
-    /// Example: `data/dict/el/el/temp/tidy`
-    pub fn dir_tidy(&self) -> PathBuf {
-        self.dir_temp().join("tidy")
-    }
-
-    pub fn setup_dirs(&self) -> Result<()> {
-        fs::create_dir_all(self.dir_kaik())?;
-        fs::create_dir_all(self.dir_dict())?;
-
-        if self.save_temps {
-            fs::create_dir_all(self.dir_tidy())?; // not needed for glossary
-            fs::create_dir_all(self.dir_temp_dict())?;
-        }
-
-        Ok(())
-    }
-
-    /// Different in English and non-English editions. The English download is already filtered.
-    ///
-    /// Example (el):    `data/kaikki/el-extract.jsonl`
-    /// Example (en-en): `data/kaikki/en-en-extract.jsonl`
-    /// Example (de-en): `data/kaikki/de-en-extract.jsonl`
-    pub fn path_jsonl_raw(&self) -> PathBuf {
-        self.dir_kaik().join(match self.edition {
-            Edition::All => panic!(), // this can't happen in DictionaryType::Main
-            Edition::EditionLang(EditionLang::En) => {
-                format!("{}-{}-extract.jsonl", self.source, self.target)
-            }
-            Edition::EditionLang(_) => format!("{}-extract.jsonl", self.edition),
-        })
-    }
-
-    /// `data/kaikki/source-target.jsonl`
-    ///
-    /// Source and target are passed as arguments because some dictionaries may require a different
-    /// combination in their input. F.e., the el-en glossary is made out of el-el-extract.jsonl
-    ///
-    /// Example (en-el): `data/kaikki/en-el-extract.jsonl`
-    pub fn path_jsonl(&self, source: Lang, target: Lang) -> PathBuf {
-        self.dir_kaik()
-            .join(format!("{source}-{target}-extract.jsonl"))
-    }
-
-    /// `data/dict/source/target/temp/tidy/source-target-lemmas.json`
-    ///
-    /// Example: `data/dict/el/el/temp/tidy/el-el-lemmas.json`
-    pub fn path_lemmas(&self) -> PathBuf {
-        self.dir_tidy()
-            .join(format!("{}-{}-lemmas.json", self.source, self.target))
-    }
-
-    /// `data/dict/source/target/temp/tidy/source-target-forms.json`
-    ///
-    /// Example: `data/dict/el/el/temp/tidy/el-el-forms.json`
-    pub fn path_forms(&self) -> PathBuf {
-        self.dir_tidy()
-            .join(format!("{}-{}-forms.json", self.source, self.target))
-    }
-
-    /// Temporary working directory path used before zipping the dictionary.
-    ///
-    /// Example: `data/dict/el/el/temp/dict`
-    pub fn dir_temp_dict(&self) -> PathBuf {
-        self.dir_temp().join("dict")
-    }
-
-    // Should not go here, but since it uses dict_ty...
-    // It exists so the dictionary index is in sync with PathManager::path_dict
-    //
-    /// Depends on the dictionary type (main, glossary etc.)
-    ///
-    /// Example: `dictionary_name-el-en`
-    /// Example: `dictionary_name-el-en-gloss`
-    pub fn dict_name_expanded(&self) -> String {
-        let mut expanded = match self.dict_ty {
-            DictionaryType::Main => format!("{}-{}-{}", self.dict_name, self.source, self.target),
-            DictionaryType::Glossary => {
-                format!("{}-{}-{}-gloss", self.dict_name, self.source, self.target)
-            }
-            DictionaryType::GlossaryExtended => {
-                format!(
-                    "{}-{}-{}-{}-gloss",
-                    self.dict_name, self.edition, self.source, self.target
-                )
-            }
-            DictionaryType::Ipa => {
-                format!("{}-{}-{}-ipa", self.dict_name, self.source, self.target)
-            }
-            DictionaryType::IpaMerged => format!("{}-{}-ipa", self.dict_name, self.target),
-        };
-
-        if self.experimental {
-            expanded.push_str("-exp");
-        }
-
-        expanded
-    }
-
-    /// Depends on the dictionary type (main, glossary etc.)
-    ///
-    /// Example: `data/dict/el/en/dictionary_name-el-en.zip`
-    /// Example: `data/dict/el/en/dictionary_name-el-en-gloss.zip`
-    pub fn path_dict(&self) -> PathBuf {
-        self.dir_dict()
-            .join(format!("{}.zip", self.dict_name_expanded()))
-    }
-
-    /// Example: `data/dict/el/el/temp/diagnostics`
-    pub fn dir_diagnostics(&self) -> PathBuf {
-        self.dir_temp().join("diagnostics")
-    }
-}
+simple_args!(MainArgs);
+simple_args!(GlossaryArgs);
+simple_args!(GlossaryExtendedArgs);
+simple_args!(IpaArgs);
+simple_args!(IpaMergedArgs);
 
 #[cfg(test)]
 mod tests {
@@ -623,16 +415,18 @@ mod tests {
         assert!(Cli::try_parse_from(["kty", "main", "el", "grc"]).is_err());
     }
 
-    // #[test]
-    // fn glossary_needs_source_edition() {
-    //     assert!(Cli::try_parse_from(["kty", "glossary", "grc", "el"]).is_err());
-    //     assert!(Cli::try_parse_from(["kty", "glossary", "el", "grc"]).is_ok());
-    // }
-    //
-    // #[test]
-    // fn glossary_can_not_be_monolingual() {
-    //     assert!(Cli::try_parse_from(["kty", "glossary", "el", "el"]).is_err());
-    // }
+    #[test]
+    fn glossary_needs_source_edition() {
+        assert!(Cli::try_parse_from(["kty", "glossary", "grc", "el"]).is_err());
+        assert!(Cli::try_parse_from(["kty", "glossary", "el", "grc"]).is_ok());
+    }
+
+    #[test]
+    fn glossary_can_not_be_monolingual() {
+        let res = Cli::try_parse_from(["kty", "glossary", "el", "el"]);
+        let mut cli = res.unwrap(); // The parsing should be ok
+        assert!(prepare_command(&mut cli.command).is_err())
+    }
 
     #[test]
     fn filter_flag() {
