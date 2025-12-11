@@ -118,7 +118,7 @@ pub struct MainLangs {
     /// Source language
     pub source: Lang,
 
-    /// Target language
+    /// Target language (edition)
     pub target: EditionLang,
 }
 
@@ -129,7 +129,7 @@ pub struct GlossaryLangs {
     #[arg(skip)]
     pub edition: EditionLang,
 
-    /// Source language
+    /// Source language (edition)
     pub source: EditionLang,
 
     /// Target language

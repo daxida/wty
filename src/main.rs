@@ -4,6 +4,7 @@ use kty::cli::{Cli, Command, Langs, SimpleArgs};
 use kty::download::html::download_jsonl;
 use kty::lang::{EditionLang, Lang};
 use kty::path::{DictionaryType, PathManager};
+use kty::utils::skip_because_file_exists;
 use kty::{DGlossary, DGlossaryExtended, DIpa, DIpaMerged, DMain};
 use kty::{make_dict_simple, setup_tracing};
 
@@ -35,14 +36,15 @@ fn run_command(cmd: &Command) -> Result<()> {
             let langs = args.langs();
             let source = langs.source();
             let edition_lang: EditionLang = langs.edition().try_into().unwrap();
+            let opath = pm.path_jsonl_raw(edition_lang, source);
 
-            let _ = std::fs::create_dir(pm.dir_kaik());
-            download_jsonl(
-                edition_lang,
-                source,
-                &pm.path_jsonl_raw(edition_lang, source),
-                args.options.quiet,
-            )
+            if opath.exists() {
+                skip_because_file_exists("download", &opath);
+                Ok(())
+            } else {
+                let _ = std::fs::create_dir(pm.dir_kaik());
+                download_jsonl(edition_lang, source, &opath, args.options.quiet)
+            }
         }
         Command::Iso => {
             println!("{}", Lang::help_supported_isos_coloured());
