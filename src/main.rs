@@ -46,8 +46,12 @@ fn run_command(cmd: &Command) -> Result<()> {
                 download_jsonl(edition_lang, source, &opath, args.options.quiet)
             }
         }
-        Command::Iso => {
-            println!("{}", Lang::help_supported_isos_coloured());
+        Command::Iso(args) => {
+            if args.edition {
+                println!("{}", Lang::help_supported_editions());
+            } else {
+                println!("{}", Lang::help_supported_isos_coloured());
+            }
             Ok(())
         }
     }

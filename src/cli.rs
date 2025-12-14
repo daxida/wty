@@ -40,7 +40,7 @@ pub enum Command {
     Download(MainArgs),
 
     /// Show supported iso codes, with coloured editions
-    Iso,
+    Iso(IsoArgs),
 }
 
 #[derive(Parser, Debug, Default)]
@@ -106,6 +106,13 @@ pub struct IpaMergedArgs {
 
     #[command(flatten)]
     pub options: ArgsOptions,
+}
+
+#[derive(Parser, Debug, Default)]
+pub struct IsoArgs {
+    /// Only print languages with edition
+    #[arg(long)]
+    pub edition: bool,
 }
 
 /// Langs-like struct that validates edition for `target` and skips `edition`.
@@ -305,7 +312,7 @@ fn prepare_command(cmd: &mut Command) -> Result<()> {
         Command::Download(args) => {
             args.langs.edition = args.langs.target;
         }
-        Command::Iso => (),
+        Command::Iso(_) => (),
     }
 
     Ok(())
