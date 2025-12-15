@@ -844,25 +844,32 @@ fn is_inflection_sense(target: EditionLang, sense: &Sense) -> bool {
             !sense.form_of.is_empty() && sense.glosses.iter().any(|gloss| gloss.contains("του"))
         }
         EditionLang::En => {
-            if sense
-                .glosses
-                .iter()
-                .any(|gloss| gloss.contains("inflection of"))
-            {
-                return true;
-            }
-            for form in &sense.form_of {
-                if form.word.is_empty() {
-                    continue;
-                }
-                // This escape is not the original custom function used in the original.
-                let pattern = format!(r"of {}($| \(.+?\)$)", regex::escape(&form.word));
-                let re = Regex::new(&pattern).unwrap();
-                if sense.glosses.iter().any(|gloss| re.is_match(gloss)) {
+            sense.glosses.iter().any(|gloss| {
+                if gloss.contains("inflection of") {
                     return true;
                 }
-            }
-            false
+
+                for form in &sense.form_of {
+                    if form.word.is_empty() {
+                        continue;
+                    }
+                    // We are looking for "... of {word}$" or "... of {word} (text)$"
+                    //
+                    // Cf.
+                    // ... imperative of iki
+                    // ... perfective of возни́кнуть (vozníknutʹ)
+                    // But no
+                    // ... agent noun of fahren; driver (person)
+                    let target = format!("of {}", form.word);
+                    if gloss.ends_with(&target)
+                        || (gloss.contains(&format!("{} (", target)) && gloss.ends_with(")"))
+                    {
+                        return true;
+                    }
+                }
+
+                false
+            })
         }
         _ => false,
     }
@@ -887,6 +894,8 @@ fn handle_inflection_sense(
     sense: &Sense,
     ret: &mut Tidy,
 ) {
+    debug_assert!(!sense.glosses.is_empty()); // we checked @ is_inflection_sense
+
     match target {
         EditionLang::El => {
             let allowed_tags: Vec<_> = sense
@@ -912,13 +921,8 @@ fn handle_inflection_sense(
                 );
             }
         }
-        EditionLang::En => {
-            debug_assert!(!sense.glosses.is_empty()); // we checked @ is_inflection_gloss
-            handle_inflection_sense_en(source, word_entry, sense, ret)
-        }
+        EditionLang::En => handle_inflection_sense_en(source, word_entry, sense, ret),
         EditionLang::De => {
-            debug_assert!(!sense.glosses.is_empty()); // we checked @ is_inflection_gloss
-
             if let Some(caps) = DE_INFLECTION_RE.captures(&sense.glosses[0])
                 && let (Some(inflection_tags), Some(uninflected)) = (caps.get(1), caps.get(2))
             {
