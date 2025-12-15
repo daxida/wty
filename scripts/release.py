@@ -14,6 +14,7 @@ import os
 import re
 import subprocess
 import time
+from argparse import Namespace
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -193,17 +194,17 @@ def binary_version() -> str:
 
 def run_cmd(
     root_dir: Path,
-    dict_ty: str,
+    cmd_name: str,
     # <source>-<target>, <source>-<source>, all, etc.
     # they are expected to be space separated
     params: str,
-    args,
+    args: Namespace,
     *,
     print_download_status: bool = False,
 ) -> tuple[int, list[str]]:
     cmd = [
         BINARY_PATH,
-        dict_ty,
+        cmd_name,
         *params.split(" "),
         f"--root-dir={root_dir}",
     ]
@@ -215,11 +216,28 @@ def run_cmd(
         logs.append(clean(line))
         return 0, logs
 
-    result = subprocess.run(
-        cmd,
-        capture_output=True,
-        check=True,  # ignore errors atm
-    )
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            check=True,  # ignore errors atm
+        )
+    except subprocess.CalledProcessError as e:
+        # Some pairs may not have a dump from the English edition.
+        # If the language is rare, this is to be expected, but there are also languages
+        # like Kurdish (ku), which have an edition but no dump from the English edition.
+        #
+        # Every language with a dump from the English edition can be found here:
+        # https://kaikki.org/dictionary/
+        #
+        # We ignore the 404 that we get when requesting the dictionary
+        if cmd_name in ("ipa", "main") and params.split(" ")[1] == "en":
+            # print("[err]", clean(" ".join(cmd)))
+            return 0, logs
+        log("[err]", f"Command failed: {' '.join(cmd)}")
+        log("[err-stdout]", e.stdout)
+        log("[err-stderr]", e.stderr)
+        raise
 
     if args.verbose:
         out = result.stdout.decode("utf-8")
@@ -259,39 +277,39 @@ type DictTy = Literal["main", "ipa", "ipa-merged", "glossary", "glossary-extende
 
 
 def run_matrix(odir: Path, langs: list[Lang], args) -> None:
+    start = time.perf_counter()
+
     n_workers = min(args.jobs, os.cpu_count() or 1)
+
+    log("info", f"n_workers {n_workers}")
+    check_previous_files("info", odir)
+    log()
 
     # Clear logs
     with LOG_PATH.open("w") as f:
         f.write("")
 
-    start = time.perf_counter()
-
-    rversion = release_version()
-    log("prelude", f"n_workers {n_workers}")
-    log("prelude", f"dic {rversion}")
-    log("prelude", "Building Rust binary...")
-    build_binary()
-    log("prelude", binary_version())
-    log()
+    run_prelude()
 
     isos = [lang.iso for lang in langs]
     # A subset for testing
-    isos = [
-        "sq",
-        "arz",
-        "el",
-        "en",
-    ]
+    # isos = [
+    #     # "sq",
+    #     # "arz",
+    #     "ku",
+    #     "el",
+    #     "en",
+    # ]
 
     with_edition = [lang.iso for lang in langs if lang.has_edition]
     # A subset for testing
-    with_edition = [
-        "el",
-        "en",
-        # "zh",
-        # "ja",
-    ]
+    # with_edition = [
+    #     # "el",
+    #     "en",
+    #     "ku",
+    #     # "zh",
+    #     # "ja",
+    # ]
 
     matrix = [
         ["ipa", with_edition, isos],
@@ -310,24 +328,14 @@ def run_matrix(odir: Path, langs: list[Lang], args) -> None:
     #     # "ipa-merged",
     # ]
     # log("ALL", f"Dictionaries: {' '.join(sorted(dictionary_types))}")
-    log("ALL", f"Dictionaries: {' '.join(sorted(run[0] for run in matrix))}")
+    log("ALL", f"Dictionaries: {' '.join(run[0] for run in matrix)}")
     log()
 
     # We first download the jsonl because otherwise each worker will not find it in disk
     # and will try to download it itself... This way, we guarantee only one download happens.
-    log("dl", "Downloading editions...")
-    for source in with_edition:
-        label = f"dl-{source}"
-        params = f"{source} {source}"
-        _, logs = run_cmd(odir, "download", params, args, print_download_status=True)
-        for logline in logs:
-            log(logline)
-        log(label, "Finished download")
-
-    _, total_size = stats(odir / "kaikki")
-    elapsed = time.perf_counter() - start
-    msg = f"Finished downloads ({elapsed:.2f}s, {total_size / 1024 / 1024:.2f}MB)\n"
-    log("dl", msg)
+    #
+    # NOTE: when testing with subsets, if ipa-merged is in the matrix we will download all editions...
+    run_download(odir, with_edition, args)
 
     log("ALL", "Starting...")
     for dict_ty, sources, targets in matrix:
@@ -377,7 +385,48 @@ def run_matrix(odir: Path, langs: list[Lang], args) -> None:
     log("ALL", msg)
 
 
-def build_release(odir: Path, args) -> None:
+def check_previous_files(label: str, path: Path) -> None:
+    n_files, total_size = stats(path)
+    if n_files > 0:
+        log(
+            label,
+            f"Found previous files ({total_size / 1024 / 1024:.2f}MB, {n_files} files) @ {path}",
+        )
+    else:
+        log(label, f"Clean directory. No previous files found @ {path}")
+
+
+def run_prelude() -> None:
+    log("prelude", "Building Rust binary...")
+    build_binary()
+    log("prelude", binary_version())
+    rversion = release_version()
+    log("prelude", f"dic {rversion}")
+    log()
+
+
+def run_download(odir: Path, with_edition: list[str], args: Namespace) -> None:
+    start = time.perf_counter()
+
+    log("dl", "Downloading editions...")
+    download_path = odir / "kaikki"
+    check_previous_files("dl", download_path)
+
+    for source in with_edition:
+        label = f"dl-{source}"
+        params = f"{source} {source}"
+        _, logs = run_cmd(odir, "download", params, args, print_download_status=True)
+        for logline in logs:
+            log(logline)
+        log(label, "Finished download")
+
+    _, total_size = stats(download_path)
+    elapsed = time.perf_counter() - start
+    msg = f"Finished downloads ({elapsed:.2f}s, {total_size / 1024 / 1024:.2f}MB)\n"
+    log("dl", msg)
+
+
+def build_release(odir: Path, args: Namespace) -> None:
     assets_path = Path("assets")
     path_languages_json = assets_path / "languages.json"
     with path_languages_json.open() as f:
