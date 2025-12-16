@@ -406,23 +406,6 @@ fn tidy_preprocess(
     //     word_entry.pos = "participle".to_string();
     // }
 
-    // WARN: mutates word_entry::senses::glosses
-    //
-    // rg: full stop
-    // https://github.com/yomidevs/yomitan/issues/2232
-    // Add an empty whitespace at the end... and it works!
-    if options.experimental {
-        static TRAILING_PUNCT_RE: LazyLock<Regex> =
-            LazyLock::new(|| Regex::new(r"\p{P}$").unwrap());
-        for sense in &mut word_entry.senses {
-            for gloss in &mut sense.glosses {
-                if !TRAILING_PUNCT_RE.is_match(gloss) {
-                    gloss.push(' ');
-                }
-            }
-        }
-    }
-
     // WARN: mutates word_entry::senses::sense::tags
     //
     // [en]
@@ -519,6 +502,23 @@ fn tidy_preprocess(
         }
     }
     word_entry.senses = senses_without_inflections;
+
+    // WARN: mutates word_entry::senses::glosses
+    //
+    // rg: full stop
+    // https://github.com/yomidevs/yomitan/issues/2232
+    // Add an empty whitespace at the end... and it works!
+    if options.experimental {
+        static TRAILING_PUNCT_RE: LazyLock<Regex> =
+            LazyLock::new(|| Regex::new(r"\p{P}$").unwrap());
+        for sense in &mut word_entry.senses {
+            for gloss in &mut sense.glosses {
+                if !TRAILING_PUNCT_RE.is_match(gloss) {
+                    gloss.push(' ');
+                }
+            }
+        }
+    }
 }
 
 /// Add Extracted forms. That is, forms from `word_entry.forms`.
