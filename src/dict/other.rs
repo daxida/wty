@@ -236,10 +236,7 @@ fn make_yomitan_entries_glossary(
         reading,
         definition_tags,
         found_pos,
-        0,
         definitions,
-        0,
-        String::new(),
     ));
     irs.push(ir);
 }
@@ -327,10 +324,7 @@ fn make_yomitan_glossary_extended(irs: Vec<IGlossaryExtended>) -> Vec<YomitanEnt
                 String::new(),
                 found_pos.clone(),
                 found_pos,
-                0,
                 definitions,
-                0,
-                String::new(),
             ))
         })
         .collect()

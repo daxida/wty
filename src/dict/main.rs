@@ -1154,10 +1154,7 @@ fn make_yomitan_lemma(
         yomitan_reading.to_string(),
         definition_tags,
         found_pos,
-        0,
         vec![detailed_definition],
-        0,
-        String::new(),
     ))
 }
 
@@ -1434,10 +1431,7 @@ fn make_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
             reading.into(),
             "non-lemma".into(),
             String::new(),
-            0,
             deinflection_definitions,
-            0,
-            String::new(),
         ));
 
         yomitan_entries.push(yomitan_entry);

@@ -1,29 +1,49 @@
 use crate::{Map, models::kaikki::Tag};
-use serde::ser::{SerializeSeq, Serializer};
+use serde::ser::{SerializeTuple, Serializer};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub enum YomitanEntry {
-    TermBank(TermBank),
-    TermBankMeta(TermBankMeta),
+    TermBank(TermBank),         // 120 (24 * 5)
+    TermBankMeta(TermBankMeta), // 104
 }
 
+// Simplified version to avoid storing fields that we don't use. Those are written later on via the
+// serialize implementation.
+//
+// The skipped fields are (at index): frequency (4), sequence (6), term_tags (7)
+//
 // https://github.com/yomidevs/yomitan/blob/f271fc0da3e55a98fa91c9834d75fccc96deae27/ext/data/schemas/dictionary-term-bank-v3-schema.json
 //
 // https://github.com/MarvNC/yomichan-dict-builder/blob/master/src/types/yomitan/termbank.ts
 // @ TermInformation
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Clone)]
 pub struct TermBank(
     pub String,                  // term
     pub String,                  // reading
     pub String,                  // definition_tags
     pub String,                  // rules
-    pub u32,                     // frequency
     pub Vec<DetailedDefinition>, // definitions
-    pub u32,                     // sequence
-    pub String,                  // term_tags
 );
+
+impl Serialize for TermBank {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut tup = serializer.serialize_tuple(8)?;
+        tup.serialize_element(&self.0)?;
+        tup.serialize_element(&self.1)?;
+        tup.serialize_element(&self.2)?;
+        tup.serialize_element(&self.3)?;
+        tup.serialize_element(&0u8)?;
+        tup.serialize_element(&self.4)?;
+        tup.serialize_element(&0u8)?;
+        tup.serialize_element(&"")?;
+        tup.end()
+    }
+}
 
 // There are other variants that we don't use at the moment.
 #[derive(Debug, Serialize, Clone)]
@@ -251,12 +271,12 @@ impl Serialize for TagInformation {
     where
         S: Serializer,
     {
-        let mut seq = serializer.serialize_seq(Some(5))?;
-        seq.serialize_element(&self.short_tag)?;
-        seq.serialize_element(&self.category)?;
-        seq.serialize_element(&self.sort_order)?;
-        seq.serialize_element(&self.long_tag)?;
-        seq.serialize_element(&self.popularity_score)?;
-        seq.end()
+        let mut tup = serializer.serialize_tuple(5)?;
+        tup.serialize_element(&self.short_tag)?;
+        tup.serialize_element(&self.category)?;
+        tup.serialize_element(&self.sort_order)?;
+        tup.serialize_element(&self.long_tag)?;
+        tup.serialize_element(&self.popularity_score)?;
+        tup.end()
     }
 }
