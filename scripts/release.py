@@ -25,6 +25,7 @@ import os
 import re
 import subprocess
 import time
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -36,8 +37,6 @@ REPO_ID_HF = "daxida/test-dataset"
 REPO_ID_GH = "https://github.com/daxida/kty"
 
 BINARY_PATH = "target/release/kty"
-LOG_PATH = Path("log.txt")
-ODIR_PATH = Path("data/release")
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
 
@@ -47,6 +46,33 @@ class Args:
     verbose: int
     dry_run: bool
     jobs: int
+
+
+class PathManager:
+    def __init__(self, root_dir: Path) -> None:
+        self.root_dir = root_dir
+
+        self.release = self.root_dir / "release"
+        self.dictionary = self.release / "dict"  # self.dict has messed highlighting
+        self.index = self.release / "index"
+        self.readme = self.release / "README.md"
+
+        # These are at the "repo root"
+        self.assets = Path("assets")
+        self.languages_json = self.assets / "languages.json"
+        self.log = Path("log.txt")
+
+    def setup(self) -> None:
+        self.release.mkdir(exist_ok=True)
+
+    def check_dict_dir(self) -> None:
+        if not self.dictionary.exists() or not any(self.dictionary.iterdir()):
+            print(f"No files found in {self.dictionary}")
+            exit(1)
+
+
+PM = PathManager(Path("data"))
+"""Global to simplify the argument passing. Should be read-only."""
 
 
 def clean(line: str) -> str:
@@ -83,14 +109,11 @@ def release_version() -> str:
 
 # https://huggingface.co/new-dataset
 # https://huggingface.co/settings/tokens
-def upload_to_huggingface(odir: Path) -> None:
-    dict_dir = odir / "dict"
-    if not dict_dir.exists() or not any(dict_dir.iterdir()):
-        print(f"No files found in {dict_dir}")
-        return
-
+def upload_to_huggingface() -> None:
     from dotenv import load_dotenv
     from huggingface_hub import HfApi, whoami
+
+    PM.check_dict_dir()
 
     try:
         # Requires an ".env" file with
@@ -102,6 +125,7 @@ def upload_to_huggingface(odir: Path) -> None:
         print(f"✗ Login failed: {e}")
         return
 
+    dict_dir = PM.dictionary
     _, size_bytes = stats(dict_dir)
     size_mb = size_bytes / 1024 / 1024
     version = release_version()
@@ -128,7 +152,7 @@ def upload_to_huggingface(odir: Path) -> None:
     api = HfApi()
 
     # README and .gitignore
-    readme_path = odir / "README.md"
+    readme_path = PM.readme
     update_readme_local(readme_path, commit_sha, version)
 
     try:
@@ -145,7 +169,7 @@ def upload_to_huggingface(odir: Path) -> None:
 
     try:
         api.upload_file(
-            path_or_fileobj=str(LOG_PATH),
+            path_or_fileobj=str(PM.log),
             path_in_repo="log.txt",
             repo_id=REPO_ID_HF,
             repo_type="dataset",
@@ -309,16 +333,17 @@ def log(*values, **kwargs) -> None:
     print(line, **kwargs)
 
     # Bad bad bad
-    with LOG_PATH.open("a") as f:
+    with PM.log.open("a") as f:
         f.write(line + "\n")
 
 
 type DictTy = Literal["main", "ipa", "ipa-merged", "glossary", "glossary-extended"]
 
 
-def run_matrix(odir: Path, langs: list[Lang], args: Args) -> None:
+def run_matrix(langs: list[Lang], args: Args) -> None:
     start = time.perf_counter()
 
+    odir = PM.release
     n_workers = min(args.jobs, os.cpu_count() or 1)
 
     log("info", f"n_workers {n_workers}")
@@ -327,7 +352,7 @@ def run_matrix(odir: Path, langs: list[Lang], args: Args) -> None:
     log()
 
     # Clear logs
-    with LOG_PATH.open("w") as f:
+    with PM.log.open("w") as f:
         f.write("")
 
     run_prelude()
@@ -467,14 +492,45 @@ def run_download(odir: Path, with_edition: list[str], args: Args) -> None:
     log("dl", msg)
 
 
-def build_release(odir: Path, args: Args) -> None:
-    assets_path = Path("assets")
-    path_languages_json = assets_path / "languages.json"
-    with path_languages_json.open() as f:
+def build_release(args: Args) -> None:
+    with PM.languages_json.open() as f:
         data = json.load(f)
         langs = [load_lang(row) for row in data]
 
-    run_matrix(odir, langs, args)
+    run_matrix(langs, args)
+
+
+def extract_indexes(args: Args) -> None:
+    """Extract indexes in some folder to support dictionary updates.
+
+    Paths looks like:
+        data/release/dict/nb/ru/kty-nb-ru.zip
+               {dict_dir}/nb/ru/kty-nb-ru.zip
+
+    And we want to clone to:
+        data/release/index/kty-nb-ru-index.json
+               {index_dir}/kty-nb-ru-index.json
+
+    Note: we don't need the nb/ru folders anymore, since these indexes are only intended
+          to be used as direct URLs for the Yomitan upgrade machinery.
+    """
+    PM.check_dict_dir()
+    PM.index.mkdir(exist_ok=True)
+
+    for zip_path in PM.dictionary.rglob("*.zip"):
+        index_path = PM.index / f"{zip_path.stem}-index.json"
+
+        with zipfile.ZipFile(zip_path) as zf:
+            index_names = [name for name in zf.namelist() if name == "index.json"]
+            assert len(index_names) == 1, (
+                f"There should be exactly one index @ {zip_path}"
+            )
+
+            index_name = index_names[0]
+            with zf.open(index_name) as src, index_path.open("wb") as dst:
+                dst.write(src.read())
+
+            # print(f"{zip_path} ---> {index_path}")
 
 
 def parse_args() -> tuple[str, Args]:
@@ -492,13 +548,11 @@ def parse_args() -> tuple[str, Args]:
 def main() -> None:
     cmd, args = parse_args()
 
-    odir = ODIR_PATH
-    odir.mkdir(exist_ok=True)
-
     if cmd == "build":
-        build_release(odir, args)
+        # build_release(args)
+        extract_indexes(args)
     else:
-        upload_to_huggingface(odir)
+        upload_to_huggingface()
 
 
 if __name__ == "__main__":
