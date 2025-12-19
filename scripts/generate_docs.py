@@ -109,7 +109,7 @@ Files are hosted [here]({
         REPO_URL
     }), where you can also see the calendar version (calver) of the dictionaries.
 
-TODO: brief description of the different types.
+A brief description of the dictionaries can be found [here](dictionaries.md).
 """.strip()
 
 
