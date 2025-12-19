@@ -56,6 +56,7 @@ class PathManager:
         self.dictionary = self.release / "dict"  # self.dict has messed highlighting
         self.index = self.release / "index"
         self.readme = self.release / "README.md"
+        self.download = self.release / "kaikki"
 
         # These are at the "repo root"
         self.assets = Path("assets")
@@ -87,16 +88,31 @@ def double_check(msg: str = "") -> None:
         exit(1)
 
 
-def stats(path: Path, *, endswith: str | None = None) -> tuple[int, int]:
+def human_size(size_bytes: float, precision: int = 2) -> str:
+    for unit in ("B", "KB", "MB"):
+        if size_bytes < 1024:
+            return f"{size_bytes:.{precision}f} {unit}"
+        size_bytes /= 1024
+    return f"{size_bytes:.{precision}f} GB"
+
+
+def stats(
+    path: Path,
+    *,
+    file_pattern: str | None = None,
+    endswith: str | None = None,
+) -> tuple[int, str]:
     n_files = 0
     size_files = 0
     for f in path.rglob("*"):
         if f.is_file():
+            if file_pattern is not None and not re.match(file_pattern, f.name):
+                continue
             if endswith is not None and not f.name.endswith(endswith):
                 continue
             n_files += 1
             size_files += f.stat().st_size
-    return n_files, size_files
+    return n_files, human_size(size_files)
 
 
 def release_version() -> str:
@@ -126,8 +142,7 @@ def upload_to_huggingface() -> None:
         return
 
     dict_dir = PM.dictionary
-    _, size_bytes = stats(dict_dir)
-    size_mb = size_bytes / 1024 / 1024
+    _, size = stats(dict_dir)
     version = release_version()
     git_cmd = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=".")
     commit_sha = git_cmd.decode().strip()
@@ -146,12 +161,22 @@ def upload_to_huggingface() -> None:
     pprint(kwargs)
     print(f"{version=}")
     print()
-    print(f"Upload {dict_dir} ({size_mb:.2f} MB) to {REPO_ID_HF}?")
+    print(f"Upload {dict_dir} ({size}) to {REPO_ID_HF}?")
     double_check()
 
     api = HfApi()
 
-    # README and .gitignore
+    try:
+        # Huggingface may complain that we should be using upload_large_folder instead,
+        # but this worked fine, and upload_large_folder polutes the git history and messes
+        # up the file tree.
+        api.upload_folder(**kwargs)  # type: ignore
+        print(f"Upload complete @ https://huggingface.co/datasets/{REPO_ID_HF}")
+    except Exception as e:
+        print(e)
+        exit(1)
+
+    # README and logs
     readme_path = PM.readme
     update_readme_local(readme_path, commit_sha, version)
 
@@ -161,7 +186,7 @@ def upload_to_huggingface() -> None:
             path_in_repo="README.md",
             repo_id=REPO_ID_HF,
             repo_type="dataset",
-            commit_message=f"Update README to version {version}",
+            commit_message=f"[{version}] update README",
         )
     except Exception as e:
         print(e)
@@ -173,18 +198,8 @@ def upload_to_huggingface() -> None:
             path_in_repo="log.txt",
             repo_id=REPO_ID_HF,
             repo_type="dataset",
-            commit_message="Update logs",
+            commit_message=f"[{version}] update logs",
         )
-    except Exception as e:
-        print(e)
-        exit(1)
-
-    try:
-        # Huggingface may complain that we should be using upload_large_folder instead,
-        # but this worked fine, and upload_large_folder polutes the git history and messes
-        # up the file tree.
-        api.upload_folder(**kwargs)  # type: ignore
-        print(f"Upload complete @ https://huggingface.co/datasets/{REPO_ID_HF}")
     except Exception as e:
         print(e)
         exit(1)
@@ -337,7 +352,27 @@ def log(*values, **kwargs) -> None:
         f.write(line + "\n")
 
 
-type DictTy = Literal["main", "ipa", "ipa-merged", "glossary", "glossary-extended"]
+type DictTy = Literal["main", "ipa", "ipa-merged", "glossary"]
+
+
+# see path.rs::dict_name_expanded
+def pattern(dict_ty: DictTy, sources: list[str], targets: list[str]) -> str:
+    sources_re = "|".join(sources)
+    targets_re = "|".join(targets)
+
+    match dict_ty:
+        case "main":
+            fp = rf"kty-({targets_re})-({sources_re})\.zip"
+        case "ipa":
+            # dict/el/ja/kty-el-ja-ipa.zip
+            fp = rf"kty-({targets_re})-({sources_re})-ipa\.zip"
+        case "ipa-merged":
+            # dict/ja/all/kty-ja-ipa.zip
+            fp = rf"kty-({sources_re})-ipa\.zip"
+        case "glossary":
+            fp = rf"kty-({sources_re})-({targets_re})-gloss\.zip"
+
+    return fp
 
 
 def run_matrix(langs: list[Lang], args: Args) -> None:
@@ -349,6 +384,7 @@ def run_matrix(langs: list[Lang], args: Args) -> None:
     log("info", f"n_workers {n_workers}")
     log("info", args)
     check_previous_files("info", odir)
+    check_previous_files("info", odir, file_type="zip")
     log()
 
     # Clear logs
@@ -377,7 +413,7 @@ def run_matrix(langs: list[Lang], args: Args) -> None:
     #     # "ja",
     # ]
 
-    matrix: list[tuple[str, list[str], list[str]]] = [
+    matrix: list[tuple[DictTy, list[str], list[str]]] = [
         ("main", with_edition, isos),
         ("ipa", with_edition, isos),
         ("glossary", with_edition, isos),
@@ -437,29 +473,31 @@ def run_matrix(langs: list[Lang], args: Args) -> None:
             elapsed = time.perf_counter() - source_start
             log(label, f"Finished dict ({elapsed:.2f}s)")
 
-        # may not work:
-        # glossary extended > gloss
-        # main > nothing
-        _, total_size = stats(odir, endswith=f"-{dict_ty}.zip")
+        fp = pattern(dict_ty, sources, targets)
+        _, total_size = stats(odir, file_pattern=fp)
         elapsed = time.perf_counter() - dict_start
-        msg = f"Finished dicts ({elapsed:.2f}s, {total_size / 1024 / 1024:.2f}MB)"
-        log(dict_ty, msg)
+        log(dict_ty, f"Finished dicts ({elapsed:.2f}s, {total_size})")
 
     n_dictionaries, total_size = stats(odir, endswith=".zip")
     elapsed = time.perf_counter() - start
-    msg = f"Finished! ({elapsed:.2f}s, {total_size / 1024 / 1024:.2f}MB, {n_dictionaries} dicts)"
-    log("ALL", msg)
+    log("ALL", f"Finished! ({elapsed:.2f}s, {total_size}, {n_dictionaries} dicts)")
 
 
-def check_previous_files(label: str, path: Path) -> None:
-    n_files, total_size = stats(path)
+def check_previous_files(label: str, path: Path, file_type: str = "") -> None:
+    if file_type:
+        n_files, total_size = stats(path, endswith=file_type)
+        file_msg = f"{file_type} files"
+    else:
+        n_files, total_size = stats(path)
+        file_msg = "files"
+
     if n_files > 0:
         log(
             label,
-            f"Found previous files ({total_size / 1024 / 1024:.2f}MB, {n_files} files) @ {path}",
+            f"Found previous {file_msg} ({total_size}, {n_files} files) @ {path}",
         )
     else:
-        log(label, f"Clean directory. No previous files found @ {path}")
+        log(label, f"Clean directory. No previous {file_type} found @ {path}")
 
 
 def run_prelude() -> None:
@@ -475,8 +513,7 @@ def run_download(odir: Path, with_edition: list[str], args: Args) -> None:
     start = time.perf_counter()
 
     log("dl", "Downloading editions...")
-    download_path = odir / "kaikki"
-    check_previous_files("dl", download_path)
+    check_previous_files("dl", PM.download)
 
     for source in with_edition:
         label = f"dl-{source}"
@@ -484,12 +521,12 @@ def run_download(odir: Path, with_edition: list[str], args: Args) -> None:
         _, logs = run_cmd(odir, "download", params, args, print_download_status=True)
         for logline in logs:
             log(logline)
-        log(label, "Finished download")
+        _, size = stats(PM.download, endswith=f"{source}-extract.jsonl")
+        log(label, f"Finished download ({size})")
 
-    _, total_size = stats(download_path)
+    _, total_size = stats(PM.download)
     elapsed = time.perf_counter() - start
-    msg = f"Finished downloads ({elapsed:.2f}s, {total_size / 1024 / 1024:.2f}MB)\n"
-    log("dl", msg)
+    log("dl", f"Finished downloads ({elapsed:.2f}s, {total_size})\n")
 
 
 def build_release(args: Args) -> None:
@@ -517,6 +554,9 @@ def extract_indexes(args: Args) -> None:
     PM.check_dict_dir()
     PM.index.mkdir(exist_ok=True)
 
+    log("index", "Extracting indexes...")
+    n_indexes = 0
+
     for zip_path in PM.dictionary.rglob("*.zip"):
         index_path = PM.index / f"{zip_path.stem}-index.json"
 
@@ -528,9 +568,10 @@ def extract_indexes(args: Args) -> None:
 
             index_name = index_names[0]
             with zf.open(index_name) as src, index_path.open("wb") as dst:
+                n_indexes += 1
                 dst.write(src.read())
 
-            # print(f"{zip_path} ---> {index_path}")
+    log("index", f"Extracted {n_indexes} indexes")
 
 
 def parse_args() -> tuple[str, Args]:
@@ -549,7 +590,7 @@ def main() -> None:
     cmd, args = parse_args()
 
     if cmd == "build":
-        # build_release(args)
+        build_release(args)
         extract_indexes(args)
     else:
         upload_to_huggingface()
