@@ -23,15 +23,26 @@ fn size(path: &Path) -> std::io::Result<u64> {
     }
 }
 
-fn get_file_size_in_mb(path: &Path) -> Result<f64> {
-    Ok(size(path)? as f64 / (1024.0 * 1024.0))
+fn human_size(size_bytes: f64) -> String {
+    let mut size = size_bytes;
+    for unit in ["B", "KB", "MB"] {
+        if size < 1024.0 {
+            return format!("{:.2} {}", size, unit);
+        }
+        size /= 1024.0;
+    }
+    format!("{:.2} GB", size)
+}
+
+fn get_file_size_human(path: &Path) -> Result<String> {
+    Ok(human_size(size(path)? as f64))
 }
 
 fn pretty_msg_at_path(msg: &str, path: &Path) -> String {
     let at = "\x1b[1;36m@\x1b[0m"; // bold + cyan
-    match get_file_size_in_mb(path) {
+    match get_file_size_human(path) {
         Result::Ok(size_mb) => {
-            let size_str = format!("\x1b[1m{size_mb:.2} MB\x1b[0m"); // bold
+            let size_str = format!("\x1b[1m{size_mb}\x1b[0m"); // bold
             format!("{msg} {at} {} ({})", path.display(), size_str)
         }
         // Happens when we write to zip

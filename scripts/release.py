@@ -589,6 +589,8 @@ def parse_args() -> tuple[str, Args]:
 def main() -> None:
     cmd, args = parse_args()
 
+    PM.release.mkdir(exist_ok=True)
+
     if cmd == "build":
         build_release(args)
         extract_indexes(args)
