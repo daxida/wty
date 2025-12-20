@@ -75,6 +75,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#dictionary-types" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -299,6 +304,24 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dictionaries
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -315,6 +338,45 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#dictionary-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dictionary types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paths
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -423,6 +485,7 @@
 
   <h1>Dictionaries</h1>
 
+<h2 id="dictionary-types">Dictionary types<a class="headerlink" href="#dictionary-types" title="Permanent link">&para;</a></h2>
 <p>WIP. These are the different types of dictionaries that can be made with kty:</p>
 <div class="highlight"><pre><span></span><code><span class="gp">$ </span>kty<span class="w"> </span>main<span class="w">              </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>&lt;SOURCE&gt;<span class="w"> </span>&lt;TARGET&gt;<span class="w"> </span><span class="o">[</span>DICT_NAME<span class="o">]</span>
 <span class="gp">$ </span>kty<span class="w"> </span>ipa<span class="w">               </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>&lt;SOURCE&gt;<span class="w"> </span>&lt;TARGET&gt;<span class="w"> </span><span class="o">[</span>DICT_NAME<span class="o">]</span>
@@ -483,6 +546,18 @@
 <div class="admonition tip">
 <p class="admonition-title">Identical cells in a row are highlighted in bold UPPERCASE</p>
 </div>
+<h2 id="paths">Paths<a class="headerlink" href="#paths" title="Permanent link">&para;</a></h2>
+<p>When building locally, dictionaries are usually stored in: <code>ROOT/dict/SOURCE/TARGET/kty-SOURCE-TARGET.zip</code>.</p>
+<p>The only exception being ipa-merged, since it has no source.</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>kty<span class="w"> </span>main<span class="w"> </span>de<span class="w"> </span>en
+<span class="go">✓ Wrote yomitan dict @ data/dict/de/en/kty-de-en.zip (16.05 MB)</span>
+<span class="gp">$ </span>kty<span class="w"> </span>glossary<span class="w"> </span>de<span class="w"> </span>en
+<span class="go">✓ Wrote yomitan dict @ data/dict/de/en/kty-de-en-gloss.zip (3.58 MB)</span>
+<span class="gp">$ </span>kty<span class="w"> </span>ipa-merged<span class="w"> </span>en
+<span class="go">✓ Wrote yomitan dict @ data/dict/en/all/kty-en-ipa.zip (4.45 MB)</span>
+<span class="gp">$ </span>kty<span class="w"> </span>glossary-extended<span class="w"> </span>all<span class="w"> </span>de<span class="w"> </span>en
+<span class="go">✓ Wrote yomitan dict @ data/dict/de/en/kty-all-de-en-gloss.zip (2.70 MB)</span>
+</code></pre></div>
 
 
 
