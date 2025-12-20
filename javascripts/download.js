@@ -17,7 +17,7 @@ function buildUrl(type, target, source) {
 
         case "ipa-merged":
             return {
-                url: `${BASE_URL}/kty-${target}-ipa.zip`,
+                url: `${BASE_URL}/${target}/all/kty-${target}-ipa.zip`,
                 filename: `kty-${target}-ipa.zip`,
             };
 
