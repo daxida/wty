@@ -1,31 +1,19 @@
 // Simple javascript script to generate the download urls from the language selection.
 
 function buildUrl(type, target, source) {
-    const BASE_URL = "https://huggingface.co/datasets/daxida/test-dataset/resolve/main/dict"
+    const BASE_URL = "https://huggingface.co/datasets/daxida/test-dataset/resolve/main/dict";
     switch (type) {
         case "main":
-            return {
-                url: `${BASE_URL}/${target}/${source}/kty-${target}-${source}.zip`,
-                filename: `kty-${target}-${source}.zip`,
-            };
+            return `${BASE_URL}/${target}/${source}/kty-${target}-${source}.zip`;
 
         case "ipa":
-            return {
-                url: `${BASE_URL}/${target}/${source}/kty-${target}-${source}-ipa.zip`,
-                filename: `kty-${target}-${source}-ipa.zip`,
-            };
+            return `${BASE_URL}/${target}/${source}/kty-${target}-${source}-ipa.zip`;
 
         case "ipa-merged":
-            return {
-                url: `${BASE_URL}/${target}/all/kty-${target}-ipa.zip`,
-                filename: `kty-${target}-ipa.zip`,
-            };
+            return `${BASE_URL}/${target}/all/kty-${target}-ipa.zip`;
 
         case "glossary":
-            return {
-                url: `${BASE_URL}/${target}/${source}/kty-${target}-${source}-gloss.zip`,
-                filename: `kty-${target}-${source}-gloss.zip`,
-            };
+            return `${BASE_URL}/${target}/${source}/kty-${target}-${source}-gloss.zip`;
 
         default:
             return null;
@@ -49,7 +37,6 @@ function setupRow(row) {
             info.textContent = "Select the language(s)";
             return;
         }
-        console.log(target, source);
 
         // Glossary constraint
         if (type === "glossary" && target === source) {
@@ -58,18 +45,39 @@ function setupRow(row) {
             return;
         }
 
-        const result = buildUrl(type, target, source);
-        if (!result) {
+        const url = buildUrl(type, target, source);
+        if (!url) {
             btn.disabled = true;
             info.textContent = "";
             return;
         }
 
+        const downloadUrl = `${url}?download=true`;
+
         btn.disabled = false;
-        info.textContent = `File: ${result.filename}`;
+
+        // Copy url button logic
+        info.innerHTML = "";
+        const copyBtn = document.createElement("button");
+        copyBtn.type = "button";
+        copyBtn.textContent = "📋 Copy URL";
+        copyBtn.className = "copy-url-btn";
+
+        copyBtn.onclick = async () => {
+            try {
+                await navigator.clipboard.writeText(downloadUrl);
+                copyBtn.textContent = "✅ Copied!";
+                setTimeout(() => {
+                    copyBtn.textContent = "📋 Copy URL";
+                }, 1500);
+            } catch {
+                copyBtn.textContent = "❌ Failed";
+            }
+        };
+        info.appendChild(copyBtn);
 
         btn.onclick = () => {
-            window.location.href = `${result.url}?download=true`;
+            window.location.href = downloadUrl;
         };
     }
 
