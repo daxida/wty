@@ -459,8 +459,10 @@
   </tbody>
 </table>
 
-Files are hosted [here](https://huggingface.co/datasets/daxida/test-dataset), where you can also see the calendar version (calver) of the dictionaries.
+!!! warning "If you get an "Entry not found" error, there was not enough data to create the dictionary."
 
-If you get an `Entry not found` error, there was not enough data to make the dictionary.
+!!! tip "You can import entries directly to Yomitan by pasting the URL into "Import from URLs""
+
+Files are hosted [here](https://huggingface.co/datasets/daxida/test-dataset), where you can also see the calendar version (calver) of the dictionaries.
 
 A brief description of the dictionaries can be found [here](dictionaries.md).
