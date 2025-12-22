@@ -91,6 +91,12 @@ function setupRow(row) {
 // but it's the only thing I got working...
 // cf. https://github.com/squidfunk/mkdocs-material/discussions/6788#discussioncomment-8498415
 document$.subscribe(function() {
+    // Mark table as loaded to fade it in
+    const table = document.querySelector('.download-table');
+    if (table) {
+        table.classList.add('loaded');
+    }
+
     document
         .querySelectorAll(".download-table tr[data-type]")
         .forEach(setupRow);
