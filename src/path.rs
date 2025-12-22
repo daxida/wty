@@ -163,24 +163,23 @@ impl PathManager {
 
         use DictionaryType::*;
         match self.dict_ty {
-            GlossaryExtended | IpaMerged => self.expand(edition),
+            // All editions, other_lang is not used when filtering
+            GlossaryExtended | IpaMerged => edition
+                .variants()
+                .into_iter()
+                .map(|edl| (edl, self.aliases(edl, edl.into())))
+                .collect(),
+            // One edition, other_lang is used when filtering
             Main | Ipa => {
                 let edl = edition.try_into().unwrap();
                 vec![(edl, self.aliases(edl, source))]
             }
+            // One edition, other_lang is not used when filtering
             Glossary => {
                 let edl = edition.try_into().unwrap();
-                vec![(edl, self.aliases(edl, edl.into()))] // monolingual
+                vec![(edl, self.aliases(edl, edl.into()))]
             }
         }
-    }
-
-    fn expand(&self, edition: Edition) -> Vec<(EditionLang, Vec<PathBuf>)> {
-        edition
-            .variants()
-            .into_iter()
-            .map(|edl| (edl, self.aliases(edl, edl.into()))) // monolingual
-            .collect()
     }
 
     /// `data/dict/source/target/temp/tidy/source-target-lemmas.json`

@@ -12,7 +12,6 @@ fn run_command(cmd: &Command) -> Result<()> {
     match cmd {
         Command::Main(args) => {
             let pm = PathManager::new(DictionaryType::Main, args);
-            // make_dict_main(args, &pm)
             make_dict(DMain, args.options(), &pm)
         }
         Command::Glossary(args) => {

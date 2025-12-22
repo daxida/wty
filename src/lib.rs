@@ -21,7 +21,7 @@ use zip::write::SimpleFileOptions;
 
 use std::fs::{self, File};
 use std::io::{BufRead, BufReader, BufWriter, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use crate::cli::ArgsOptions;
 use crate::dict::get_index;
@@ -404,6 +404,27 @@ pub trait Dictionary {
     }
 }
 
+fn find_or_download_jsonl(
+    edition: EditionLang,
+    lang: Lang,
+    paths: &[PathBuf],
+    options: &ArgsOptions,
+) -> Result<PathBuf> {
+    let first_path_found = paths.iter().find(|pbuf| pbuf.exists());
+
+    if let (false, Some(pbuf)) = (options.redownload, first_path_found) {
+        if !options.quiet {
+            skip_because_file_exists("download", pbuf);
+        }
+        Ok(pbuf.clone())
+    } else {
+        let path_jsonl_raw_of_download = paths.last().unwrap();
+        #[cfg(feature = "html")]
+        download_jsonl(edition, lang, path_jsonl_raw_of_download, options.quiet)?;
+        Ok(path_jsonl_raw_of_download.clone())
+    }
+}
+
 const CONSOLE_PRINT_INTERVAL: i32 = 10000;
 
 pub fn make_dict<D: Dictionary>(dict: D, options: &ArgsOptions, pm: &PathManager) -> Result<()> {
@@ -417,29 +438,10 @@ pub fn make_dict<D: Dictionary>(dict: D, options: &ArgsOptions, pm: &PathManager
     let mut entries = D::I::default();
 
     for (edition, paths) in pm.paths_jsonl_raw() {
-        let first_path_found = paths.iter().find(|pbuf| pbuf.exists());
-        let path_jsonl_raw = if let (false, Some(pbuf)) = (options.redownload, first_path_found) {
-            if !options.quiet {
-                skip_because_file_exists("download", pbuf);
-            }
-            pbuf
-        } else {
-            let path_jsonl_raw_of_download = paths.last().unwrap();
-            #[cfg(feature = "html")]
-            {
-                download_jsonl(
-                    edition,
-                    source_pm,
-                    path_jsonl_raw_of_download,
-                    options.quiet,
-                )?;
-            }
-            path_jsonl_raw_of_download
-        };
-
+        let path_jsonl_raw = find_or_download_jsonl(edition, source_pm, &paths, options)?;
         tracing::debug!("path_jsonl_raw: {}", path_jsonl_raw.display());
 
-        let reader_path = path_jsonl_raw;
+        let reader_path = &path_jsonl_raw;
         let reader_file = File::open(reader_path)?;
         let mut reader = BufReader::with_capacity(capacity, reader_file);
 
