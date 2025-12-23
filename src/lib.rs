@@ -15,8 +15,6 @@ use indexmap::{IndexMap, IndexSet};
 use serde::Serialize;
 #[allow(unused)]
 use tracing::{Level, debug, error, info, span, trace, warn};
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt::format::FmtSpan;
 use zip::ZipWriter;
 use zip::write::SimpleFileOptions;
 
@@ -500,28 +498,6 @@ pub fn make_dict<D: Dictionary>(dict: D, options: &ArgsOptions, pm: &PathManager
     Ok(())
 }
 
-pub fn setup_tracing(verbose: bool) {
-    // tracing_subscriber::fmt::init();
-    // Same defaults as the above, without timestamps
-
-    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
-        if verbose {
-            // Only we are set to debug. ureq and other libs stay the same.
-            EnvFilter::new(format!("{}=debug", env!("CARGO_PKG_NAME")))
-        } else {
-            EnvFilter::new("warn")
-        }
-    });
-
-    tracing_subscriber::fmt()
-        .with_env_filter(filter)
-        .with_span_events(FmtSpan::CLOSE)
-        // .without_time()
-        .with_target(true)
-        .with_level(true)
-        .init();
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -531,6 +507,8 @@ mod tests {
     use crate::path::DictionaryType;
 
     use anyhow::{Ok, Result};
+    use tracing_subscriber::EnvFilter;
+    use tracing_subscriber::fmt::format::FmtSpan;
 
     use std::fs;
     use std::path::{Path, PathBuf};
@@ -608,10 +586,21 @@ mod tests {
         }
     }
 
+    fn setup_tracing_test() {
+        let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("warn"));
+
+        tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_span_events(FmtSpan::CLOSE)
+            .with_target(true)
+            .with_level(true)
+            .init();
+    }
+
     /// Test via snapshots and git diffs like the original
     #[test]
     fn snapshot() {
-        setup_tracing(false);
+        setup_tracing_test();
 
         let fixture_dir = PathBuf::from("tests");
         // have to hardcode this since we have not initialized args

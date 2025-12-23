@@ -1,12 +1,36 @@
 use anyhow::Result;
+use tracing_subscriber::EnvFilter;
+use tracing_subscriber::fmt::format::FmtSpan;
 
 use kty::cli::{Cli, Command, Langs, SimpleArgs};
 use kty::dict::{DGlossary, DGlossaryExtended, DIpa, DIpaMerged, DMain};
 use kty::download::download_jsonl;
 use kty::lang::{EditionLang, Lang};
+use kty::make_dict;
 use kty::path::{DictionaryType, PathManager};
 use kty::utils::skip_because_file_exists;
-use kty::{make_dict, setup_tracing};
+
+fn setup_tracing(verbose: bool) {
+    // tracing_subscriber::fmt::init();
+    // Same defaults as the above, without timestamps
+
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        if verbose {
+            // Only we are set to debug. ureq and other libs stay the same.
+            EnvFilter::new(format!("{}=debug", env!("CARGO_PKG_NAME")))
+        } else {
+            EnvFilter::new("warn")
+        }
+    });
+
+    tracing_subscriber::fmt()
+        .with_env_filter(filter)
+        .with_span_events(FmtSpan::CLOSE)
+        // .without_time()
+        .with_target(true)
+        .with_level(true)
+        .init();
+}
 
 fn run_command(cmd: &Command) -> Result<()> {
     match cmd {
