@@ -27,6 +27,7 @@ import shutil
 import subprocess
 import time
 import zipfile
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
@@ -41,12 +42,15 @@ BINARY_PATH = "target/release/kty"
 
 ANSI_ESCAPE_RE = re.compile(r"\x1B[@-_][0-?]*[ -/]*[@-~]")
 
+type DictTy = Literal["main", "ipa", "ipa-merged", "glossary"]
+
 
 @dataclass
 class Args:
     verbose: int
     dry_run: bool
     jobs: int
+    dtype: DictTy | None
 
 
 class PathManager:
@@ -373,9 +377,6 @@ def log(*values, **kwargs) -> None:
         f.write(line + "\n")
 
 
-type DictTy = Literal["main", "ipa", "ipa-merged", "glossary"]
-
-
 # see path.rs::dict_name_expanded
 def pattern(dict_ty: DictTy, sources: list[str], targets: list[str]) -> str:
     sources_re = "|".join(sources)
@@ -434,13 +435,22 @@ def run_matrix(langs: list[Lang], args: Args) -> None:
     #     # "ja",
     # ]
 
-    matrix: list[tuple[DictTy, list[str], list[str]]] = [
-        ("main", with_edition, isos),
-        ("ipa", with_edition, isos),
-        ("glossary", with_edition, isos),
-        ("ipa-merged", with_edition, ["__target"]),
-        # ("glossary-extended", isos, isos), # unsupported yet, since experimental
+    isos_no_simple = [iso for iso in isos if iso != "simple"]
+    with_edition_no_simple = [iso for iso in with_edition if iso != "simple"]
+
+    matrix: list[tuple[DictTy, list[str], Callable[[str], list[str]]]] = [
+        (
+            "main",
+            with_edition,
+            lambda ed: isos_no_simple if ed != "simple" else ["simple"],
+        ),
+        ("ipa", with_edition_no_simple, lambda _: isos_no_simple),
+        ("glossary", with_edition_no_simple, lambda _: isos_no_simple),
+        ("ipa-merged", with_edition_no_simple, lambda _: ["__target"]),
     ]
+
+    if args.dtype is not None:
+        matrix = [run for run in matrix if run[0] == args.dtype]
 
     log("ALL", f"Editions:  {' '.join(sorted(with_edition))}")
     log("ALL", f"Languages: {' '.join(sorted(isos))}")
@@ -461,11 +471,12 @@ def run_matrix(langs: list[Lang], args: Args) -> None:
     run_download(odir, with_edition, args)
 
     log("ALL", "Starting...")
-    for dict_ty, sources, targets in matrix:
+    for dict_ty, sources, target_lambda in matrix:
         dict_start = time.perf_counter()
         log(dict_ty, "Making dictionaries...")
 
         for source in sources:
+            targets = target_lambda(source)
             source_start = time.perf_counter()
             label = f"{source}-{dict_ty}"
             all_logs: list[str] = []
@@ -481,6 +492,8 @@ def run_matrix(langs: list[Lang], args: Args) -> None:
                         params = f"{source} {target}"
                     case "ipa-merged":
                         params = f"{source}"
+                    case _:
+                        raise RuntimeError("invalid dict_ty")
                 return run_cmd(odir, dict_ty, params, args)
 
             with ThreadPoolExecutor(max_workers=n_workers) as executor:
@@ -494,7 +507,7 @@ def run_matrix(langs: list[Lang], args: Args) -> None:
             elapsed = time.perf_counter() - source_start
             log(label, f"Finished dict ({elapsed:.2f}s)")
 
-        fp = pattern(dict_ty, sources, targets)
+        fp = pattern(dict_ty, sources, targets)  # type: ignore
         _, total_size = stats(odir, file_pattern=fp)
         elapsed = time.perf_counter() - dict_start
         log(dict_ty, f"Finished dicts ({elapsed:.2f}s, {total_size})")
@@ -558,7 +571,7 @@ def build_release(args: Args) -> None:
     run_matrix(langs, args)
 
 
-def extract_indexes(args: Args) -> None:
+def extract_indexes() -> None:
     """Extract indexes in some folder to support dictionary updates.
 
     Paths looks like:
@@ -601,9 +614,15 @@ def parse_args() -> tuple[str, Args]:
     parser.add_argument("-v", "--verbose", action="count", default=0)
     parser.add_argument("-n", "--dry-run", action="store_true")
     parser.add_argument("-j", "--jobs", type=int, default=8)
+    parser.add_argument(
+        "-t", "--dictionary-type", choices=["main", "ipa", "ipa-merged"]
+    )
     args = parser.parse_args()
     return args.command, Args(
-        verbose=args.verbose, dry_run=args.dry_run, jobs=args.jobs
+        verbose=args.verbose,
+        dry_run=args.dry_run,
+        jobs=args.jobs,
+        dtype=args.dictionary_type,
     )
 
 
@@ -614,7 +633,7 @@ def main() -> None:
 
     if cmd == "build":
         build_release(args)
-        extract_indexes(args)
+        extract_indexes()
     else:
         upload_to_huggingface()
 
