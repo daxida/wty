@@ -1,13 +1,13 @@
 ## Dictionary types
 
-WIP. These are the different types of dictionaries that can be made with kty:
+These are the different types of dictionaries that can be made with kty (optional parameters have been omitted):
 
 ```console
-$ kty main              [OPTIONS] <SOURCE> <TARGET> [DICT_NAME]
-$ kty ipa               [OPTIONS] <SOURCE> <TARGET> [DICT_NAME]
-$ kty ipa-merged        [OPTIONS] <TARGET> [DICT_NAME]
-$ kty glossary          [OPTIONS] <SOURCE> <TARGET> [DICT_NAME]
-$ kty glossary-extended [OPTIONS] <EDITION> <SOURCE> <TARGET> [DICT_NAME]
+$ kty main              <SOURCE> <TARGET>
+$ kty ipa               <SOURCE> <TARGET>
+$ kty ipa-merged        <TARGET>
+$ kty glossary          <SOURCE> <TARGET>
+$ kty glossary-extended <EDITION> <SOURCE> <TARGET>
 ```
 
 - **main**: main dictionaries, with etymology, examples etc. These have good coverage, but tend to be verbose.
