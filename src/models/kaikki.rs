@@ -81,6 +81,7 @@ pub struct Sense {
 #[serde(default)]
 pub struct Example {
     pub text: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub translation: String,
 }
 

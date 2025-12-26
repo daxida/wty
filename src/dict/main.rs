@@ -684,7 +684,13 @@ fn process_word_entry(
     word_entry: &WordEntry,
 ) -> Option<LemmaInfo> {
     let gloss_tree = get_gloss_tree(word_entry);
+
     if gloss_tree.is_empty() {
+        // Rare, happens if word_entry has no glosses (likely a wiktionary issue)
+        tracing::warn!(
+            "Empty gloss tree for {}",
+            link_wiktionary(edition, source, &word_entry.word)
+        );
         return None;
     }
 
@@ -760,7 +766,7 @@ fn get_gloss_tree(entry: &WordEntry) -> GlossTree {
             .filter(|ex| !ex.text.is_empty() && ex.text.chars().count() <= 120) // equal to JS length
             .cloned()
             .collect();
-        // Stable sort: examples with translations first
+        // Place examples with translations first
         filtered_examples.sort_by_key(|ex| ex.translation.is_empty());
 
         insert_glosses(
