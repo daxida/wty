@@ -529,6 +529,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/bring#English",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/English/meaning/b/br/bring.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -670,6 +676,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/wain#English",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/English/meaning/w/wa/wain.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -842,6 +854,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/falcon#English",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/English/meaning/f/fa/falcon.html",
+                "content": "Kaikki"
               }
             ]
           }

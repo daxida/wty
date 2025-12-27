@@ -95,6 +95,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/ἀγρός#Ancient Greek",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Ancient%20Greek/meaning/ἀ/ἀγ/ἀγρός.html",
+                "content": "Kaikki"
               }
             ]
           }

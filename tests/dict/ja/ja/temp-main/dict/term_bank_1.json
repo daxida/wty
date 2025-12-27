@@ -38,6 +38,12 @@
                 "tag": "a",
                 "href": "https://ja.wiktionary.org/wiki/立命#Japanese",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/jawiktionary/All%20languages%20combined/meaning/立/立命/立命.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -602,6 +608,12 @@
                 "tag": "a",
                 "href": "https://ja.wiktionary.org/wiki/全然#Japanese",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/jawiktionary/All%20languages%20combined/meaning/全/全然/全然.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -672,6 +684,12 @@
                 "tag": "a",
                 "href": "https://ja.wiktionary.org/wiki/命令#Japanese",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/jawiktionary/All%20languages%20combined/meaning/命/命令/命令.html",
+                "content": "Kaikki"
               }
             ]
           }

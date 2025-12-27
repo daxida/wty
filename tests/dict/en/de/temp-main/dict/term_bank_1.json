@@ -38,6 +38,12 @@
                 "tag": "a",
                 "href": "https://de.wiktionary.org/wiki/choose#English",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dewiktionary/All%20languages%20combined/meaning/c/ch/choose.html",
+                "content": "Kaikki"
               }
             ]
           }

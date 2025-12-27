@@ -1749,6 +1749,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/prendre#French",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/French/meaning/p/pr/prendre.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -1903,6 +1909,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/sembler#French",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/French/meaning/s/se/sembler.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -2037,6 +2049,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/chambre#French",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/French/meaning/c/ch/chambre.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -2191,6 +2209,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/d'accord#French",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/French/meaning/d/d'/d'accord.html",
+                "content": "Kaikki"
               }
             ]
           }

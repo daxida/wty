@@ -149,6 +149,12 @@
                 "tag": "a",
                 "href": "https://es.wiktionary.org/wiki/fast#English",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/eswiktionary/All%20languages%20combined/meaning/f/fa/fast.html",
+                "content": "Kaikki"
               }
             ]
           }

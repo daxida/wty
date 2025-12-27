@@ -73,6 +73,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/akull#Albanian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Albanian/meaning/a/ak/akull.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -625,6 +631,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/gjuhë#Albanian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Albanian/meaning/g/gj/gjuhë.html",
+                "content": "Kaikki"
               }
             ]
           }

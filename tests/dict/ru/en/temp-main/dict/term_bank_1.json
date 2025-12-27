@@ -390,6 +390,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/снег#Russian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Russian/meaning/с/сн/снег.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -588,6 +594,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/побелеть#Russian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Russian/meaning/п/по/побелеть.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -693,6 +705,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/зимний#Russian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Russian/meaning/з/зи/зимний.html",
+                "content": "Kaikki"
               }
             ]
           }

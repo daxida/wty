@@ -106,6 +106,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/田#Chinese",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Chinese/meaning/田/田/田.html",
+                "content": "Kaikki"
               }
             ]
           }

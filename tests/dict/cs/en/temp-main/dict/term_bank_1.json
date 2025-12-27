@@ -248,6 +248,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/zpráva#Czech",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Czech/meaning/z/zp/zpráva.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -374,6 +380,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/pro#Czech",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Czech/meaning/p/pr/pro.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -457,6 +469,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/přít#Czech",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Czech/meaning/p/př/přít.html",
+                "content": "Kaikki"
               }
             ]
           }

@@ -208,6 +208,12 @@
                 "tag": "a",
                 "href": "https://el.wiktionary.org/wiki/κόρφος#Greek",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/elwiktionary/Greek/meaning/κ/κό/κόρφος.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -291,6 +297,12 @@
                 "tag": "a",
                 "href": "https://el.wiktionary.org/wiki/αζωικός#Greek",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/elwiktionary/Greek/meaning/α/αζ/αζωικός.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -438,6 +450,12 @@
                 "tag": "a",
                 "href": "https://el.wiktionary.org/wiki/γορίλλας#Greek",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/elwiktionary/Greek/meaning/γ/γο/γορίλλας.html",
+                "content": "Kaikki"
               }
             ]
           }

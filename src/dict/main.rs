@@ -1142,41 +1142,41 @@ fn make_yomitan_lemma(
 
     let yomitan_reading = if *reading == *lemma { "" } else { reading };
 
-    let common_short_tags_recognized =
-        get_recognized_tags(options, lemma, pos, &info.gloss_tree, diagnostics);
-    let definition_tags = common_short_tags_recognized.join(" ");
+    let common_short_tags_found =
+        get_found_tags(options, lemma, pos, &info.gloss_tree, diagnostics);
+    let definition_tags = common_short_tags_found.join(" ");
 
     let mut detailed_definition_content = Node::new_array();
 
     // rg: etymologytext / head_info_text headinfo
     if info.etymology_text.is_some() || info.head_info_text.is_some() {
-        let structured_preamble =
-            get_structured_preamble(info.etymology_text.as_ref(), info.head_info_text.as_ref());
-        detailed_definition_content.push(structured_preamble);
+        detailed_definition_content.push(get_structured_preamble(
+            info.etymology_text.as_ref(),
+            info.head_info_text.as_ref(),
+        ));
     }
 
-    let structured_glosses = get_structured_glosses(
+    detailed_definition_content.push(get_structured_glosses(
         edition.into(),
         info.gloss_tree,
-        &common_short_tags_recognized,
-    );
-    detailed_definition_content.push(structured_glosses);
+        &common_short_tags_found,
+    ));
 
-    let backlink = get_structured_backlink(&info.link_wiktionary, &info.link_kaikki, options);
-    detailed_definition_content.push(backlink);
-
-    let detailed_definition = DetailedDefinition::structured(detailed_definition_content);
+    detailed_definition_content.push(get_structured_backlink(
+        &info.link_wiktionary,
+        &info.link_kaikki,
+    ));
 
     YomitanEntry::TermBank(TermBank(
         lemma.to_string(),
         yomitan_reading.to_string(),
         definition_tags,
         found_pos,
-        vec![detailed_definition],
+        vec![DetailedDefinition::structured(detailed_definition_content)],
     ))
 }
 
-fn get_recognized_tags(
+fn get_found_tags(
     options: &Options,
     lemma: &str,
     pos: &Pos,
@@ -1247,15 +1247,12 @@ fn get_structured_preamble(
     wrap(NTag::Div, "", preamble.into_array_node())
 }
 
-fn get_structured_backlink(wlink: &str, klink: &str, options: &Options) -> Node {
+fn get_structured_backlink(wlink: &str, klink: &str) -> Node {
     let mut links = Node::new_array();
 
     links.push(Node::Backlink(BacklinkContent::new(wlink, "Wiktionary")));
-
-    if options.experimental {
-        links.push(Node::Text(" | ".into())); // JMdict does this
-        links.push(Node::Backlink(BacklinkContent::new(klink, "Kaikki")));
-    }
+    links.push(Node::Text(" | ".into())); // JMdict uses this separator
+    links.push(Node::Backlink(BacklinkContent::new(klink, "Kaikki")));
 
     wrap(NTag::Div, "backlink", links)
 }

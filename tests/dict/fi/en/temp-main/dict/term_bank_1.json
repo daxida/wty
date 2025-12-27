@@ -382,6 +382,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/iso#Finnish",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Finnish/meaning/i/is/iso.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -631,6 +637,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/pää#Finnish",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Finnish/meaning/p/pä/pää.html",
+                "content": "Kaikki"
               }
             ]
           }

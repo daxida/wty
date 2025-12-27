@@ -250,6 +250,12 @@
                 "tag": "a",
                 "href": "https://fr.wiktionary.org/wiki/avatar#French",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/frwiktionary/All%20languages%20combined/meaning/a/av/avatar.html",
+                "content": "Kaikki"
               }
             ]
           }

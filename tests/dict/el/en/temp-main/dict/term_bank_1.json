@@ -567,6 +567,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/έρχομαι#Greek",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Greek/meaning/έ/έρ/έρχομαι.html",
+                "content": "Kaikki"
               }
             ]
           }

@@ -310,6 +310,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/vivir#Spanish",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Spanish/meaning/v/vi/vivir.html",
+                "content": "Kaikki"
               }
             ]
           }

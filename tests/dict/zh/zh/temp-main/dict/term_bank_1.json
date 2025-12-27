@@ -73,6 +73,12 @@
                 "tag": "a",
                 "href": "https://zh.wiktionary.org/wiki/啤酒#Chinese",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/zhwiktionary/All%20languages%20combined/meaning/啤/啤酒/啤酒.html",
+                "content": "Kaikki"
               }
             ]
           }

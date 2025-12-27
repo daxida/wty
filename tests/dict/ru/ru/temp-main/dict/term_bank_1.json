@@ -452,6 +452,12 @@
                 "tag": "a",
                 "href": "https://ru.wiktionary.org/wiki/снег#Russian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/ruwiktionary/All%20languages%20combined/meaning/с/сн/снег.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -546,6 +552,12 @@
                 "tag": "a",
                 "href": "https://ru.wiktionary.org/wiki/продолжать#Russian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/ruwiktionary/All%20languages%20combined/meaning/п/пр/продолжать.html",
+                "content": "Kaikki"
               }
             ]
           }

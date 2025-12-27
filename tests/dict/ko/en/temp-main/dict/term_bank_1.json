@@ -95,6 +95,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/독일#Korean",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Korean/meaning/독/독일/독일.html",
+                "content": "Kaikki"
               }
             ]
           }

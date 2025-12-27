@@ -145,6 +145,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/ملک#Persian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Persian/meaning/م/مل/ملک.html",
+                "content": "Kaikki"
               }
             ]
           }
@@ -358,6 +364,12 @@
                 "tag": "a",
                 "href": "https://en.wiktionary.org/wiki/فارسی#Persian",
                 "content": "Wiktionary"
+              },
+              " | ",
+              {
+                "tag": "a",
+                "href": "https://kaikki.org/dictionary/Persian/meaning/ف/فا/فارسی.html",
+                "content": "Kaikki"
               }
             ]
           }
