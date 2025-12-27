@@ -113,12 +113,12 @@ impl PathManager {
 
     // Only used by CMD::download
     //
-    /// Cf. paths_jsonl documentation
+    /// Cf. `paths_jsonl` documentation
     pub fn path_jsonl(&self, edition: EditionLang, lang: Lang) -> PathBuf {
         self.aliases(edition, lang).last().unwrap().into()
     }
 
-    /// Cf. paths_jsonl documentation
+    /// Cf. `paths_jsonl` documentation
     fn aliases(&self, edition: EditionLang, lang: Lang) -> Vec<PathBuf> {
         match edition {
             EditionLang::En => {
@@ -359,7 +359,7 @@ mod tests {
 
         assert!(
             paths.contains(
-                &exp!(
+                exp!(
                     EditionLang::Zh,
                     ["kaikki/zh-zh-extract.jsonl", "kaikki/zh-extract.jsonl"]
                 )
@@ -369,7 +369,7 @@ mod tests {
         );
         assert!(
             paths.contains(
-                &exp!(
+                exp!(
                     EditionLang::Nl,
                     ["kaikki/nl-nl-extract.jsonl", "kaikki/nl-extract.jsonl"]
                 )

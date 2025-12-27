@@ -150,10 +150,10 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w(f"{idt}}}\n\n")
 
     # Lang: all (iteration)
-    w(f"{idt}pub const fn all() -> [Lang; {len(langs)}] {{\n")
+    w(f"{idt}pub const fn all() -> [Self; {len(langs)}] {{\n")
     w(f"{idt * 2}[\n")
     for lang in langs:
-        w(f"{idt * 3}Lang::{lang.iso.title()},\n")
+        w(f"{idt * 3}Self::{lang.iso.title()},\n")
     w(f"{idt * 2}]\n")
     w(f"{idt}}}\n")
     w("}\n\n")

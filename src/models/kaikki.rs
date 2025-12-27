@@ -142,7 +142,7 @@ impl WordEntry {
         self.tagged_forms(&["transliteration"]).next()
     }
 
-    /// Return the first sound.zh_pron with the `Pinyin` tag.
+    /// Return the first `sound.zh_pron` with the `Pinyin` tag.
     pub fn pinyin(&self) -> Option<&str> {
         self.sounds.iter().find_map(|sound| {
             if sound.tags.iter().any(|t| t == "Pinyin") {

@@ -462,7 +462,7 @@ fn preprocess_main(
             }
         }
         _ => (),
-    };
+    }
 
     // WARN: mutates word_entry::senses
     //
@@ -628,9 +628,7 @@ pub fn get_reading(edition: EditionLang, source: Lang, word_entry: &WordEntry) -
         (EditionLang::En, Lang::Ja) => get_japanese_reading(word_entry),
         (EditionLang::En, Lang::Fa) => word_entry.romanization_form().map(|f| f.form.clone()),
         (EditionLang::Ja, _) => word_entry.transliteration_form().map(|f| f.form.clone()),
-        (EditionLang::En | EditionLang::Zh, Lang::Zh) => {
-            word_entry.pinyin().map(|pron| pron.to_string())
-        }
+        (EditionLang::En | EditionLang::Zh, Lang::Zh) => word_entry.pinyin().map(String::from),
         _ => get_canonical_word(source, word_entry),
     }
 }
@@ -816,19 +814,17 @@ fn insert_glosses(
     topics: &[Tag],
     examples: &[Example],
 ) {
-    if glosses.is_empty() {
+    let Some(head) = glosses.get(0) else {
         return;
-    }
+    };
 
-    let head = &glosses[0];
     let tail = &glosses[1..];
 
     // get or insert node with only tags at this level
     let node = gloss_tree.entry(head.clone()).or_insert_with(|| GlossInfo {
         tags: tags.to_vec(),
         topics: topics.to_vec(),
-        examples: vec![],
-        children: GlossTree::default(),
+        ..Default::default()
     });
 
     // intersect tags if node already exists
@@ -994,58 +990,10 @@ fn handle_inflection_sense(
     }
 }
 
-static EN_LEMMA_RE: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"of ([^\s]+)\s*(\(.+?\))?$").unwrap());
-static EN_INSIDE_PARENS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\s*\(.+?\)$").unwrap());
-
-// this is awful
-//
-// tested in the es-en suite
 fn handle_inflection_sense_en(source: Lang, word_entry: &WordEntry, sense: &Sense, irs: &mut Tidy) {
-    // Split glosses by ##
-    let gloss_pieces: Vec<String> = sense
-        .glosses
-        .iter()
-        .flat_map(|gloss| gloss.split("##").map(str::trim).map(String::from))
-        .collect();
-
-    let mut lemmas = Set::default();
-    let mut inflections = Set::default();
-
-    for mut inflection in gloss_pieces {
-        if let Some(caps) = EN_LEMMA_RE.captures(&inflection)
-            && let Some(lemma) = caps.get(1)
-        {
-            lemmas.insert(lemma.as_str().replace(':', "").trim().to_string());
-        }
-
-        let lemma = match lemmas.len() {
-            0 => continue,
-            1 => lemmas.iter().next().unwrap(),
-            // If multiple lemmas → ambiguous → stop
-            _ => return,
-        };
-
-        // Clean up inflection text
-        inflection = inflection
-            .replace("inflection of ", "")
-            .replace(&format!("of {lemma}"), "")
-            .replace(lemma, "")
-            .replace(':', "");
-
-        // Remove parenthesized content at the end
-        inflection = EN_INSIDE_PARENS_RE
-            .replace_all(&inflection, "")
-            .trim()
-            .to_string();
-
-        if !inflection.is_empty() {
-            inflections.insert(inflection);
-        }
-    }
-
-    let Some(uninflected) = lemmas.iter().next() else {
-        return;
+    let uninflected = match sense.form_of.as_slice() {
+        [alt_form] => &alt_form.word,
+        _ => return,
     };
 
     // Not sure if this is better (cf. ru-en) over word_entry.word but it is what was done in
@@ -1057,9 +1005,25 @@ fn handle_inflection_sense_en(source: Lang, word_entry: &WordEntry, sense: &Sens
         return;
     }
 
+    let mut inflections = Set::default();
+    let of_uninflected = format!("of {uninflected}");
+    for gloss in &sense.glosses {
+        let cleaned = gloss
+            .replace("inflection of ", "")
+            .replace(&of_uninflected, "")
+            .replace(&*uninflected, "")
+            .replace(':', "");
+
+        let inflection = PARENS_RE.replace_all(&cleaned, "").trim().to_string();
+
+        if !inflection.is_empty() {
+            inflections.insert(inflection);
+        }
+    }
+
     for inflection in inflections {
         irs.insert_form(
-            uninflected,
+            &uninflected,
             &inflected,
             &word_entry.pos,
             FormSource::Inflection,
@@ -1114,7 +1078,7 @@ fn to_yomitan_lemma(
     info: LemmaInfo,
     diagnostics: &mut Diagnostics,
 ) -> YomitanEntry {
-    let found_pos = match find_short_pos(&pos) {
+    let found_pos = match find_short_pos(pos) {
         Some(short_pos) => short_pos.to_string(),
         None => pos.clone(),
     };
@@ -1218,13 +1182,15 @@ fn structured_preamble(etymology_text: Option<String>, head_info_text: Option<St
 }
 
 fn structured_backlink(wlink: String, klink: String) -> Node {
-    let mut links = Node::new_array();
-
-    links.push(Node::Backlink(BacklinkContent::new(wlink, "Wiktionary")));
-    links.push(Node::Text(" | ".into())); // JMdict uses this separator
-    links.push(Node::Backlink(BacklinkContent::new(klink, "Kaikki")));
-
-    wrap(NTag::Div, "backlink", links)
+    wrap(
+        NTag::Div,
+        "backlink",
+        Node::Array(vec![
+            Node::Backlink(BacklinkContent::new(wlink, "Wiktionary")),
+            Node::Text(" | ".into()), // JMdict uses this separator
+            Node::Backlink(BacklinkContent::new(klink, "Kaikki")),
+        ]),
+    )
 }
 
 fn structured_glosses(
@@ -1271,8 +1237,8 @@ fn structured_glosses_go(
             .tags
             .iter()
             .chain(gloss_info.topics.iter())
+            .filter(|&tag| !common_short_tags_found.contains(tag))
             .cloned()
-            .filter(|tag| !common_short_tags_found.contains(tag))
             .collect();
 
         let mut level_content = Node::new_array();
@@ -1313,26 +1279,29 @@ fn structured_glosses_go(
 }
 
 fn structured_tags(tags: &[Tag], common_short_tags_found: &[Tag]) -> Option<Node> {
-    let mut structured_tags_content = Vec::new();
-
-    for tag in tags {
-        if let Some(tag_info) = find_tag_in_bank(tag)
-            && !common_short_tags_found.contains(&tag_info.short_tag)
-        {
-            structured_tags_content.push(
-                GenericNode {
-                    tag: NTag::Span,
-                    title: Some(tag_info.long_tag),
-                    data: Some(NodeData::from_iter([
-                        ("content", "tag"),
-                        ("category", &tag_info.category),
-                    ])),
-                    content: Node::Text(tag_info.short_tag),
-                }
-                .into_node(),
-            );
-        }
-    }
+    let structured_tags_content: Vec<_> = tags
+        .iter()
+        .filter_map(|tag| {
+            if let Some(tag_info) = find_tag_in_bank(tag)
+                && !common_short_tags_found.contains(&tag_info.short_tag)
+            {
+                Some(
+                    GenericNode {
+                        tag: NTag::Span,
+                        title: Some(tag_info.long_tag),
+                        data: Some(NodeData::from_iter([
+                            ("content", "tag"),
+                            ("category", &tag_info.category),
+                        ])),
+                        content: Node::Text(tag_info.short_tag),
+                    }
+                    .into_node(),
+                )
+            } else {
+                None
+            }
+        })
+        .collect();
 
     if structured_tags_content.is_empty() {
         None

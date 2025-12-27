@@ -281,17 +281,15 @@ fn process_glossary_extended(
 fn to_yomitan_glossary_extended(irs: Vec<IGlossaryExtended>) -> Vec<YomitanEntry> {
     irs.into_iter()
         .map(|(lemma, found_pos, _, translations)| {
-            let definitions = translations
-                .into_iter()
-                .map(|translation| DetailedDefinition::Text(translation))
-                .collect();
-
             YomitanEntry::TermBank(TermBank(
                 lemma,
                 String::new(),
                 found_pos.clone(),
                 found_pos,
-                definitions,
+                translations
+                    .into_iter()
+                    .map(DetailedDefinition::Text)
+                    .collect(),
             ))
         })
         .collect()

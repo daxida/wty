@@ -45,3 +45,10 @@ stat *args:
 bench-log:
   @rm -rf target/criterion # remove cache comparisons when logging
   @cargo bench --bench benchmark > "benches/log.txt"
+
+clippy *args:
+  cargo clippy {{args}} --all-targets --all-features -- -W clippy::nursery -W clippy::pedantic \
+  -A clippy::must_use_candidate \
+  -A clippy::module_name_repetitions \
+  -A clippy::cast_precision_loss \
+  -A clippy::unicode_not_nfc

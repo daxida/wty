@@ -27,11 +27,11 @@ fn human_size(size_bytes: f64) -> String {
     let mut size = size_bytes;
     for unit in ["B", "KB", "MB"] {
         if size < 1024.0 {
-            return format!("{:.2} {}", size, unit);
+            return format!("{size:.2} {unit}");
         }
         size /= 1024.0;
     }
-    format!("{:.2} GB", size)
+    format!("{size:.2} GB")
 }
 
 fn get_file_size_human(path: &Path) -> Result<String> {

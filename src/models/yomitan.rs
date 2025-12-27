@@ -10,10 +10,10 @@ pub enum YomitanEntry {
 }
 
 impl YomitanEntry {
-    pub fn file_prefix(&self) -> &str {
+    pub const fn file_prefix(&self) -> &str {
         match self {
-            YomitanEntry::TermBank(_) => "term_bank",
-            YomitanEntry::TermBankMeta(_) => "term_meta_bank",
+            Self::TermBank(_) => "term_bank",
+            Self::TermBankMeta(_) => "term_meta_bank",
         }
     }
 }
@@ -171,7 +171,7 @@ pub struct BacklinkContent {
 }
 
 impl BacklinkContent {
-    pub fn new(href: String, content: &'static str) -> Self {
+    pub const fn new(href: String, content: &'static str) -> Self {
         Self { href, content }
     }
 }
