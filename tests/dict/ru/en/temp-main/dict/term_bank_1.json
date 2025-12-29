@@ -646,7 +646,7 @@
                         "data": {
                           "content": "Grammar-content"
                         },
-                        "content": "зи́мний • (zýmnyj)"
+                        "content": "зи́мний • (zímnij) (adverb зи́мне or по-зи́мнему)"
                       }
                     ]
                   },
@@ -668,7 +668,7 @@
                         "data": {
                           "content": "Etymology-content"
                         },
-                        "content": "From Proto-Slavic *zimьnъ. Morphologically, from зима́ (zymá) + -ний (-nyj).\nRelated to зи́мній (zýmnij)."
+                        "content": "Inherited from Proto-Slavic *zimьnъ. By surface analysis, зима́ (zimá) + -ний (-nij)."
                       }
                     ]
                   }
@@ -688,7 +688,78 @@
                   {
                     "tag": "div",
                     "content": [
-                      "cold"
+                      {
+                        "tag": "div",
+                        "data": {
+                          "content": "tags"
+                        },
+                        "content": [
+                          {
+                            "tag": "span",
+                            "title": "relational",
+                            "data": {
+                              "content": "tag",
+                              "category": ""
+                            },
+                            "content": "reltnl"
+                          }
+                        ]
+                      },
+                      "winter",
+                      {
+                        "tag": "details",
+                        "data": {
+                          "content": "details-entry-examples"
+                        },
+                        "content": [
+                          {
+                            "tag": "summary",
+                            "data": {
+                              "content": "summary-entry"
+                            },
+                            "content": "1 example"
+                          },
+                          {
+                            "tag": "div",
+                            "data": {
+                              "content": "extra-info"
+                            },
+                            "content": {
+                              "tag": "div",
+                              "data": {
+                                "content": "example-sentence"
+                              },
+                              "content": [
+                                {
+                                  "tag": "div",
+                                  "data": {
+                                    "content": "example-sentence-a"
+                                  },
+                                  "content": "Зи́мний дворе́ц"
+                                },
+                                {
+                                  "tag": "div",
+                                  "data": {
+                                    "content": "example-sentence-b"
+                                  },
+                                  "content": "Winter palace"
+                                }
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "tag": "li",
+                "content": [
+                  {
+                    "tag": "div",
+                    "content": [
+                      "wintry, hibernal"
                     ]
                   }
                 ]

@@ -110,10 +110,21 @@
       "adj": [
         {
           "gloss_tree": {
-            "cold": {}
+            "winter": {
+              "tags": [
+                "relational"
+              ],
+              "examples": [
+                {
+                  "text": "Зи́мний дворе́ц",
+                  "translation": "Winter palace"
+                }
+              ]
+            },
+            "wintry, hibernal": {}
           },
-          "etymology_text": "From Proto-Slavic *zimьnъ. Morphologically, from зима́ (zymá) + -ний (-nyj).\nRelated to зи́мній (zýmnij).",
-          "head_info_text": "зи́мний • (zýmnyj)",
+          "etymology_text": "Inherited from Proto-Slavic *zimьnъ. By surface analysis, зима́ (zimá) + -ний (-nij).",
+          "head_info_text": "зи́мний • (zímnij) (adverb зи́мне or по-зи́мнему)",
           "wlink": "https://en.wiktionary.org/wiki/зимний#Russian",
           "klink": "https://kaikki.org/dictionary/Russian/meaning/з/зи/зимний.html"
         }
