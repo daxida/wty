@@ -89,12 +89,30 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
 
     # w("#![rustfmt::skip]\n")
 
+    w("""use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+    str::FromStr,
+};\n\n""")
+
     w("use serde::{Deserialize, Serialize};\n\n")
+
+    ### Trait
+
+    shared_traits = ["Clone", "Debug", "Display", "FromStr", "PartialEq", "Eq", "Hash"]
+    w("// The idea is from https://github.com/johnstonskj/rust-codes/tree/main\n")
+    w(f"pub trait Code: {' + '.join(shared_traits)} {{}}\n\n")
+    w("impl Code for Lang {}\n")
+    w("impl Code for Edition {}\n")
+    w("impl Code for EditionLang {}\n")
+    w("\n")
 
     ### Lang start
 
     # Lang
-    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]\n")
+    w(
+        "#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]\n"
+    )
     w("pub enum Lang {\n")
     # Add English on top as the default variant
     w(f"{idt}/// English\n")  # doc
@@ -123,7 +141,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
 
     # Lang: help_messages
     is_supported = " | ".join(lang.iso for lang in langs)
-    fn_name = "help_supported_isos"
+    fn_name = "help_isos"
     w(f"{idt}pub const fn {fn_name}() -> &'static str {{\n")
     w(f'{idt * 2}"Supported isos: {is_supported}"\n')
     w(f"{idt}}}\n\n")
@@ -132,12 +150,12 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
         f"\x1b[32m{lang.iso}\x1b[0m" if lang.has_edition else lang.iso for lang in langs
     ]
     isos_colored = " | ".join(coloured_parts)
-    w(f"{idt}pub const fn help_supported_isos_coloured() -> &'static str {{\n")
+    w(f"{idt}pub const fn help_isos_coloured() -> &'static str {{\n")
     w(f'{idt * 2}"Supported isos: {isos_colored}"\n')
     w(f"{idt}}}\n\n")
 
     with_edition = " | ".join(lang.iso for lang in langs if lang.has_edition)
-    w(f"{idt}pub const fn help_supported_editions() -> &'static str {{\n")
+    w(f"{idt}pub const fn help_editions() -> &'static str {{\n")
     w(f'{idt * 2}"Supported editions: {with_edition}"\n')
     w(f"{idt}}}\n\n")
 
@@ -159,7 +177,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w("}\n\n")
 
     # Lang: FromStr
-    w("impl std::str::FromStr for Lang {\n")
+    w("impl FromStr for Lang {\n")
     w(f"{idt}type Err = String;\n\n")
     w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
     w(f"{idt * 2}match s.to_lowercase().as_str() {{\n")
@@ -173,7 +191,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w("}\n\n")
 
     # Lang: Display
-    w("impl std::fmt::Display for Lang {\n")
+    w("impl Display for Lang {\n")
     w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
     w(f'{idt * 2}let debug_str = format!("{{self:?}}");\n')
     w(f'{idt * 2}write!(f, "{{}}", debug_str.to_lowercase())\n')
@@ -183,7 +201,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     ### Edition start
 
     # Edition
-    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]\n")
+    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]\n")
     w("pub enum Edition {\n")
     w(f"{idt}/// All editions\n")
     w(f"{idt}All,\n")
@@ -213,7 +231,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w("}\n\n")
 
     # Edition: FromStr
-    w("impl std::str::FromStr for Edition {\n")
+    w("impl FromStr for Edition {\n")
     w(f"{idt}type Err = String;\n\n")
     w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
     w(f"{idt * 2}match s {{\n")
@@ -224,7 +242,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w("}\n\n")
 
     # Edition: Display
-    w("impl std::fmt::Display for Edition {\n")
+    w("impl Display for Edition {\n")
     w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
     w(f"{idt * 2}match self {{\n")
     w(f'{idt * 3}Self::All => write!(f, "all"),\n')
@@ -236,7 +254,9 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     ### EditionLang start
 
     # EditionLang
-    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]\n")
+    w(
+        "#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]\n"
+    )
     w("pub enum EditionLang {\n")
     # Add English on top as the default variant
     w(f"{idt}/// English\n")  # doc
@@ -273,7 +293,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w("}\n\n")
 
     # EditionLang: FromStr
-    w("impl std::str::FromStr for EditionLang {\n")
+    w("impl FromStr for EditionLang {\n")
     w(f"{idt}type Err = String;\n\n")
     w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
     w(f"{idt * 2}match s.to_lowercase().as_str() {{\n")
@@ -286,7 +306,7 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w("}\n\n")
 
     # EditionLang: Display
-    w("impl std::fmt::Display for EditionLang {\n")
+    w("impl Display for EditionLang {\n")
     w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
     w(f'{idt * 2}let debug_str = format!("{{:?}}", Lang::from(*self));\n')
     w(f'{idt * 2}write!(f, "{{}}", debug_str.to_lowercase())\n')

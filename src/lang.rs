@@ -1,9 +1,22 @@
 //! This file was generated and should not be edited directly.
 //! The source code can be found at scripts/build.py
 
+use std::{
+    fmt::{Debug, Display},
+    hash::Hash,
+    str::FromStr,
+};
+
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+// The idea is from https://github.com/johnstonskj/rust-codes/tree/main
+pub trait Code: Clone + Debug + Display + FromStr + PartialEq + Eq + Hash {}
+
+impl Code for Lang {}
+impl Code for Edition {}
+impl Code for EditionLang {}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub enum Lang {
     /// English
     #[default]
@@ -179,15 +192,15 @@ impl From<EditionLang> for Lang {
 }
 
 impl Lang {
-    pub const fn help_supported_isos() -> &'static str {
+    pub const fn help_isos() -> &'static str {
         "Supported isos: sq | arz | afb | ar | apc | ajp | aii | bn | bg | yue | zh | cs | da | nl | en | enm | ang | simple | eo | et | fi | fr | ka | de | el | grc | haw | he | hi | hu | is | id | ga | sga | it | ja | kn | kk | km | ko | ku | lo | la | lv | ms | mt | mr | mn | no | nb | nn | fa | pl | pt | ro | ru | sh | scn | sl | es | sv | tl | te | th | tok | tr | uk | ur | vi | cy | yi"
     }
 
-    pub const fn help_supported_isos_coloured() -> &'static str {
+    pub const fn help_isos_coloured() -> &'static str {
         "Supported isos: sq | arz | afb | ar | apc | ajp | aii | bn | bg | yue | [32mzh[0m | [32mcs[0m | da | [32mnl[0m | [32men[0m | enm | ang | [32msimple[0m | eo | et | fi | [32mfr[0m | ka | [32mde[0m | [32mel[0m | grc | haw | he | hi | hu | is | [32mid[0m | ga | sga | [32mit[0m | [32mja[0m | kn | kk | km | [32mko[0m | [32mku[0m | lo | la | lv | [32mms[0m | mt | mr | mn | no | nb | nn | fa | [32mpl[0m | [32mpt[0m | ro | [32mru[0m | sh | scn | sl | [32mes[0m | sv | tl | te | [32mth[0m | tok | [32mtr[0m | uk | ur | [32mvi[0m | cy | yi"
     }
 
-    pub const fn help_supported_editions() -> &'static str {
+    pub const fn help_editions() -> &'static str {
         "Supported editions: zh | cs | nl | en | simple | fr | de | el | id | it | ja | ko | ku | ms | pl | pt | ru | es | th | tr | vi"
     }
 
@@ -344,7 +357,7 @@ impl Lang {
     }
 }
 
-impl std::str::FromStr for Lang {
+impl FromStr for Lang {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -420,19 +433,19 @@ impl std::str::FromStr for Lang {
             "vi" => Ok(Self::Vi),
             "cy" => Ok(Self::Cy),
             "yi" => Ok(Self::Yi),
-            _ => Err(format!("unsupported iso code '{s}'\n{}", Self::help_supported_isos())),
+            _ => Err(format!("unsupported iso code '{s}'\n{}", Self::help_isos())),
         }
     }
 }
 
-impl std::fmt::Display for Lang {
+impl Display for Lang {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let debug_str = format!("{self:?}");
         write!(f, "{}", debug_str.to_lowercase())
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Edition {
     /// All editions
     All,
@@ -477,7 +490,7 @@ impl Default for Edition {
     }
 }
 
-impl std::str::FromStr for Edition {
+impl FromStr for Edition {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -488,7 +501,7 @@ impl std::str::FromStr for Edition {
     }
 }
 
-impl std::fmt::Display for Edition {
+impl Display for Edition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::All => write!(f, "all"),
@@ -497,7 +510,7 @@ impl std::fmt::Display for Edition {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
 pub enum EditionLang {
     /// English
     #[default]
@@ -586,7 +599,7 @@ impl std::convert::TryFrom<Edition> for EditionLang {
     }
 }
 
-impl std::str::FromStr for EditionLang {
+impl FromStr for EditionLang {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -617,7 +630,7 @@ impl std::str::FromStr for EditionLang {
     }
 }
 
-impl std::fmt::Display for EditionLang {
+impl Display for EditionLang {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let debug_str = format!("{:?}", Lang::from(*self));
         write!(f, "{}", debug_str.to_lowercase())

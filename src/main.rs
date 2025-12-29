@@ -70,9 +70,9 @@ fn run_command(cmd: &Command) -> Result<()> {
         }
         Command::Iso(args) => {
             if args.edition {
-                println!("{}", Lang::help_supported_editions());
+                println!("{}", Lang::help_editions());
             } else {
-                println!("{}", Lang::help_supported_isos_coloured());
+                println!("{}", Lang::help_isos_coloured());
             }
             Ok(())
         }
