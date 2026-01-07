@@ -80,7 +80,7 @@ pub const TAG_ORDER: [&str; 76] = [
     "combined-form",
 ];
 
-pub const TAG_BANK: [(&str, &str, i32, &[&str], i32); 240] = [
+pub const TAG_BANK: [(&str, &str, i32, &[&str], i32); 241] = [
     ("non-lemma", "", 10, &["non-lemma"], -10),
     ("r", "partOfSpeech", -1, &["root"], 1),
     ("pos-r", "partOfSpeech", -1, &["pos-root"], 1),
@@ -180,6 +180,7 @@ pub const TAG_BANK: [(&str, &str, i32, &[&str], i32); 240] = [
     ("polit", "", 0, &["politics"], 0),
     ("🌿", "", 0, &["botany"], 0),
     ("🔭", "", 0, &["astronomy"], 0),
+    ("ૐ", "", 0, &["Buddhism"], 0),
     ("✝️", "", 0, &["Christianity"], 0),
     ("🛐", "", 0, &["religion"], 0),
     ("vulg", "", 0, &["vulgar"], 0),
