@@ -153,7 +153,7 @@ impl WordEntry {
         })
     }
 
-    /// Check if a `word_entry` contains no glosses.
+    /// Check if a `entry` contains no glosses.
     ///
     /// There is a "no-gloss" tag but it is not always in the same place and therefore unreliable.
     pub fn contains_no_gloss(&self) -> bool {
@@ -168,8 +168,7 @@ impl WordEntry {
 
             // blacklisted forms (happens at least in English)
             // * "-" usually denotes an empty cell in some table in most editions.
-            // * forms starting with hyphens are more likely than not garbage from inflections
-            //   suffixes.
+            // * hyphen-prefixed words are more likely than not garbage from inflections.
             // We deal with both at the same time.
             if form.form.starts_with(['-', '‑']) {
                 return false;
@@ -192,6 +191,7 @@ impl WordEntry {
         })
     }
 
+    // Rare, but a translation can have an empty word.
     pub fn non_trivial_translations(&self) -> impl Iterator<Item = &Translation> {
         self.translations
             .iter()
@@ -200,7 +200,7 @@ impl WordEntry {
 
     pub fn etymology_texts(&self) -> Option<Vec<&str>> {
         if !self.etymology_texts.is_empty() {
-            Some(self.etymology_texts.iter().map(|s| s.as_ref()).collect())
+            Some(self.etymology_texts.iter().map(String::as_ref).collect())
         } else if !self.etymology_text.is_empty() {
             Some(vec![&self.etymology_text])
         } else {

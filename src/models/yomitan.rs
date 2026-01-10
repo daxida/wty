@@ -144,7 +144,7 @@ pub enum NTag {
     Summary,
 }
 
-// The order follows kty serialization, not yomichan builder order
+// Fields are ordered for visualization and may be different from yomitan builder order.
 #[derive(Debug, Serialize, Clone)]
 pub struct GenericNode {
     pub tag: NTag,
