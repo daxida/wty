@@ -3186,6 +3186,10 @@
               "sense_index": "1"
             },
             {
+              "word": "Privatgarage",
+              "sense_index": "1"
+            },
+            {
               "word": "Tiefgarage",
               "sense_index": "1"
             },
@@ -17929,7 +17933,7 @@
               ]
             },
             {
-              "form": "el-conjug-'έρχομαι'\n",
+              "form": "el-conjug-'έρχομαι'",
               "source": "conjugation",
               "tags": [
                 "inflection-template"
