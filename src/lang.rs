@@ -12,15 +12,76 @@ use serde::{Deserialize, Serialize};
 // The idea is from https://github.com/johnstonskj/rust-codes/tree/main
 pub trait Code: Clone + Debug + Display + FromStr + AsRef<str> + PartialEq + Eq + Hash {}
 
+impl Code for LangSpec {}
 impl Code for Lang {}
+impl Code for EditionSpec {}
 impl Code for Edition {}
-impl Code for EditionLang {}
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum LangSpec {
+    /// All langs
+    All,
+    /// A `Lang`
+    One(Lang),
+}
+
+impl LangSpec {
+    pub fn variants(&self) -> Vec<Lang> {
+        match self {
+            Self::All => Lang::all(),
+            Self::One(lang) => vec![*lang],
+        }
+    }
+}
+
+impl TryInto<Lang> for LangSpec {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<Lang, Self::Error> {
+        match self {
+            Self::All => Err("cannot convert from All"),
+            Self::One(lang) => Ok(lang),
+        }
+    }
+}
+
+impl From<EditionSpec> for LangSpec {
+    fn from(value: EditionSpec) -> Self {
+        match value {
+            EditionSpec::All => Self::All,
+            EditionSpec::One(lang) => Self::One(lang.into()),
+        }
+    }
+}
+
+impl FromStr for LangSpec {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "all" => Ok(Self::All),
+            other => Ok(Self::One(Lang::from_str(other)?)),
+        }
+    }
+}
+
+impl AsRef<str> for LangSpec {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::All => "all",
+            Self::One(lang) => lang.as_ref(),
+        }
+    }
+}
+
+impl Display for LangSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_ref())
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Lang {
-    /// English
-    #[default]
-    En,
     /// Albanian
     Sq,
     /// Egyptian Arabic
@@ -41,6 +102,8 @@ pub enum Lang {
     Bg,
     /// Cantonese
     Yue,
+    /// Cebuano
+    Ceb,
     /// Chinese
     Zh,
     /// Czech
@@ -49,6 +112,8 @@ pub enum Lang {
     Da,
     /// Dutch
     Nl,
+    /// English
+    En,
     /// Middle English
     Enm,
     /// Old English
@@ -163,41 +228,47 @@ pub enum Lang {
     Yi,
 }
 
-impl From<EditionLang> for Lang {
-    fn from(e: EditionLang) -> Self {
-        match e {
-            EditionLang::Zh => Self::Zh,
-            EditionLang::Cs => Self::Cs,
-            EditionLang::Nl => Self::Nl,
-            EditionLang::En => Self::En,
-            EditionLang::Simple => Self::Simple,
-            EditionLang::Fr => Self::Fr,
-            EditionLang::De => Self::De,
-            EditionLang::El => Self::El,
-            EditionLang::Id => Self::Id,
-            EditionLang::It => Self::It,
-            EditionLang::Ja => Self::Ja,
-            EditionLang::Ko => Self::Ko,
-            EditionLang::Ku => Self::Ku,
-            EditionLang::Ms => Self::Ms,
-            EditionLang::Pl => Self::Pl,
-            EditionLang::Pt => Self::Pt,
-            EditionLang::Ru => Self::Ru,
-            EditionLang::Es => Self::Es,
-            EditionLang::Th => Self::Th,
-            EditionLang::Tr => Self::Tr,
-            EditionLang::Vi => Self::Vi,
+impl From<Edition> for Lang {
+    fn from(value: Edition) -> Self {
+        match value {
+            Edition::Zh => Self::Zh,
+            Edition::Cs => Self::Cs,
+            Edition::Nl => Self::Nl,
+            Edition::En => Self::En,
+            Edition::Simple => Self::Simple,
+            Edition::Fr => Self::Fr,
+            Edition::De => Self::De,
+            Edition::El => Self::El,
+            Edition::Id => Self::Id,
+            Edition::It => Self::It,
+            Edition::Ja => Self::Ja,
+            Edition::Ko => Self::Ko,
+            Edition::Ku => Self::Ku,
+            Edition::Ms => Self::Ms,
+            Edition::Pl => Self::Pl,
+            Edition::Pt => Self::Pt,
+            Edition::Ru => Self::Ru,
+            Edition::Es => Self::Es,
+            Edition::Th => Self::Th,
+            Edition::Tr => Self::Tr,
+            Edition::Vi => Self::Vi,
         }
+    }
+}
+
+impl Into<LangSpec> for Lang {
+    fn into(self) -> LangSpec {
+        LangSpec::One(self)
     }
 }
 
 impl Lang {
     pub const fn help_isos() -> &'static str {
-        "Supported isos: sq | arz | afb | ar | apc | ajp | aii | bn | bg | yue | zh | cs | da | nl | en | enm | ang | simple | eo | et | fi | fr | ka | de | el | grc | haw | he | hi | hu | is | id | ga | sga | it | ja | kn | kk | km | ko | ku | lo | la | lv | ms | mt | mr | mn | no | nb | nn | fa | pl | pt | ro | ru | sh | scn | sl | es | sv | tl | te | th | tok | tr | uk | ur | vi | cy | yi"
+        "Supported isos: sq | arz | afb | ar | apc | ajp | aii | bn | bg | yue | ceb | zh | cs | da | nl | en | enm | ang | simple | eo | et | fi | fr | ka | de | el | grc | haw | he | hi | hu | is | id | ga | sga | it | ja | kn | kk | km | ko | ku | lo | la | lv | ms | mt | mr | mn | no | nb | nn | fa | pl | pt | ro | ru | sh | scn | sl | es | sv | tl | te | th | tok | tr | uk | ur | vi | cy | yi"
     }
 
     pub const fn help_isos_coloured() -> &'static str {
-        "Supported isos: sq | arz | afb | ar | apc | ajp | aii | bn | bg | yue | [32mzh[0m | [32mcs[0m | da | [32mnl[0m | [32men[0m | enm | ang | [32msimple[0m | eo | et | fi | [32mfr[0m | ka | [32mde[0m | [32mel[0m | grc | haw | he | hi | hu | is | [32mid[0m | ga | sga | [32mit[0m | [32mja[0m | kn | kk | km | [32mko[0m | [32mku[0m | lo | la | lv | [32mms[0m | mt | mr | mn | no | nb | nn | fa | [32mpl[0m | [32mpt[0m | ro | [32mru[0m | sh | scn | sl | [32mes[0m | sv | tl | te | [32mth[0m | tok | [32mtr[0m | uk | ur | [32mvi[0m | cy | yi"
+        "Supported isos: sq | arz | afb | ar | apc | ajp | aii | bn | bg | yue | ceb | [32mzh[0m | [32mcs[0m | da | [32mnl[0m | [32men[0m | enm | ang | [32msimple[0m | eo | et | fi | [32mfr[0m | ka | [32mde[0m | [32mel[0m | grc | haw | he | hi | hu | is | [32mid[0m | ga | sga | [32mit[0m | [32mja[0m | kn | kk | km | [32mko[0m | [32mku[0m | lo | la | lv | [32mms[0m | mt | mr | mn | no | nb | nn | fa | [32mpl[0m | [32mpt[0m | ro | [32mru[0m | sh | scn | sl | [32mes[0m | sv | tl | te | [32mth[0m | tok | [32mtr[0m | uk | ur | [32mvi[0m | cy | yi"
     }
 
     pub const fn help_editions() -> &'static str {
@@ -216,6 +287,7 @@ impl Lang {
             Self::Bn => "Bengali",
             Self::Bg => "Bulgarian",
             Self::Yue => "Cantonese",
+            Self::Ceb => "Cebuano",
             Self::Zh => "Chinese",
             Self::Cs => "Czech",
             Self::Da => "Danish",
@@ -280,8 +352,8 @@ impl Lang {
         }
     }
 
-    pub const fn all() -> [Self; 71] {
-        [
+    pub fn all() -> Vec<Self> {
+        vec![
             Self::Sq,
             Self::Arz,
             Self::Afb,
@@ -292,6 +364,7 @@ impl Lang {
             Self::Bn,
             Self::Bg,
             Self::Yue,
+            Self::Ceb,
             Self::Zh,
             Self::Cs,
             Self::Da,
@@ -357,6 +430,37 @@ impl Lang {
     }
 }
 
+impl TryInto<Edition> for Lang {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<Edition, Self::Error> {
+        match self {
+            Self::Zh => Ok(Edition::Zh),
+            Self::Cs => Ok(Edition::Cs),
+            Self::Nl => Ok(Edition::Nl),
+            Self::En => Ok(Edition::En),
+            Self::Simple => Ok(Edition::Simple),
+            Self::Fr => Ok(Edition::Fr),
+            Self::De => Ok(Edition::De),
+            Self::El => Ok(Edition::El),
+            Self::Id => Ok(Edition::Id),
+            Self::It => Ok(Edition::It),
+            Self::Ja => Ok(Edition::Ja),
+            Self::Ko => Ok(Edition::Ko),
+            Self::Ku => Ok(Edition::Ku),
+            Self::Ms => Ok(Edition::Ms),
+            Self::Pl => Ok(Edition::Pl),
+            Self::Pt => Ok(Edition::Pt),
+            Self::Ru => Ok(Edition::Ru),
+            Self::Es => Ok(Edition::Es),
+            Self::Th => Ok(Edition::Th),
+            Self::Tr => Ok(Edition::Tr),
+            Self::Vi => Ok(Edition::Vi),
+            _ => Err("language has no edition"),
+        }
+    }
+}
+
 impl FromStr for Lang {
     type Err = String;
 
@@ -372,6 +476,7 @@ impl FromStr for Lang {
             "bn" => Ok(Self::Bn),
             "bg" => Ok(Self::Bg),
             "yue" => Ok(Self::Yue),
+            "ceb" => Ok(Self::Ceb),
             "zh" => Ok(Self::Zh),
             "cs" => Ok(Self::Cs),
             "da" => Ok(Self::Da),
@@ -451,6 +556,7 @@ impl AsRef<str> for Lang {
             Self::Bn => "bn",
             Self::Bg => "bg",
             Self::Yue => "yue",
+            Self::Ceb => "ceb",
             Self::Zh => "zh",
             Self::Cs => "cs",
             Self::Da => "da",
@@ -523,87 +629,69 @@ impl Display for Lang {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum Edition {
+pub enum EditionSpec {
     /// All editions
     All,
-    /// An `EditionLang`
-    EditionLang(EditionLang),
+    /// An `Edition`
+    One(Edition),
 }
 
-impl Edition {
-    pub fn variants(&self) -> Vec<EditionLang> {
+impl EditionSpec {
+    pub fn variants(&self) -> Vec<Edition> {
         match self {
-            Self::All => vec![
-                EditionLang::Zh,
-                EditionLang::Cs,
-                EditionLang::Nl,
-                EditionLang::En,
-                EditionLang::Simple,
-                EditionLang::Fr,
-                EditionLang::De,
-                EditionLang::El,
-                EditionLang::Id,
-                EditionLang::It,
-                EditionLang::Ja,
-                EditionLang::Ko,
-                EditionLang::Ku,
-                EditionLang::Ms,
-                EditionLang::Pl,
-                EditionLang::Pt,
-                EditionLang::Ru,
-                EditionLang::Es,
-                EditionLang::Th,
-                EditionLang::Tr,
-                EditionLang::Vi,
-            ],
-            Self::EditionLang(lang) => vec![*lang],
+            Self::All => Edition::all(),
+            Self::One(lang) => vec![*lang],
         }
     }
 }
 
-impl Default for Edition {
-    fn default() -> Self {
-        Self::EditionLang(EditionLang::default())
+impl TryInto<Edition> for EditionSpec {
+    type Error = &'static str;
+
+    fn try_into(self) -> Result<Edition, Self::Error> {
+        match self {
+            Self::All => Err("cannot convert from All"),
+            Self::One(lang) => Ok(lang),
+        }
     }
 }
 
-impl FromStr for Edition {
+impl FromStr for EditionSpec {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "all" => Ok(Self::All),
-            other => Ok(Self::EditionLang(other.parse::<EditionLang>()?)),
+            other => Ok(Self::One(Edition::from_str(other)?)),
         }
     }
 }
 
-impl AsRef<str> for Edition {
+impl AsRef<str> for EditionSpec {
     fn as_ref(&self) -> &str {
         match self {
             Self::All => "all",
-            Self::EditionLang(lang) => lang.as_ref(),
+            Self::One(lang) => lang.as_ref(),
         }
     }
 }
 
-impl Display for Edition {
+impl Display for EditionSpec {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.as_ref())
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]
-pub enum EditionLang {
-    /// English
-    #[default]
-    En,
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub enum Edition {
     /// Chinese
     Zh,
     /// Czech
     Cs,
     /// Dutch
     Nl,
+    /// English
+    En,
     /// Simple English
     Simple,
     /// French
@@ -640,49 +728,41 @@ pub enum EditionLang {
     Vi,
 }
 
-impl std::convert::TryFrom<Lang> for EditionLang {
-    type Error = &'static str;
-
-    fn try_from(lang: Lang) -> Result<Self, Self::Error> {
-        match lang {
-            Lang::Zh => Ok(Self::Zh),
-            Lang::Cs => Ok(Self::Cs),
-            Lang::Nl => Ok(Self::Nl),
-            Lang::En => Ok(Self::En),
-            Lang::Simple => Ok(Self::Simple),
-            Lang::Fr => Ok(Self::Fr),
-            Lang::De => Ok(Self::De),
-            Lang::El => Ok(Self::El),
-            Lang::Id => Ok(Self::Id),
-            Lang::It => Ok(Self::It),
-            Lang::Ja => Ok(Self::Ja),
-            Lang::Ko => Ok(Self::Ko),
-            Lang::Ku => Ok(Self::Ku),
-            Lang::Ms => Ok(Self::Ms),
-            Lang::Pl => Ok(Self::Pl),
-            Lang::Pt => Ok(Self::Pt),
-            Lang::Ru => Ok(Self::Ru),
-            Lang::Es => Ok(Self::Es),
-            Lang::Th => Ok(Self::Th),
-            Lang::Tr => Ok(Self::Tr),
-            Lang::Vi => Ok(Self::Vi),
-            _ => Err("language has no edition"),
-        }
+impl Edition {
+    pub fn all() -> Vec<Self> {
+        vec![
+            Self::Zh,
+            Self::Cs,
+            Self::Nl,
+            Self::En,
+            Self::Simple,
+            Self::Fr,
+            Self::De,
+            Self::El,
+            Self::Id,
+            Self::It,
+            Self::Ja,
+            Self::Ko,
+            Self::Ku,
+            Self::Ms,
+            Self::Pl,
+            Self::Pt,
+            Self::Ru,
+            Self::Es,
+            Self::Th,
+            Self::Tr,
+            Self::Vi,
+        ]
     }
 }
 
-impl std::convert::TryFrom<Edition> for EditionLang {
-    type Error = &'static str;
-
-    fn try_from(edition: Edition) -> Result<Self, Self::Error> {
-        match edition {
-            Edition::EditionLang(lang) => Ok(lang),
-            Edition::All => Err("cannot convert Edition::All to EditionLang"),
-        }
+impl Into<EditionSpec> for Edition {
+    fn into(self) -> EditionSpec {
+        EditionSpec::One(self)
     }
 }
 
-impl FromStr for EditionLang {
+impl FromStr for Edition {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -713,7 +793,7 @@ impl FromStr for EditionLang {
     }
 }
 
-impl AsRef<str> for EditionLang {
+impl AsRef<str> for Edition {
     fn as_ref(&self) -> &str {
         match self {
             Self::Zh => "zh",
@@ -741,7 +821,7 @@ impl AsRef<str> for EditionLang {
     }
 }
 
-impl Display for EditionLang {
+impl Display for Edition {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(self.as_ref())
     }

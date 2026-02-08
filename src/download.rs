@@ -1,28 +1,49 @@
-use crate::lang::{EditionLang, Lang};
+use anyhow::{Result, bail};
+
+use crate::lang::{Edition, Lang};
+
+#[derive(Debug)]
+pub enum DatasetKind {
+    /// Post-processed, English-edition-only, filtered by language.
+    /// Should not use: <https://github.com/tatuylonen/wiktextract/issues/1178>
+    Filtered,
+    /// Every edition (including English) raw datasets
+    Unfiltered,
+}
 
 /// Different in English and non-English editions.
 ///
+/// Default download name is:
+/// - Filtered:   `kaikki.org-dictionary-TARGET.jsonl.gz`
+/// - Unfiltered: `raw-wiktextract-data.jsonl.gz`
+///
 /// Example (el):    `https://kaikki.org/elwiktionary/raw-wiktextract-data.jsonl.gz`
 /// Example (sh-en): `https://kaikki.org/dictionary/Serbo-Croatian/kaikki.org-dictionary-SerboCroatian.jsonl.gz`
-pub fn url_jsonl_gz(edition: EditionLang, source: Lang) -> String {
+pub fn url_jsonl_gz(edition: Edition, lang: Option<Lang>, kind: DatasetKind) -> Result<String> {
     let root = "https://kaikki.org";
 
-    match edition {
-        // Depends on source
-        // Default download name is: kaikki.org-dictionary-TARGET_LANGUAGE.jsonl.gz
-        EditionLang::En => {
-            let long = source.long();
+    match (edition, kind) {
+        (Edition::En, DatasetKind::Filtered) => {
+            let Some(lang) = lang else {
+                bail!("filtered dataset requires lang to not be None");
+            };
+            let long = lang.long();
             // Serbo-Croatian, Ancient Greek and such cases
-            let long_no_special_chars: String =
-                long.chars().filter(|c| *c != ' ' && *c != '-').collect();
+            let long_compact: String = long.chars().filter(|c| *c != ' ' && *c != '-').collect();
             let long_escaped = long.replace(' ', "%20");
-            format!(
-                "{root}/dictionary/{long_escaped}/kaikki.org-dictionary-{long_no_special_chars}.jsonl.gz"
-            )
+            Ok(format!(
+                "{root}/dictionary/{long_escaped}/kaikki.org-dictionary-{long_compact}.jsonl.gz"
+            ))
         }
-        // Does not depend on source
-        // Default download name is: raw-wiktextract-data.jsonl.gz
-        other => format!("{root}/{other}wiktionary/raw-wiktextract-data.jsonl.gz",),
+        (_, DatasetKind::Filtered) => {
+            bail!("Kaikki does not support filtered kind for non-English editions")
+        }
+        (Edition::En, DatasetKind::Unfiltered) => {
+            Ok(format!("{root}/dictionary/raw-wiktextract-data.jsonl.gz"))
+        }
+        (other, DatasetKind::Unfiltered) => Ok(format!(
+            "{root}/{other}wiktionary/raw-wiktextract-data.jsonl.gz"
+        )),
     }
 }
 
@@ -31,7 +52,7 @@ pub use html::*;
 
 #[cfg(feature = "html")]
 mod html {
-    use super::{EditionLang, Lang, url_jsonl_gz};
+    use super::url_jsonl_gz;
 
     use anyhow::Result;
     use flate2::read::GzDecoder;
@@ -39,21 +60,26 @@ mod html {
     use std::io::BufWriter;
     use std::path::Path;
 
-    use crate::utils::{CHECK_C, pretty_println_at_path};
+    use crate::{
+        download::DatasetKind,
+        lang::{Edition, Lang},
+        utils::{CHECK_C, pretty_println_at_path},
+    };
 
     /// Download the "raw" jsonl (jsonlines) from kaikki and write it to `path_jsonl`.
     ///
-    /// "Raw" means that it does not include extra information that they (kaikki) use for the
-    /// website generation, but are not intended for the general use.
+    /// "Raw" means that it does not include extra information, not intended for general use,
+    /// that they (kaikki) use for their website generation.
     ///
     /// Does not write the .gz file to disk.
     pub fn download_jsonl(
-        edition: EditionLang,
-        source: Lang,
+        edition: Edition,
+        lang: Option<Lang>,
+        kind: DatasetKind,
         path_jsonl: &Path,
         quiet: bool,
     ) -> Result<()> {
-        let url = url_jsonl_gz(edition, source);
+        let url = url_jsonl_gz(edition, lang, kind)?;
         if !quiet {
             println!("⬇ Downloading {url}");
         }

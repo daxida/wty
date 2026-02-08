@@ -111,38 +111,107 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     ]
     w("// The idea is from https://github.com/johnstonskj/rust-codes/tree/main\n")
     w(f"pub trait Code: {' + '.join(shared_traits)} {{}}\n\n")
+    w("impl Code for LangSpec {}\n")
     w("impl Code for Lang {}\n")
+    w("impl Code for EditionSpec {}\n")
     w("impl Code for Edition {}\n")
-    w("impl Code for EditionLang {}\n")
     w("\n")
+
+    ### LangSpec start
+
+    # LangSpec
+    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]\n")
+    w("pub enum LangSpec {\n")
+    w(f"{idt}/// All langs\n")
+    w(f"{idt}All,\n")
+    w(f"{idt}/// A `Lang`\n")
+    w(f"{idt}One(Lang),\n")
+    w("}\n\n")
+
+    # LangSpec: variants (iteration)
+    w("impl LangSpec {\n")
+    w(f"{idt}pub fn variants(&self) -> Vec<Lang> {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f"{idt * 3}Self::All => Lang::all(),\n")
+    w(f"{idt * 3}Self::One(lang) => vec![*lang],\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # LangSpec: TryInto<Lang>
+    w("impl TryInto<Lang> for LangSpec {\n")
+    w(f"{idt}type Error = &'static str;\n\n")
+    w(f"{idt}fn try_into(self) -> Result<Lang, Self::Error> {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f'{idt * 3}Self::All => Err("cannot convert from All"),\n')
+    w(f"{idt * 3}Self::One(lang) => Ok(lang),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # LangSpec: From<EditionSpec>
+    w("impl From<EditionSpec> for LangSpec {\n")
+    w(f"{idt}fn from(value: EditionSpec) -> Self {{\n")
+    w(f"{idt * 2}match value {{\n")
+    w(f"{idt * 3}EditionSpec::All => Self::All,\n")
+    w(f"{idt * 3}EditionSpec::One(lang) => Self::One(lang.into()),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # LangSpec: FromStr
+    w("impl FromStr for LangSpec {\n")
+    w(f"{idt}type Err = String;\n\n")
+    w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
+    w(f"{idt * 2}match s {{\n")
+    w(f'{idt * 3}"all" => Ok(Self::All),\n')
+    w(f"{idt * 3}other => Ok(Self::One(Lang::from_str(other)?)),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # LangSpec: AsRef<&str>
+    w("impl AsRef<str> for LangSpec {\n")
+    w(f"{idt}fn as_ref(&self) -> &str {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f'{idt * 3}Self::All => "all",\n')
+    w(f"{idt * 3}Self::One(lang) => lang.as_ref(),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # LangSpec: Display
+    w("impl Display for LangSpec {\n")
+    w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
+    w(f"{idt * 2}f.write_str(self.as_ref())\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
 
     ### Lang start
 
     # Lang
-    w(
-        "#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]\n"
-    )
+    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]\n")
     w("pub enum Lang {\n")
-    # Add English on top as the default variant
-    w(f"{idt}/// English\n")  # doc
-    w(f"{idt}#[default]\n")
-    w(f"{idt}En,\n")
     for lang in langs:
-        if lang.iso != "en":
-            w(f"{idt}/// {lang.language}\n")  # doc
-            w(f"{idt}{lang.iso.title()},\n")
+        w(f"{idt}/// {lang.language}\n")  # doc
+        w(f"{idt}{lang.iso.title()},\n")
     w("}\n\n")
 
-    # Lang: From<EditionLang>
-    w("impl From<EditionLang> for Lang {\n")
-    w(f"{idt}fn from(e: EditionLang) -> Self {{\n")
-    w(f"{idt * 2}match e {{\n")
+    # Lang: From<Edition>
+    w("impl From<Edition> for Lang {\n")
+    w(f"{idt}fn from(value: Edition) -> Self {{\n")
+    w(f"{idt * 2}match value {{\n")
     for lang in langs:
         if lang.has_edition:
-            w(
-                f"{idt * 3}EditionLang::{lang.iso.title()} => Self::{lang.iso.title()},\n"
-            )
+            w(f"{idt * 3}Edition::{lang.iso.title()} => Self::{lang.iso.title()},\n")
     w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # Lang: Into<LangSpec>
+    w("impl Into<LangSpec> for Lang {\n")
+    w(f"{idt}fn into(self) -> LangSpec {{\n")
+    w(f"{idt * 2}LangSpec::One(self)\n")
     w(f"{idt}}}\n")
     w("}\n\n")
 
@@ -177,11 +246,26 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w(f"{idt}}}\n\n")
 
     # Lang: all (iteration)
-    w(f"{idt}pub const fn all() -> [Self; {len(langs)}] {{\n")
-    w(f"{idt * 2}[\n")
+    w(f"{idt}pub fn all() -> Vec<Self> {{\n")
+    w(f"{idt * 2}vec![\n")
     for lang in langs:
         w(f"{idt * 3}Self::{lang.iso.title()},\n")
     w(f"{idt * 2}]\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # Lang: TryInto<Edition>
+    w("impl TryInto<Edition> for Lang {\n")
+    w(f"{idt}type Error = &'static str;\n\n")
+    w(f"{idt}fn try_into(self) -> Result<Edition, Self::Error> {{\n")
+    w(f"{idt * 2}match self {{\n")
+    for lang in langs:
+        if lang.has_edition:
+            w(
+                f"{idt * 3}Self::{lang.iso.title()} => Ok(Edition::{lang.iso.title()}),\n"
+            )
+    w(f'{idt * 3}_ => Err("language has no edition"),\n')
+    w(f"{idt * 2}}}\n")
     w(f"{idt}}}\n")
     w("}\n\n")
 
@@ -216,110 +300,97 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w(f"{idt}}}\n")
     w("}\n\n")
 
+    ### EditionSpec start
+
+    # EditionSpec
+    w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]\n")
+    w("pub enum EditionSpec {\n")
+    w(f"{idt}/// All editions\n")
+    w(f"{idt}All,\n")
+    w(f"{idt}/// An `Edition`\n")
+    w(f"{idt}One(Edition),\n")
+    w("}\n\n")
+
+    # EditionSpec: variants (iteration)
+    w("impl EditionSpec {\n")
+    w(f"{idt}pub fn variants(&self) -> Vec<Edition> {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f"{idt * 3}Self::All => Edition::all(),\n")
+    w(f"{idt * 3}Self::One(lang) => vec![*lang],\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # EditionSpec: TryInto<Edition>
+    w("impl TryInto<Edition> for EditionSpec {\n")
+    w(f"{idt}type Error = &'static str;\n\n")
+    w(f"{idt}fn try_into(self) -> Result<Edition, Self::Error> {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f'{idt * 3}Self::All => Err("cannot convert from All"),\n')
+    w(f"{idt * 3}Self::One(lang) => Ok(lang),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # EditionSpec: FromStr
+    w("impl FromStr for EditionSpec {\n")
+    w(f"{idt}type Err = String;\n\n")
+    w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
+    w(f"{idt * 2}match s {{\n")
+    w(f'{idt * 3}"all" => Ok(Self::All),\n')
+    w(f"{idt * 3}other => Ok(Self::One(Edition::from_str(other)?)),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # EditionSpec: AsRef<&str>
+    w("impl AsRef<str> for EditionSpec {\n")
+    w(f"{idt}fn as_ref(&self) -> &str {{\n")
+    w(f"{idt * 2}match self {{\n")
+    w(f'{idt * 3}Self::All => "all",\n')
+    w(f"{idt * 3}Self::One(lang) => lang.as_ref(),\n")
+    w(f"{idt * 2}}}\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
+    # EditionSpec: Display
+    w("impl Display for EditionSpec {\n")
+    w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
+    w(f"{idt * 2}f.write_str(self.as_ref())\n")
+    w(f"{idt}}}\n")
+    w("}\n\n")
+
     ### Edition start
 
     # Edition
     w("#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, Hash)]\n")
     w("pub enum Edition {\n")
-    w(f"{idt}/// All editions\n")
-    w(f"{idt}All,\n")
-    w(f"{idt}/// An `EditionLang`\n")
-    w(f"{idt}EditionLang(EditionLang),\n")
-    w("}\n\n")
-
-    # Edition: variants (iteration)
-    w("impl Edition {\n")
-    w(f"{idt}pub fn variants(&self) -> Vec<EditionLang> {{\n")
-    w(f"{idt * 2}match self {{\n")
-    w(f"{idt * 3}Self::All => vec![\n")
     for lang in langs:
         if lang.has_edition:
-            w(f"{idt * 4}EditionLang::{lang.iso.title()},\n")
-    w(f"{idt * 3}],\n")
-    w(f"{idt * 3}Self::EditionLang(lang) => vec![*lang],\n")
-    w(f"{idt * 2}}}\n")
+            w(f"{idt}/// {lang.language}\n")  # doc
+            w(f"{idt}{lang.iso.title()},\n")
+    w("}\n\n")
+
+    # Edition: all (iteration)
+    w("impl Edition {\n")
+    w(f"{idt}pub fn all() -> Vec<Self> {{\n")
+    w(f"{idt * 2}vec![\n")
+    for lang in langs:
+        if lang.has_edition:
+            w(f"{idt * 3}Self::{lang.iso.title()},\n")
+    w(f"{idt * 2}]\n")
     w(f"{idt}}}\n")
     w("}\n\n")
 
-    # Edition: Default
-    w("impl Default for Edition {\n")
-    w(f"{idt}fn default() -> Self {{\n")
-    w(f"{idt * 2}Self::EditionLang(EditionLang::default())\n")
+    # Edition: Into<EditionSpec>
+    w("impl Into<EditionSpec> for Edition {\n")
+    w(f"{idt}fn into(self) -> EditionSpec {{\n")
+    w(f"{idt * 2}EditionSpec::One(self)\n")
     w(f"{idt}}}\n")
     w("}\n\n")
 
     # Edition: FromStr
     w("impl FromStr for Edition {\n")
-    w(f"{idt}type Err = String;\n\n")
-    w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
-    w(f"{idt * 2}match s {{\n")
-    w(f'{idt * 3}"all" => Ok(Self::All),\n')
-    w(f"{idt * 3}other => Ok(Self::EditionLang(other.parse::<EditionLang>()?)),\n")
-    w(f"{idt * 2}}}\n")
-    w(f"{idt}}}\n")
-    w("}\n\n")
-
-    # Edition: AsRef<&str>
-    w("impl AsRef<str> for Edition {\n")
-    w(f"{idt}fn as_ref(&self) -> &str {{\n")
-    w(f"{idt * 2}match self {{\n")
-    w(f'{idt * 3}Self::All => "all",\n')
-    w(f"{idt * 3}Self::EditionLang(lang) => lang.as_ref(),\n")
-    w(f"{idt * 2}}}\n")
-    w(f"{idt}}}\n")
-    w("}\n\n")
-
-    # Edition: Display
-    w("impl Display for Edition {\n")
-    w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
-
-    w(f"{idt * 2}f.write_str(self.as_ref())\n")
-    w(f"{idt}}}\n")
-    w("}\n\n")
-
-    ### EditionLang start
-
-    # EditionLang
-    w(
-        "#[derive(Debug, Clone, Copy, Serialize, Deserialize, Default, PartialEq, Eq, Hash)]\n"
-    )
-    w("pub enum EditionLang {\n")
-    # Add English on top as the default variant
-    w(f"{idt}/// English\n")  # doc
-    w(f"{idt}#[default]\n")
-    w(f"{idt}En,\n")
-    for lang in langs:
-        if lang.iso != "en" and lang.has_edition:
-            w(f"{idt}/// {lang.language}\n")  # doc
-            w(f"{idt}{lang.iso.title()},\n")
-    w("}\n\n")
-
-    # EditionLang: TryFrom<Lang>
-    w("impl std::convert::TryFrom<Lang> for EditionLang {\n")
-    w(f"{idt}type Error = &'static str;\n\n")
-    w(f"{idt}fn try_from(lang: Lang) -> Result<Self, Self::Error> {{\n")
-    w(f"{idt * 2}match lang {{\n")
-    for lang in langs:
-        if lang.has_edition:
-            w(f"{idt * 3}Lang::{lang.iso.title()} => Ok(Self::{lang.iso.title()}),\n")
-    w(f'{idt * 3}_ => Err("language has no edition"),\n')
-    w(f"{idt * 2}}}\n")
-    w(f"{idt}}}\n")
-    w("}\n\n")
-
-    # EditionLang: TryFrom<Edition>
-    w("impl std::convert::TryFrom<Edition> for EditionLang {\n")
-    w(f"{idt}type Error = &'static str;\n\n")
-    w(f"{idt}fn try_from(edition: Edition) -> Result<Self, Self::Error> {{\n")
-    w(f"{idt * 2}match edition {{\n")
-    w(f"{idt * 3}Edition::EditionLang(lang) => Ok(lang),\n")
-    w(f'{idt * 3}Edition::All => Err("cannot convert Edition::All to EditionLang"),\n')
-    w(f"{idt * 2}}}\n")
-    w(f"{idt}}}\n")
-    w("}\n\n")
-
-    # EditionLang: FromStr
-    w("impl FromStr for EditionLang {\n")
     w(f"{idt}type Err = String;\n\n")
     w(f"{idt}fn from_str(s: &str) -> Result<Self, Self::Err> {{\n")
     w(f"{idt * 2}match s.to_lowercase().as_str() {{\n")
@@ -331,8 +402,8 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w(f"{idt}}}\n")
     w("}\n\n")
 
-    # EditionLang: AsRef<&str>
-    w("impl AsRef<str> for EditionLang {\n")
+    # Edition: AsRef<&str>
+    w("impl AsRef<str> for Edition {\n")
     w(f"{idt}fn as_ref(&self) -> &str {{\n")
     w(f"{idt * 2}match self {{\n")
     for lang in langs:
@@ -342,8 +413,8 @@ def generate_lang_rs(langs: list[Lang], f) -> None:
     w(f"{idt}}}\n")
     w("}\n\n")
 
-    # EditionLang: Display
-    w("impl Display for EditionLang {\n")
+    # Edition: Display
+    w("impl Display for Edition {\n")
     w(f"{idt}fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {{\n")
     w(f"{idt * 2}f.write_str(self.as_ref())\n")
     w(f"{idt}}}\n")

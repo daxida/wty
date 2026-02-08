@@ -1,32 +1,267 @@
 use std::{fs::File, io::BufWriter, sync::LazyLock};
 
 use anyhow::Result;
+use indexmap::map::Entry;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
 
 use crate::{
     Map, Set,
-    cli::Options,
+    cli::{MainArgs, Options},
     dict::{
-        Diagnostics, Dictionary, Intermediate, LabelledYomitanEntry,
+        Dictionary, Intermediate, LabelledYomitanEntry, Langs, LangsKey,
         locale::localize_examples_string,
     },
-    lang::{EditionLang, Lang},
+    lang::{Edition, Lang},
     models::{
         kaikki::{Example, Form, HeadTemplate, Pos, Sense, Tag, WordEntry},
         yomitan::{
-            BacklinkContent, DetailedDefinition, GenericNode, Ipa, NTag, Node, NodeData, TermBank,
-            YomitanEntry, wrap,
+            BacklinkContent, BacklinkContentKind, DetailedDefinition, GenericNode, NTag, Node,
+            NodeData, TermBank, TermBankSimplified, YomitanEntry, wrap,
         },
     },
     path::PathManager,
     tags::{
-        REDUNDANT_FORM_TAGS, find_short_pos, find_tag_in_bank, merge_person_tags,
+        REDUNDANT_FORM_TAGS, find_short_pos_or_default, find_tag_in_bank, merge_person_tags,
         remove_redundant_tags, sort_tags, sort_tags_by_similar,
     },
     utils::{link_kaikki, link_wiktionary, pretty_println_at_path},
 };
+
+pub mod heap {
+    use std::mem::size_of;
+
+    use super::*;
+    use crate::{
+        Map,
+        models::yomitan::{
+            Ipa, PhoneticTranscription, StructuredContent, TermBankMeta, TermPhoneticTranscription,
+        },
+    };
+
+    pub trait HeapSize {
+        fn heap_size(&self) -> usize;
+    }
+
+    impl HeapSize for String {
+        fn heap_size(&self) -> usize {
+            self.capacity()
+        }
+    }
+
+    impl HeapSize for Example {
+        fn heap_size(&self) -> usize {
+            self.text.heap_size() + self.translation.heap_size() + self.reference.heap_size()
+        }
+    }
+
+    impl<T: HeapSize> HeapSize for Vec<T> {
+        fn heap_size(&self) -> usize {
+            self.capacity() * size_of::<T>() + self.iter().map(HeapSize::heap_size).sum::<usize>()
+        }
+    }
+
+    impl HeapSize for LemmaKey {
+        fn heap_size(&self) -> usize {
+            self.lemma.heap_size() + self.reading.heap_size() + self.pos.heap_size()
+        }
+    }
+
+    impl HeapSize for FormKey {
+        fn heap_size(&self) -> usize {
+            self.uninflected.heap_size() + self.inflected.heap_size() + self.pos.heap_size()
+        }
+    }
+
+    impl HeapSize for FormSource {
+        fn heap_size(&self) -> usize {
+            0
+        }
+    }
+
+    impl<A, B> HeapSize for (A, B)
+    where
+        A: HeapSize,
+        B: HeapSize,
+    {
+        fn heap_size(&self) -> usize {
+            self.0.heap_size() + self.1.heap_size()
+        }
+    }
+
+    impl<K: HeapSize, V: HeapSize> HeapSize for Map<K, V> {
+        fn heap_size(&self) -> usize {
+            self.capacity() * (size_of::<K>() + size_of::<V>())
+                + self
+                    .iter()
+                    .map(|(k, v)| k.heap_size() + v.heap_size())
+                    .sum::<usize>()
+        }
+    }
+
+    impl HeapSize for LemmaInfo {
+        fn heap_size(&self) -> usize {
+            self.gloss_tree.heap_size()
+                + self.etymology_text.as_ref().map_or(0, |s| s.heap_size())
+                + self.head_info_text.as_ref().map_or(0, |s| s.heap_size())
+                + self.link_wiktionary.heap_size()
+                + self.link_kaikki.heap_size()
+        }
+    }
+
+    impl HeapSize for GlossInfo {
+        fn heap_size(&self) -> usize {
+            self.tags.heap_size()
+                + self.topics.heap_size()
+                + self.examples.heap_size()
+                + self.children.heap_size()
+        }
+    }
+
+    impl HeapSize for LemmaMap {
+        fn heap_size(&self) -> usize {
+            self.0.heap_size()
+        }
+    }
+
+    impl HeapSize for FormMap {
+        fn heap_size(&self) -> usize {
+            self.0.heap_size()
+        }
+    }
+
+    impl HeapSize for Tidy {
+        fn heap_size(&self) -> usize {
+            self.lemma_map.heap_size() + self.form_map.heap_size()
+        }
+    }
+
+    // YomitanEntry
+    impl<T: HeapSize> HeapSize for Box<T> {
+        fn heap_size(&self) -> usize {
+            size_of::<T>() + (**self).heap_size()
+        }
+    }
+
+    impl HeapSize for YomitanEntry {
+        fn heap_size(&self) -> usize {
+            match self {
+                YomitanEntry::TermBank(tb) => tb.heap_size(),
+                YomitanEntry::TermBankSimplified(tbs) => tbs.heap_size(),
+                YomitanEntry::TermBankMeta(tbm) => tbm.heap_size(),
+            }
+        }
+    }
+
+    impl HeapSize for TermBank {
+        fn heap_size(&self) -> usize {
+            self.0.heap_size() // term
+                + self.1.heap_size() // reading
+                + self.2.heap_size() // definition_tags
+                + self.3.heap_size() // rules
+                + self.4.heap_size() // definitions
+        }
+    }
+
+    impl HeapSize for TermBankSimplified {
+        fn heap_size(&self) -> usize {
+            self.0.heap_size() // term
+                + self.1.heap_size() // reading
+                + self.2.heap_size() // definitions
+        }
+    }
+
+    impl HeapSize for TermBankMeta {
+        fn heap_size(&self) -> usize {
+            match self {
+                TermBankMeta::TermPhoneticTranscription(tpt) => tpt.heap_size(),
+            }
+        }
+    }
+
+    impl HeapSize for TermPhoneticTranscription {
+        fn heap_size(&self) -> usize {
+            self.0.heap_size() // term
+                + self.1.heap_size() // "ipa" string
+                + self.2.heap_size() // PhoneticTranscription
+        }
+    }
+
+    impl HeapSize for PhoneticTranscription {
+        fn heap_size(&self) -> usize {
+            self.reading.heap_size() + self.transcriptions.heap_size()
+        }
+    }
+
+    impl HeapSize for Ipa {
+        fn heap_size(&self) -> usize {
+            self.ipa.heap_size() + self.tags.heap_size()
+        }
+    }
+
+    impl HeapSize for DetailedDefinition {
+        fn heap_size(&self) -> usize {
+            match self {
+                DetailedDefinition::Text(s) => s.heap_size(),
+                DetailedDefinition::StructuredContent(sc) => sc.heap_size(),
+                DetailedDefinition::Inflection((s, v)) => s.heap_size() + v.heap_size(),
+            }
+        }
+    }
+
+    impl HeapSize for StructuredContent {
+        fn heap_size(&self) -> usize {
+            self.ty.heap_size() + self.content.heap_size()
+        }
+    }
+
+    impl HeapSize for Node {
+        fn heap_size(&self) -> usize {
+            match self {
+                Node::Text(s) => s.heap_size(),
+                Node::Array(v) => v.heap_size(),
+                Node::Generic(boxed) => boxed.heap_size(),
+                Node::Backlink(bl) => bl.heap_size(),
+            }
+        }
+    }
+
+    impl HeapSize for GenericNode {
+        fn heap_size(&self) -> usize {
+            self.title.as_ref().map_or(0, |s| s.heap_size())
+                + self.data.as_ref().map_or(0, |d| d.heap_size())
+                + self.content.heap_size()
+        }
+    }
+
+    impl HeapSize for NodeData {
+        fn heap_size(&self) -> usize {
+            self.0.heap_size()
+        }
+    }
+
+    impl HeapSize for BacklinkContent {
+        fn heap_size(&self) -> usize {
+            self.href.heap_size()
+        }
+    }
+
+    impl HeapSize for BacklinkContentKind {
+        fn heap_size(&self) -> usize {
+            0 // enum discriminant is on the stack
+        }
+    }
+
+    impl HeapSize for LabelledYomitanEntry {
+        fn heap_size(&self) -> usize {
+            0
+            // self.entries.heap_size()
+        }
+    }
+}
+
+use heap::HeapSize;
 
 #[derive(Debug, Clone, Copy)]
 pub struct DMain;
@@ -36,84 +271,83 @@ impl Intermediate for Tidy {
         self.len()
     }
 
-    fn write(&self, pm: &PathManager, options: &Options) -> Result<()> {
-        self.write(options, pm)
+    fn write(&self, pm: &PathManager) -> Result<()> {
+        self.write(pm)
     }
 }
 
 impl Dictionary for DMain {
     type I = Tidy;
+    type A = MainArgs;
 
-    fn preprocess(
-        &self,
-        edition: EditionLang,
-        source: Lang,
-        _: Lang,
-        word_entry: &mut WordEntry,
-        options: &Options,
-        irs: &mut Self::I,
-    ) {
-        preprocess_main(edition, source, options, word_entry, irs);
+    fn keep_if(&self, source: Lang, entry: &WordEntry) -> bool {
+        entry.lang_code == source.as_ref()
     }
 
-    fn process(
-        &self,
-        edition: EditionLang,
-        source: Lang,
-        _: Lang,
-        word_entry: &WordEntry,
-        irs: &mut Self::I,
-    ) {
-        process_main(edition, source, word_entry, irs);
+    fn preprocess(&self, langs: Langs, entry: &mut WordEntry, opts: &Options, irs: &mut Self::I) {
+        preprocess_main(langs.edition, langs.source, opts, entry, irs);
     }
 
-    fn postprocess(&self, irs: &mut Self::I) {
-        postprocess_forms(&mut irs.form_map);
+    fn process(&self, langs: Langs, entry: &WordEntry, irs: &mut Self::I) {
+        process_main(langs.edition, langs.source, entry, irs);
     }
 
-    fn found_ir_message(&self, irs: &Self::I) {
-        // A bit hacky to have it here
+    fn found_ir_message(&self, key: &LangsKey, irs: &Self::I) {
         let n_lemmas = irs.lemma_map.len();
         let n_forms = irs.form_map.len();
+        let n_irs = n_lemmas + n_forms;
         let n_forms_inflection = irs.form_map.len_inflection();
         let n_forms_extracted = irs.form_map.len_extracted();
         let n_forms_alt_of = irs.form_map.len_alt_of();
+
         debug_assert_eq!(
             n_forms,
             n_forms_inflection + n_forms_extracted + n_forms_alt_of,
             "mismatch in form counts"
         );
-        let n_entries = n_lemmas + n_forms;
-        println!(
-            "Found {n_entries} entries: {n_lemmas} lemmas, {n_forms} forms \
-({n_forms_inflection} inflections, {n_forms_extracted} extracted, {n_forms_alt_of} alt_of)"
-        );
+
+        let lemma_heap = irs.lemma_map.heap_size() as f64;
+        let form_heap = irs.form_map.heap_size() as f64;
+        let irs_heap = lemma_heap + form_heap;
+        let lemma_heap_msg = crate::utils::human_size(lemma_heap);
+        let form_heap_msg = crate::utils::human_size(form_heap);
+        let irs_heap_msg = crate::utils::human_size(irs_heap);
+
+        let prefix = format!("[{}-{}]", key.source, key.target);
+
+        //         println!(
+        //             "{prefix} Found {n_irs} irs: {n_lemmas} lemmas, {n_forms} forms \
+        // ({n_forms_inflection} inflections, {n_forms_extracted} extracted, {n_forms_alt_of} alt_of)"
+        //         );
+
+        const MB: f64 = 1024.0 * 1024.0;
+        if irs_heap > 500.0 * MB {
+            tracing::debug!("{prefix} Found {} irs ({})", n_irs, irs_heap_msg,);
+            tracing::debug!("├─ lemmas: {} ({})", n_lemmas, lemma_heap_msg,);
+            tracing::debug!(
+                "└─ forms : {} ({}) [infl {}, extr {}, alt {}]",
+                n_forms,
+                form_heap_msg,
+                n_forms_inflection,
+                n_forms_extracted,
+                n_forms_alt_of,
+            );
+        }
     }
 
     fn write_ir(&self) -> bool {
         true
     }
 
-    fn to_yomitan(
-        &self,
-        edition: EditionLang,
-        source: Lang,
-        _: Lang,
-        options: &Options,
-        diagnostics: &mut Diagnostics,
-        irs: Self::I,
-    ) -> Vec<LabelledYomitanEntry> {
-        vec![
-            (
-                "lemma",
-                to_yomitan_lemmas(edition, options, irs.lemma_map, diagnostics),
-            ),
-            ("form", to_yomitan_forms(source, irs.form_map)),
-        ]
+    fn postprocess(&self, irs: &mut Self::I) {
+        postprocess_forms(&mut irs.form_map);
     }
 
-    fn write_diagnostics(&self, pm: &PathManager, diagnostics: &Diagnostics) -> Result<()> {
-        diagnostics.write(pm)
+    fn to_yomitan(&self, langs: Langs, irs: Self::I) -> Vec<LabelledYomitanEntry> {
+        vec![
+            LabelledYomitanEntry::new("lemma", to_yomitan_lemmas(langs.target, irs.lemma_map)),
+            LabelledYomitanEntry::new("form", to_yomitan_forms(langs.source, irs.form_map)),
+        ]
     }
 }
 
@@ -151,6 +385,18 @@ impl Serialize for LemmaMap {
 }
 
 impl LemmaMap {
+    pub fn into_flat_iter(self) -> impl Iterator<Item = (String, String, Pos, LemmaInfo)> {
+        self.0.into_iter().flat_map(|(key, infos)| {
+            let lemma = key.lemma;
+            let reading = key.reading;
+            let pos = key.pos;
+
+            infos
+                .into_iter()
+                .map(move |info| (lemma.clone(), reading.clone(), pos.clone(), info))
+        })
+    }
+
     fn len(&self) -> usize {
         self.0.values().map(Vec::len).sum()
     }
@@ -204,6 +450,14 @@ impl FormMap {
         })
     }
 
+    fn into_flat_iter(
+        self,
+    ) -> impl Iterator<Item = (String, String, String, FormSource, Vec<String>)> {
+        self.0
+            .into_iter()
+            .map(|(key, (source, tags))| (key.uninflected, key.inflected, key.pos, source, tags))
+    }
+
     /// Iterates over: uninflected, inflected, pos, source, tags
     fn flat_iter_mut(
         &mut self,
@@ -246,7 +500,7 @@ impl FormMap {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 enum FormSource {
-    /// Form extracted from `word_entry.forms`
+    /// Form extracted from `entry.forms`
     Extracted,
     /// Form added via gloss analysis ("is inflection of...")
     Inflection,
@@ -314,7 +568,14 @@ impl Tidy {
             pos: pos.into(),
         };
 
-        self.lemma_map.0.entry(key).or_default().push(entry);
+        match self.lemma_map.0.entry(key) {
+            Entry::Vacant(e) => {
+                e.insert(vec![entry]);
+            }
+            Entry::Occupied(mut e) => {
+                e.get_mut().push(entry);
+            }
+        }
     }
 
     fn insert_form(
@@ -334,27 +595,29 @@ impl Tidy {
             pos: pos.into(),
         };
 
-        self.form_map
-            .0
-            .entry(key)
-            .or_insert_with(|| (source, Vec::new()))
-            .1
-            .extend(tags);
+        match self.form_map.0.entry(key) {
+            Entry::Vacant(e) => {
+                e.insert((source, tags));
+            }
+            Entry::Occupied(mut e) => {
+                e.get_mut().1.extend(tags);
+            }
+        }
     }
 
     // NOTE: we write stuff even if irs.attribute is empty
     #[tracing::instrument(skip_all)]
-    fn write(&self, options: &Options, pm: &PathManager) -> Result<()> {
+    fn write(&self, pm: &PathManager) -> Result<()> {
         let opath = pm.path_lemmas();
         let file = File::create(&opath)?;
         let writer = BufWriter::new(file);
 
-        if options.pretty {
+        if pm.opts.pretty {
             serde_json::to_writer_pretty(writer, &self.lemma_map)?;
         } else {
             serde_json::to_writer(writer, &self.lemma_map)?;
         }
-        if !options.quiet {
+        if !pm.opts.quiet {
             pretty_println_at_path("Wrote tidy lemmas", &opath);
         }
 
@@ -362,12 +625,12 @@ impl Tidy {
         let file = File::create(&opath)?;
         let writer = BufWriter::new(file);
 
-        if options.pretty {
+        if pm.opts.pretty {
             serde_json::to_writer_pretty(writer, &self.form_map)?;
         } else {
             serde_json::to_writer(writer, &self.form_map)?;
         }
-        if !options.quiet {
+        if !pm.opts.quiet {
             pretty_println_at_path("Wrote tidy forms", &opath);
         }
 
@@ -394,39 +657,55 @@ fn postprocess_forms(form_map: &mut FormMap) {
     }
 }
 
-fn process_main(edition: EditionLang, source: Lang, word_entry: &WordEntry, irs: &mut Tidy) {
-    process_forms(edition, source, word_entry, irs);
+fn process_main(edition: Edition, source: Lang, entry: &WordEntry, irs: &mut Tidy) {
+    process_forms(edition, source, entry, irs);
 
-    process_alt_forms(word_entry, irs);
+    process_alt_forms(entry, irs);
 
-    if word_entry.contains_no_gloss() {
-        process_no_gloss(edition, word_entry, irs);
+    // match edition {
+    //     Edition::Ja => {
+    //         if let Some(sense) = entry.senses.first() {
+    //             if let Some(gloss) = sense.glosses.first() {
+    //                 if gloss.ends_with("参照") && gloss.split_whitespace().count() == 2 {
+    //                     tracing::warn!(
+    //                         "Japanese redirection @ {}",
+    //                         link_wiktionary(edition, source, &entry.word)
+    //                     );
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     _ => (),
+    // };
+
+    if entry.contains_no_gloss() {
+        process_no_gloss(edition, entry, irs);
     } else {
         irs.insert_lemma(
-            &word_entry.word,
-            &get_reading(edition, source, word_entry).unwrap_or_else(|| word_entry.word.clone()),
-            &word_entry.pos,
-            process_word_entry(edition, source, word_entry),
+            &entry.word,
+            &get_reading(edition, source, entry).unwrap_or_else(|| entry.word.clone()),
+            &entry.pos,
+            process_entry(edition, source, entry),
         );
     }
 }
 
-// Everything that mutates word_entry
+// Everything that mutates entry
 fn preprocess_main(
-    edition: EditionLang,
+    edition: Edition,
     source: Lang,
-    options: &Options,
-    word_entry: &mut WordEntry,
+    opts: &Options,
+    entry: &mut WordEntry,
     irs: &mut Tidy,
 ) {
-    // WARN: mutates word_entry::senses::sense::tags
+    // WARN: mutates entry::senses::sense::tags
     match edition {
-        EditionLang::En => {
+        Edition::En => {
             // The original fetched them from head_templates but it is better not to touch that
             // and we can do the same by looking at the tags of the canonical form.
-            if let Some(cform) = word_entry.canonical_form() {
+            if let Some(cform) = entry.canonical_form() {
                 let cform_tags: Vec<_> = cform.tags.clone();
-                for sense in &mut word_entry.senses {
+                for sense in &mut entry.senses {
                     for tag in &cform_tags {
                         if tag != "canonical" && !sense.tags.contains(tag) {
                             sense.tags.push(tag.into());
@@ -435,12 +714,12 @@ fn preprocess_main(
                 }
             }
         }
-        EditionLang::El => {
+        Edition::El => {
             // Fetch gender from a matching form
             let gender_tags = ["masculine", "feminine", "neuter"];
-            for form in &word_entry.forms {
-                if form.form == word_entry.word {
-                    for sense in &mut word_entry.senses {
+            for form in &entry.forms {
+                if form.form == entry.word {
+                    for sense in &mut entry.senses {
                         for tag in &form.tags {
                             if gender_tags.contains(&tag.as_str()) && !sense.tags.contains(tag) {
                                 sense.tags.push(tag.into());
@@ -450,10 +729,10 @@ fn preprocess_main(
                 }
             }
         }
-        EditionLang::Ru => {
-            // Propagate word_entry.tags to sense.tags
-            for sense in &mut word_entry.senses {
-                for tag in &word_entry.tags {
+        Edition::Ru => {
+            // Propagate entry.tags to sense.tags
+            for sense in &mut entry.senses {
+                for tag in &entry.tags {
                     if !sense.tags.contains(tag) {
                         sense.tags.push(tag.into());
                     }
@@ -463,7 +742,7 @@ fn preprocess_main(
         _ => (),
     }
 
-    // WARN: mutates word_entry::senses
+    // WARN: mutates entry::senses
     //
     // What if the current word is an inflection but *also* has an inflection table?
     // https://el.wiktionary.org/wiki/ψηφίσας
@@ -486,28 +765,28 @@ fn preprocess_main(
     // Note that deleting senses is a good decision overall: it reduces clutter and forces the
     // redirect. One just has to be careful about when to do it
     //
-    let old_senses = std::mem::take(&mut word_entry.senses);
+    let old_senses = std::mem::take(&mut entry.senses);
     let mut senses_without_inflections = Vec::new();
     for sense in old_senses {
         if is_inflection_sense(edition, &sense)
-            && (!options.experimental || word_entry.non_trivial_forms().next().is_none())
+            && (!opts.experimental || entry.non_trivial_forms().next().is_none())
         {
-            handle_inflection_sense(edition, source, word_entry, &sense, irs);
+            handle_inflection_sense(edition, source, entry, &sense, irs);
         } else {
             senses_without_inflections.push(sense);
         }
     }
-    word_entry.senses = senses_without_inflections;
+    entry.senses = senses_without_inflections;
 
-    // WARN: mutates word_entry::senses::glosses
+    // WARN: mutates entry::senses::glosses
     //
     // rg: full stop
     // https://github.com/yomidevs/yomitan/issues/2232
     // Add an empty whitespace at the end... and it works!
-    if options.experimental {
+    if opts.experimental {
         static TRAILING_PUNCT_RE: LazyLock<Regex> =
             LazyLock::new(|| Regex::new(r"\p{P}$").unwrap());
-        for sense in &mut word_entry.senses {
+        for sense in &mut entry.senses {
             for gloss in &mut sense.glosses {
                 if !TRAILING_PUNCT_RE.is_match(gloss) {
                     gloss.push(' ');
@@ -517,39 +796,84 @@ fn preprocess_main(
     }
 }
 
-/// Add Extracted forms. That is, forms from `word_entry.forms`.
-fn process_forms(edition: EditionLang, source: Lang, word_entry: &WordEntry, irs: &mut Tidy) {
-    for form in word_entry.non_trivial_forms() {
-        let filtered_tags: Vec<_> = form
-            .tags
-            .iter()
-            .map(String::as_str)
-            .filter(|tag| !REDUNDANT_FORM_TAGS.contains(tag))
-            .collect();
-        if filtered_tags.is_empty() {
-            continue;
-        }
-
+/// Add Extracted forms. That is, forms from `entry.forms`.
+fn process_forms(edition: Edition, source: Lang, entry: &WordEntry, irs: &mut Tidy) {
+    for form in entry.non_trivial_forms() {
         if should_break_at_finish_forms(edition, source, form) {
             break;
         }
 
+        if should_skip_form(edition, source, form) {
+            continue;
+        }
+
+        let filtered_tags = form
+            .tags
+            .iter()
+            .map(String::as_str)
+            .filter(|tag| !REDUNDANT_FORM_TAGS.contains(tag))
+            .collect::<Vec<_>>()
+            .join(" ");
+
         irs.insert_form(
-            &word_entry.word,
+            &entry.word,
             &form.form,
-            &word_entry.pos,
+            &entry.pos,
             FormSource::Extracted,
-            vec![filtered_tags.join(" ")],
+            vec![filtered_tags],
         );
     }
+}
+
+// This requires knowledge of witktionary table structures, the edition language and Yomitan.
+// The point being to skip unnecessary forms because either:
+// - They are already included in a shorter form which is equally useful
+//   Ex. if we have the fr "arrive", don't add "j'arrive"
+// - (This for later) Yomitan has inflection rules that make adding the form pointless
+//   Ex. "runs" for "run", since there is already a plural rule
+// - They are useless
+//   - forms with multiple articles (useless for a dictionary). Ex. "il/elle/on arrive"
+//   - most composite verbs are in most languages
+//
+// Eventually it would be preferable if these were done at wiktextract level, but let's do the work
+// ourselves for now
+fn should_skip_form(edition: Edition, source: Lang, form: &Form) -> bool {
+    match (edition, source) {
+        (Edition::Fr, Lang::Fr) => {
+            // Objectively better
+            if ["qu’", "que ", "il/elle/on", "ils/elles", "en "]
+                .iter()
+                .any(|p| form.form.starts_with(p))
+            {
+                return true;
+            }
+            // Debatable, but since we contain the part participle (mangé), we most likely don't
+            // need "j’avais mangé"
+            if form.tags.iter().any(|tag| tag == "pluperfect") {
+                return true;
+            }
+        }
+        (Edition::En, Lang::Ja) => {
+            // Skip transliterations: "hashireru" etc.
+            if is_roman(&form.form) {
+                return true;
+            }
+        }
+        _ => (),
+    }
+    false
+}
+
+fn is_roman(form: &str) -> bool {
+    form.is_ascii()
 }
 
 // Finnish from the English edition crashes with out-of-memory.
 // There are simply too many forms, so we prune the less used (possessive).
 //
 // https://uusikielemme.fi/finnish-grammar/possessive-suffixes-possessiivisuffiksit#one
-fn should_break_at_finish_forms(edition: EditionLang, source: Lang, form: &Form) -> bool {
-    if matches!((edition, source), (EditionLang::En, Lang::Fi)) {
+fn should_break_at_finish_forms(edition: Edition, source: Lang, form: &Form) -> bool {
+    if matches!((edition, source), (Edition::En, Lang::Fi)) {
         // HACK: 1. For tables that parse the title
         // https://kaikki.org/dictionary/Finnish/meaning/p/p%C3%A4/p%C3%A4%C3%A4.html
         if form.form == "See the possessive forms below." {
@@ -566,28 +890,28 @@ fn should_break_at_finish_forms(edition: EditionLang, source: Lang, form: &Form)
 }
 
 /// Add `AltOf` forms. That is, alternative forms.
-fn process_alt_forms(word_entry: &WordEntry, irs: &mut Tidy) {
+fn process_alt_forms(entry: &WordEntry, irs: &mut Tidy) {
     let base_tags = vec!["alt-of".to_string()];
 
-    for alt_form in &word_entry.alt_of {
+    for alt_form in &entry.alt_of {
         irs.insert_form(
-            &word_entry.word,
+            &entry.word,
             &alt_form.word,
-            &word_entry.pos,
+            &entry.pos,
             FormSource::AltOf,
             base_tags.clone(),
         );
     }
 
-    for sense in &word_entry.senses {
+    for sense in &entry.senses {
         let mut sense_tags = sense.tags.clone();
         sense_tags.extend(base_tags.clone());
 
         for alt_form in &sense.alt_of {
             irs.insert_form(
-                &word_entry.word,
+                &entry.word,
                 &alt_form.word,
-                &word_entry.pos,
+                &entry.pos,
                 FormSource::AltOf,
                 sense_tags.clone(),
             );
@@ -596,24 +920,24 @@ fn process_alt_forms(word_entry: &WordEntry, irs: &mut Tidy) {
 }
 
 /// Process "no-gloss" word entries for alternative ways of adding lemmas/forms.
-fn process_no_gloss(edition: EditionLang, word_entry: &WordEntry, irs: &mut Tidy) {
+fn process_no_gloss(edition: Edition, entry: &WordEntry, irs: &mut Tidy) {
     match edition {
         // Unfortunately we are in the same A from B, B from C situation discussed in
-        // preprocess_word_entry. There is no easy solution for adding the lemma back because at
+        // preprocess_entry. There is no easy solution for adding the lemma back because at
         // this point the gloss has been deleted. Maybe reconsider the original approach of
         // deleting glosses, and mark them somehow as "inflection-only".
         //
         // At any rate, this will still add useful redirections.
-        EditionLang::El => {
-            if word_entry.is_participle()
-                && let Some(form_of) = word_entry.form_of.first()
+        Edition::El => {
+            if entry.is_participle()
+                && let Some(form_of) = entry.form_of.first()
             {
                 irs.insert_form(
                     &form_of.word,
-                    &word_entry.word,
-                    &word_entry.pos,
+                    &entry.word,
+                    &entry.pos,
                     FormSource::Inflection,
-                    vec![format!("redirected from {}", word_entry.word)],
+                    vec![format!("redirected from {}", entry.word)],
                 );
             }
         }
@@ -622,30 +946,32 @@ fn process_no_gloss(edition: EditionLang, word_entry: &WordEntry, irs: &mut Tidy
 }
 
 // There are potentially more than one, but yomitan doesn't really support it
-pub fn get_reading(edition: EditionLang, source: Lang, word_entry: &WordEntry) -> Option<String> {
+pub fn get_reading(edition: Edition, source: Lang, entry: &WordEntry) -> Option<String> {
     match (edition, source) {
-        (EditionLang::En, Lang::Ja) => get_japanese_reading(word_entry),
-        (EditionLang::En, Lang::Fa) => word_entry.romanization_form().map(|f| f.form.clone()),
-        (EditionLang::Ja, _) => word_entry.transliteration_form().map(|f| f.form.clone()),
-        (EditionLang::En | EditionLang::Zh, Lang::Zh) => word_entry.pinyin().map(String::from),
-        _ => get_canonical_word(source, word_entry),
+        (Edition::En, Lang::Ja) => get_japanese_reading(entry),
+        (Edition::En, Lang::Fa) => entry.romanization_form().map(|f| f.form.clone()),
+        (Edition::Ja, _) => entry.transliteration_form().map(|f| f.form.clone()),
+        (Edition::En | Edition::Zh, Lang::Zh) => entry.pinyin().map(String::from),
+        _ => get_canonical_word(source, entry),
     }
 }
 
 /// The canonical word may contain extra diacritics.
 ///
 /// For most languages, this is equal to word, but for, let's say, Latin, there may be a
-/// difference (cf. <https://en.wiktionary.org/wiki/fama>, where `word_entry.word` is fama, but
+/// difference (cf. <https://en.wiktionary.org/wiki/fama>, where `entry.word` is fama, but
 /// this will return fāma).
-fn get_canonical_word(source: Lang, word_entry: &WordEntry) -> Option<String> {
+fn get_canonical_word(source: Lang, entry: &WordEntry) -> Option<String> {
     match source {
-        Lang::La | Lang::Ru | Lang::Grc => word_entry.canonical_form().map(|f| f.form.to_string()),
+        Lang::La | Lang::Ru | Lang::Grc => entry.canonical_form().map(|f| f.form.to_string()),
         _ => None,
     }
 }
 
+// TODO: work with this to return a &str
+//
 // Does not support multiple readings
-fn get_japanese_reading(word_entry: &WordEntry) -> Option<String> {
+fn get_japanese_reading(entry: &WordEntry) -> Option<String> {
     // The original parses head_templates directly (which probably deserves a PR to
     // wiktextract), although imo pronunciation templates should have been better.
     // There is no pronunciation template info in en-wiktextract, and while I think that
@@ -656,37 +982,37 @@ fn get_japanese_reading(word_entry: &WordEntry) -> Option<String> {
     // but no "other" sounds, which is where pronunciations are usually stored.
 
     // Ideally we would just do this:
-    // for sound in &word_entry.sounds {
+    // for sound in &entry.sounds {
     //     if !sound.other.is_empty() {
     //         return &sound.other;
     //     }
     // }
 
     // I really don't want to touch templates so instead, replace the ruby
-    if let Some(cform) = word_entry.canonical_form()
+    if let Some(cform) = entry.canonical_form()
         && !cform.ruby.is_empty()
     {
         // https://github.com/tatuylonen/wiktextract/issues/1484
         // let mut cform_lemma = cform.form.clone();
-        // if cform_lemma != word_entry.word {
+        // if cform_lemma != entry.word {
         //     warn!(
         //         "Canonical form: '{cform_lemma}' != word: '{}'\n{}\n{}\n\n",
-        //         word_entry.word,
-        //         link_wiktionary(args, &word_entry.word),
-        //         link_kaikki(args, &word_entry.word),
+        //         entry.word,
+        //         link_wiktionary(args, &entry.word),
+        //         link_kaikki(args, &entry.word),
         //     );
         // } else {
         //     warn!(
         //         "Equal for word: '{}'\n{}\n{}\n\n",
-        //         word_entry.word,
-        //         link_wiktionary(args, &word_entry.word),
-        //         link_kaikki(args, &word_entry.word),
+        //         entry.word,
+        //         link_wiktionary(args, &entry.word),
+        //         link_kaikki(args, &entry.word),
         //     );
         // }
 
         // This should be cform.form, but it's not parsed properly:
         // https://github.com/tatuylonen/wiktextract/issues/1484
-        let mut cform_lemma = word_entry.word.clone();
+        let mut cform_lemma = entry.word.clone();
         let mut cursor = 0;
         for (base, reading) in &cform.ruby {
             if let Some(pos) = cform_lemma[cursor..].find(base) {
@@ -705,47 +1031,16 @@ fn get_japanese_reading(word_entry: &WordEntry) -> Option<String> {
     None
 }
 
-fn process_word_entry(edition: EditionLang, source: Lang, word_entry: &WordEntry) -> LemmaInfo {
+fn process_entry(edition: Edition, source: Lang, entry: &WordEntry) -> LemmaInfo {
     LemmaInfo {
-        gloss_tree: get_gloss_tree(word_entry),
-        etymology_text: word_entry
+        gloss_tree: get_gloss_tree(entry),
+        etymology_text: entry
             .etymology_texts()
             .map(|etymology_text| etymology_text.join("\n")),
-        head_info_text: get_head_info(&word_entry.head_templates).map(String::from),
-        link_wiktionary: link_wiktionary(edition, source, &word_entry.word),
-        link_kaikki: link_kaikki(edition, source, &word_entry.word),
+        head_info_text: get_head_info(&entry.head_templates).map(String::from),
+        link_wiktionary: link_wiktionary(edition, source, &entry.word),
+        link_kaikki: link_kaikki(edition, source, &entry.word),
     }
-}
-
-// default version getphonetictranscription
-pub fn get_ipas(word_entry: &WordEntry) -> Vec<Ipa> {
-    let ipas_iter = word_entry.sounds.iter().filter_map(|sound| {
-        if sound.ipa.is_empty() {
-            return None;
-        }
-        let ipa = sound.ipa.clone();
-        let mut tags = sound.tags.clone();
-        if !sound.note.is_empty() {
-            tags.push(sound.note.clone());
-        }
-        Some(Ipa { ipa, tags })
-    });
-
-    // rg: saveIpaResult - Group by ipa
-    let mut ipas_grouped: Vec<Ipa> = Vec::new();
-    for ipa in ipas_iter {
-        if let Some(existing) = ipas_grouped.iter_mut().find(|e| e.ipa == ipa.ipa) {
-            for tag in ipa.tags {
-                if !existing.tags.contains(&tag) {
-                    existing.tags.push(tag);
-                }
-            }
-        } else {
-            ipas_grouped.push(ipa);
-        }
-    }
-
-    ipas_grouped
 }
 
 static PARENS_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\(.+?\)").unwrap());
@@ -797,7 +1092,7 @@ fn insert_glosses(
     topics: &[Tag],
     examples: &[Example],
 ) {
-    let Some(head) = glosses.get(0) else {
+    let Some(head) = glosses.first() else {
         return;
     };
 
@@ -835,16 +1130,16 @@ static DE_INFLECTION_RE: LazyLock<Regex> = LazyLock::new(|| {
 });
 
 // rg: isinflectiongloss
-fn is_inflection_sense(edition: EditionLang, sense: &Sense) -> bool {
+fn is_inflection_sense(edition: Edition, sense: &Sense) -> bool {
     match edition {
-        EditionLang::De => sense
+        Edition::De => sense
             .glosses
             .iter()
             .any(|gloss| DE_INFLECTION_RE.is_match(gloss)),
-        EditionLang::El => {
+        Edition::El => {
             !sense.form_of.is_empty() && sense.glosses.iter().any(|gloss| gloss.contains("του"))
         }
-        EditionLang::En => {
+        Edition::En => {
             sense.glosses.iter().any(|gloss| {
                 if gloss.contains("inflection of") {
                     return true;
@@ -872,7 +1167,7 @@ fn is_inflection_sense(edition: EditionLang, sense: &Sense) -> bool {
                 false
             })
         }
-        EditionLang::Fr => {
+        Edition::Fr => {
             !sense.form_of.is_empty()
                 && sense
                     .glosses
@@ -896,16 +1191,16 @@ const TAGS_RETAINED_EL: [&str; 9] = [
 ];
 
 fn handle_inflection_sense(
-    edition: EditionLang,
+    edition: Edition,
     source: Lang,
-    word_entry: &WordEntry,
+    entry: &WordEntry,
     sense: &Sense,
     irs: &mut Tidy,
 ) {
     debug_assert!(!sense.glosses.is_empty()); // we checked @ is_inflection_sense
 
     match edition {
-        EditionLang::De => {
+        Edition::De => {
             if let Some(caps) = DE_INFLECTION_RE.captures(&sense.glosses[0])
                 && let (Some(inflection_tags), Some(uninflected)) = (caps.get(1), caps.get(2))
             {
@@ -914,15 +1209,15 @@ fn handle_inflection_sense(
                 if !inflection_tags.is_empty() {
                     irs.insert_form(
                         uninflected.as_str(),
-                        &word_entry.word,
-                        &word_entry.pos,
+                        &entry.word,
+                        &entry.pos,
                         FormSource::Inflection,
                         vec![inflection_tags.to_string()],
                     );
                 }
             }
         }
-        EditionLang::El => {
+        Edition::El => {
             let allowed_tags: Vec<_> = sense
                 .tags
                 .iter()
@@ -931,23 +1226,23 @@ fn handle_inflection_sense(
                 .collect();
             let inflection_tags: Vec<_> = if allowed_tags.is_empty() {
                 // very rare
-                vec![format!("redirected from {}", word_entry.word)]
+                vec![format!("redirected from {}", entry.word)]
             } else {
                 allowed_tags
             };
             for form in &sense.form_of {
                 irs.insert_form(
                     &form.word,
-                    &word_entry.word,
-                    &word_entry.pos,
+                    &entry.word,
+                    &entry.pos,
                     FormSource::Inflection,
                     // Unfortunate clone. Most sense.form_of only contain one form...
                     inflection_tags.clone(),
                 );
             }
         }
-        EditionLang::En => handle_inflection_sense_en(source, word_entry, sense, irs),
-        EditionLang::Fr => {
+        Edition::En => handle_inflection_sense_en(source, entry, sense, irs),
+        Edition::Fr => {
             let allowed_tags: Vec<_> = sense
                 .tags
                 .iter()
@@ -955,15 +1250,15 @@ fn handle_inflection_sense(
                 .map(String::from)
                 .collect();
             let inflection_tags: Vec<_> = if allowed_tags.is_empty() {
-                vec![format!("redirected from {}", word_entry.word)]
+                vec![format!("redirected from {}", entry.word)]
             } else {
                 allowed_tags
             };
             for form in &sense.form_of {
                 irs.insert_form(
                     &form.word,
-                    &word_entry.word,
-                    &word_entry.pos,
+                    &entry.word,
+                    &entry.pos,
                     FormSource::Inflection,
                     inflection_tags.clone(),
                 );
@@ -973,16 +1268,15 @@ fn handle_inflection_sense(
     }
 }
 
-fn handle_inflection_sense_en(source: Lang, word_entry: &WordEntry, sense: &Sense, irs: &mut Tidy) {
+fn handle_inflection_sense_en(source: Lang, entry: &WordEntry, sense: &Sense, irs: &mut Tidy) {
     let uninflected = match sense.form_of.as_slice() {
         [alt_form] => &alt_form.word,
         _ => return,
     };
 
-    // Not sure if this is better (cf. ru-en) over word_entry.word but it is what was done in
+    // Not sure if this is better (cf. ru-en) over entry.word but it is what was done in
     // the original, so lets not change that for the moment.
-    let inflected =
-        get_canonical_word(source, word_entry).unwrap_or_else(|| word_entry.word.clone());
+    let inflected = get_canonical_word(source, entry).unwrap_or_else(|| entry.word.clone());
 
     if inflected == *uninflected {
         return;
@@ -994,7 +1288,7 @@ fn handle_inflection_sense_en(source: Lang, word_entry: &WordEntry, sense: &Sens
         let cleaned = gloss
             .replace("inflection of ", "")
             .replace(&of_uninflected, "")
-            .replace(&*uninflected, "")
+            .replace(uninflected, "")
             .replace(':', "");
 
         let inflection = PARENS_RE.replace_all(&cleaned, "").trim().to_string();
@@ -1006,9 +1300,9 @@ fn handle_inflection_sense_en(source: Lang, word_entry: &WordEntry, sense: &Sens
 
     for inflection in inflections {
         irs.insert_form(
-            &uninflected,
+            uninflected,
             &inflected,
-            &word_entry.pos,
+            &entry.pos,
             FormSource::Inflection,
             vec![inflection],
         );
@@ -1027,49 +1321,29 @@ fn normalize_orthography(source: Lang, word: &str) -> String {
     }
 }
 
-#[tracing::instrument(skip_all)]
-fn to_yomitan_lemmas(
-    edition: EditionLang,
-    options: &Options,
-    lemma_map: LemmaMap,
-    diagnostics: &mut Diagnostics,
-) -> Vec<YomitanEntry> {
-    let mut yomitan_entries = Vec::new();
-
-    for (key, infos) in lemma_map.0 {
-        let LemmaKey {
-            lemma,
-            reading,
-            pos,
-        } = key;
-
-        yomitan_entries.extend(infos.into_iter().map(|info| {
-            to_yomitan_lemma(edition, options, &lemma, &reading, &pos, info, diagnostics)
-        }));
-    }
-
-    yomitan_entries
+#[tracing::instrument(skip_all, level = "trace")]
+fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> Vec<YomitanEntry> {
+    lemma_map
+        .into_flat_iter()
+        .map(move |(lemma, reading, pos, info)| {
+            to_yomitan_lemma(target, &lemma, &reading, &pos, info)
+        })
+        .collect()
 }
 
 // TODO: consume info
 fn to_yomitan_lemma(
-    edition: EditionLang,
-    options: &Options,
+    target: Lang,
     lemma: &str,
     reading: &str,
     pos: &Pos, // should be &str
     info: LemmaInfo,
-    diagnostics: &mut Diagnostics,
 ) -> YomitanEntry {
-    let found_pos = match find_short_pos(pos) {
-        Some(short_pos) => short_pos.to_string(),
-        None => pos.clone(),
-    };
+    let short_pos = find_short_pos_or_default(pos);
 
     let yomitan_reading = if *reading == *lemma { "" } else { reading };
 
-    let common_short_tags_found =
-        get_found_tags(options, lemma, pos, &info.gloss_tree, diagnostics);
+    let common_short_tags_found = get_found_tags(pos, &info.gloss_tree);
 
     let mut detailed_definition_content = Node::new_array();
 
@@ -1081,7 +1355,7 @@ fn to_yomitan_lemma(
     }
 
     detailed_definition_content.push(structured_glosses(
-        edition,
+        target,
         info.gloss_tree,
         &common_short_tags_found,
     ));
@@ -1092,18 +1366,12 @@ fn to_yomitan_lemma(
         lemma.to_string(),
         yomitan_reading.to_string(),
         common_short_tags_found.join(" "),
-        found_pos,
+        short_pos.to_string(),
         vec![DetailedDefinition::structured(detailed_definition_content)],
     ))
 }
 
-fn get_found_tags(
-    options: &Options,
-    lemma: &str,
-    pos: &Pos,
-    gloss_tree: &GlossTree,
-    diagnostics: &mut Diagnostics,
-) -> Vec<Tag> {
+fn get_found_tags(pos: &Pos, gloss_tree: &GlossTree) -> Vec<Tag> {
     // Common tags to all glosses (this is an English edition reasoning really...)
     // it should also support tags at the WordEntry level
     let common_tags_iter = gloss_tree
@@ -1120,15 +1388,10 @@ fn get_found_tags(
     for tag in std::iter::once(pos.to_string()).chain(common_tags_iter) {
         match find_tag_in_bank(&tag) {
             None => {
-                // try modified tag: skip
-                if options.save_temps {
-                    diagnostics.increment_rejected_tag(tag, lemma.to_string());
-                }
+                // log skipped tags
+                // tracing::debug!("{}", tag);
             }
             Some(res) => {
-                if options.save_temps {
-                    diagnostics.increment_accepted_tag(tag, lemma.to_string());
-                }
                 common_short_tags_found.push(res.short_tag);
             }
         }
@@ -1169,15 +1432,15 @@ fn structured_backlink(wlink: String, klink: String) -> Node {
         NTag::Div,
         "backlink",
         Node::Array(vec![
-            Node::Backlink(BacklinkContent::new(wlink, "Wiktionary")),
+            Node::Backlink(BacklinkContent::new(wlink, BacklinkContentKind::Wiktionary)),
             Node::Text(" | ".into()), // JMdict uses this separator
-            Node::Backlink(BacklinkContent::new(klink, "Kaikki")),
+            Node::Backlink(BacklinkContent::new(klink, BacklinkContentKind::Kaikki)),
         ]),
     )
 }
 
 fn structured_glosses(
-    edition: EditionLang,
+    target: Lang,
     gloss_tree: GlossTree,
     common_short_tags_found: &[Tag],
 ) -> Node {
@@ -1192,7 +1455,7 @@ fn structured_glosses(
                         NTag::Li,
                         "",
                         Node::Array(structured_glosses_go(
-                            edition,
+                            target,
                             &GlossTree::from_iter([gloss_pair]),
                             common_short_tags_found,
                             0,
@@ -1206,7 +1469,7 @@ fn structured_glosses(
 
 // Recursive helper ~ should return Node for consistency
 fn structured_glosses_go(
-    edition: EditionLang,
+    target: Lang,
     gloss_tree: &GlossTree,
     common_short_tags_found: &[Tag],
     level: usize,
@@ -1233,7 +1496,7 @@ fn structured_glosses_go(
         level_content.push(Node::Text(gloss.into()));
 
         if !gloss_info.examples.is_empty() {
-            level_content.push(structured_examples(edition, &gloss_info.examples));
+            level_content.push(structured_examples(target, &gloss_info.examples));
         }
 
         nested.push(wrap(html_tag, "", level_content));
@@ -1250,7 +1513,7 @@ fn structured_glosses_go(
             NTag::Ul,
             "",
             Node::Array(structured_glosses_go(
-                edition,
+                target,
                 &gloss_info.children,
                 &new_common_short_tags_found,
                 level + 1,
@@ -1261,6 +1524,7 @@ fn structured_glosses_go(
     nested
 }
 
+/// cf [crate::models::yomitan::TagInformation]
 fn structured_tags(tags: &[Tag], common_short_tags_found: &[Tag]) -> Option<Node> {
     let structured_tags_content: Vec<_> = tags
         .iter()
@@ -1274,7 +1538,7 @@ fn structured_tags(tags: &[Tag], common_short_tags_found: &[Tag]) -> Option<Node
                         title: Some(tag_info.long_tag),
                         data: Some(NodeData::from_iter([
                             ("content", "tag"),
-                            ("category", &tag_info.category),
+                            ("category", &tag_info.category), // can be empty
                         ])),
                         content: Node::Text(tag_info.short_tag),
                     }
@@ -1297,13 +1561,13 @@ fn structured_tags(tags: &[Tag], common_short_tags_found: &[Tag]) -> Option<Node
     }
 }
 
-fn structured_examples(edition: EditionLang, examples: &[Example]) -> Node {
+fn structured_examples(target: Lang, examples: &[Example]) -> Node {
     debug_assert!(!examples.is_empty());
 
     let mut structured_examples_content = wrap(
         NTag::Summary,
         "summary-entry",
-        Node::Text(localize_examples_string(edition, examples.len())),
+        Node::Text(localize_examples_string(target, examples.len())),
     )
     .into_array_node();
 
@@ -1347,11 +1611,11 @@ fn structured_examples(edition: EditionLang, examples: &[Example]) -> Node {
     )
 }
 
-#[tracing::instrument(skip_all)]
+#[tracing::instrument(skip_all, level = "trace")]
 fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
     form_map
-        .flat_iter()
-        .map(|(uninflected, inflected, _, _, tags)| {
+        .into_flat_iter()
+        .map(move |(uninflected, inflected, _, _, tags)| {
             // There needs to be DetailedDefinition per tag because yomitan reads
             // multiple tags in a single Inflection as a causal inflection chain.
             let deinflection_definitions: Vec<_> = tags
@@ -1361,18 +1625,16 @@ fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
                 })
                 .collect();
 
-            let normalized_inflected = normalize_orthography(source, inflected);
-            let reading = if normalized_inflected == *inflected {
-                ""
+            let normalized_inflected = normalize_orthography(source, &inflected);
+            let reading = if normalized_inflected == inflected {
+                "".to_string()
             } else {
                 inflected
             };
 
-            YomitanEntry::TermBank(TermBank(
+            YomitanEntry::TermBankSimplified(TermBankSimplified(
                 normalized_inflected,
-                reading.into(),
-                "non-lemma".into(),
-                String::new(),
+                reading,
                 deinflection_definitions,
             ))
         })

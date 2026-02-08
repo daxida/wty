@@ -2,12 +2,10 @@ use std::fmt;
 use std::fs;
 use std::path::PathBuf;
 
-use crate::{
-    cli::{Langs, SimpleArgs},
-    lang::{Edition, EditionLang, Lang},
-};
+use crate::cli::{DictName, LangSpecs, Options};
+use crate::lang::{Edition, EditionSpec, Lang, LangSpec};
 
-/// Enum used by `PathManager` to dispatch filetree operations (folder names etc.)
+/// Enum used by `PathManager` to manage filetree operations.
 #[derive(Debug, Clone, Copy)]
 pub enum DictionaryType {
     Main,
@@ -20,70 +18,116 @@ pub enum DictionaryType {
 /// Used only for the temporary files folder (`dir_temp`).
 impl fmt::Display for DictionaryType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Main => write!(f, "main"),
-            Self::Glossary => write!(f, "glossary"),
-            Self::GlossaryExtended => write!(f, "glossary-ext"),
-            Self::Ipa => write!(f, "ipa"),
-            Self::IpaMerged => write!(f, "ipa-merged"),
+        f.write_str(match self {
+            Self::Main => "main",
+            Self::Glossary => "glossary",
+            Self::GlossaryExtended => "glossary-ext",
+            Self::Ipa => "ipa",
+            Self::IpaMerged => "ipa-merged",
+        })
+    }
+}
+
+// this could also be used to ingest some other shape of the data (like rkyv Archive)
+//
+// cf. download::DatasetKind
+#[derive(Debug, PartialEq, Eq)]
+pub enum PathKind {
+    /// Path to a filtered jsonl. English-edition-only, for other editions this is just an alias.
+    Filtered,
+    /// Path to a unfiltered jsonl
+    Unfiltered,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct DatasetPath {
+    pub kind: PathKind,
+    pub path: PathBuf,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct DatasetPaths {
+    pub inner: Vec<DatasetPath>,
+}
+
+fn dataset_raw_unfiltered(edition: Edition, root: PathBuf) -> DatasetPath {
+    DatasetPath {
+        kind: PathKind::Unfiltered,
+        path: root.join(format!("{edition}-extract.jsonl")),
+    }
+}
+
+fn dataset_raw_filtered(edition: Edition, lang: Lang, root: PathBuf) -> DatasetPath {
+    DatasetPath {
+        kind: PathKind::Filtered,
+        path: root.join(format!("{lang}-{edition}-extract.jsonl")),
+    }
+}
+
+impl DatasetPaths {
+    pub fn new(edition: Edition, lang: Option<Lang>, root: PathBuf) -> Self {
+        Self {
+            inner: match lang {
+                Some(lang) => vec![
+                    dataset_raw_filtered(edition, lang, root.clone()),
+                    dataset_raw_unfiltered(edition, root),
+                ],
+                None => vec![dataset_raw_unfiltered(edition, root)],
+            },
         }
     }
 }
 
 /// Helper struct to manage paths.
-//
-// It could have done directly with args, but tracking dict_ty is quite tricky. Also, this makes
-// the intent of every call to either args or pm (PathManager) clearer. And better autocomplete!
-#[derive(Debug)]
+///
+/// TODO: rename to context/params
+#[derive(Debug, Clone)]
 pub struct PathManager {
-    dict_name: String,
-    dict_ty: DictionaryType,
-
-    edition: Edition,
-    source: Lang,
-    target: Lang,
-
-    root_dir: PathBuf,
-    save_temps: bool,
-    experimental: bool,
+    pub dict_ty: DictionaryType,
+    pub dict_name: DictName,
+    pub langs: LangSpecs,
+    pub opts: Options,
 }
 
 impl PathManager {
-    pub fn new(dict_ty: DictionaryType, args: &impl SimpleArgs) -> Self {
-        Self {
-            dict_name: args.dict_name().to_string(),
-            dict_ty,
-            edition: args.langs().edition(),
-            source: args.langs().source(),
-            target: args.langs().target(),
-            root_dir: args.options().root_dir.clone(),
-            save_temps: args.options().save_temps,
-            experimental: args.options().experimental,
-        }
+    pub const fn set_edition(&mut self, edition: EditionSpec) {
+        self.langs.edition = edition;
+    }
+    pub const fn set_source(&mut self, source: LangSpec) {
+        self.langs.source = source;
+    }
+    pub const fn set_target(&mut self, target: LangSpec) {
+        self.langs.target = target;
     }
 
-    // Seems a bit hacky to get it from the PathManager...
-    pub const fn langs(&self) -> (Edition, Lang, Lang) {
-        (self.edition, self.source, self.target)
+    pub const fn langs(&self) -> (EditionSpec, LangSpec, LangSpec) {
+        let LangSpecs {
+            edition,
+            source,
+            target,
+        } = self.langs;
+        (edition, source, target)
+    }
+
+    const fn root_dir(&self) -> &PathBuf {
+        &self.opts.root_dir
     }
 
     /// Example: `data/kaikki`
     pub fn dir_kaik(&self) -> PathBuf {
-        self.root_dir.join("kaikki")
+        self.root_dir().join("kaikki")
     }
     /// Directory for all dictionaries.
     ///
     /// Example: `data/dict`
     pub fn dir_dicts(&self) -> PathBuf {
-        self.root_dir.join("dict")
+        self.root_dir().join("dict")
     }
     /// Example: `data/dict/el/el`
     fn dir_dict(&self) -> PathBuf {
         self.dir_dicts().join(match self.dict_ty {
-            // For merged dictionaries, use the edition (displays as "all")
-            // TODO: this should be the opposite
-            DictionaryType::IpaMerged => format!("{}/{}", self.target, self.edition),
-            _ => format!("{}/{}", self.source, self.target),
+            DictionaryType::IpaMerged => format!("{}/{}", self.langs.edition, self.langs.target),
+            _ => format!("{}/{}", self.langs.source, self.langs.target),
         })
     }
     /// Depends on the type of dictionary being made.
@@ -103,8 +147,9 @@ impl PathManager {
         fs::create_dir_all(self.dir_kaik())?;
         fs::create_dir_all(self.dir_dict())?;
 
-        if self.save_temps {
-            fs::create_dir_all(self.dir_tidy())?; // not needed for glossary
+        if self.opts.save_temps {
+            // not needed for dictionaries that don't support write_ir
+            fs::create_dir_all(self.dir_tidy())?;
             fs::create_dir_all(self.dir_temp_dict())?;
         }
 
@@ -114,89 +159,38 @@ impl PathManager {
     // Only used by CMD::download
     //
     /// Cf. `paths_jsonl` documentation
-    pub fn path_jsonl(&self, edition: EditionLang, lang: Lang) -> PathBuf {
-        self.aliases(edition, lang).last().unwrap().into()
+    pub fn path_jsonl(&self, edition: Edition, lang: Lang) -> PathBuf {
+        self.dataset_paths(edition, Some(lang))
+            .inner
+            .first() // take the Filtered path
+            .unwrap()
+            .path
+            .clone()
     }
 
     /// Cf. `paths_jsonl` documentation
-    fn aliases(&self, edition: EditionLang, lang: Lang) -> Vec<PathBuf> {
-        match edition {
-            EditionLang::En => {
-                vec![self.dir_kaik().join(format!("{lang}-en-extract.jsonl"))]
-            }
-            _ => {
-                vec![
-                    self.dir_kaik()
-                        .join(format!("{lang}-{edition}-extract.jsonl")),
-                    self.dir_kaik().join(format!("{edition}-extract.jsonl")),
-                ]
-            }
-        }
-    }
-
-    /// Return a vector of edition languages and aliases to the raw jsonl.
-    ///
-    /// Aliases are done for both legacy reasons (cf. the testsuite), and the differences in
-    /// filenames between the English edition and the rest.
-    ///
-    /// The order of the paths is from specific (alias(es)) to general (download name)
-    ///
-    /// For example, for the main dictionary:
-    /// * If <source> = En, <target> = Zh
-    ///   [en-zh-extract.jsonl], actual, name of the (filtered) download
-    ///   [en-extract.jsonl],    does not exist
-    /// * If <source> = Zh, <target> = En
-    ///   [zh-en-extract.jsonl]  alias (specific), used in tests
-    ///   [zh-extract.jsonl]     actual (general), name of the (unfiltered) download
-    ///
-    /// Example (zh-en): [`data/kaikki/zh-en-extract.jsonl`]
-    /// Example (en-en): [`data/kaikki/en-en-extract.jsonl`]
-    /// Example (en-zh): [`data/kaikki/en-zh-extract.jsonl`, `data/kaikki/zh-extract.jsonl`]
-    ///
-    /// Note that the English downloads are already filtered. That is:
-    /// * [`data/kaikki/zh-en-extract.jsonl`]
-    ///   is guaranteed to only have Chinese words with glosses in English
-    /// but for:
-    /// * [`data/kaikki/en-zh-extract.jsonl`]
-    ///   there is no such guarantee (it is an alias, *not* downloaded)
-    pub fn paths_jsonl(&self) -> Vec<(EditionLang, Vec<PathBuf>)> {
-        let (edition, source, _) = self.langs();
-
-        use DictionaryType::*;
-        match self.dict_ty {
-            // All editions, other_lang is not used when filtering
-            GlossaryExtended | IpaMerged => edition
-                .variants()
-                .into_iter()
-                .map(|edl| (edl, self.aliases(edl, edl.into())))
-                .collect(),
-            // One edition, other_lang is used when filtering
-            Main | Ipa => {
-                let edl = edition.try_into().unwrap();
-                vec![(edl, self.aliases(edl, source))]
-            }
-            // One edition, other_lang is not used when filtering
-            Glossary => {
-                let edl = edition.try_into().unwrap();
-                vec![(edl, self.aliases(edl, edl.into()))]
-            }
-        }
+    pub fn dataset_paths(&self, edition: Edition, lang: Option<Lang>) -> DatasetPaths {
+        DatasetPaths::new(edition, lang, self.dir_kaik())
     }
 
     /// `data/dict/source/target/temp/tidy/source-target-lemmas.json`
     ///
     /// Example: `data/dict/el/el/temp/tidy/el-el-lemmas.json`
     pub fn path_lemmas(&self) -> PathBuf {
-        self.dir_tidy()
-            .join(format!("{}-{}-lemmas.json", self.source, self.target))
+        self.dir_tidy().join(format!(
+            "{}-{}-lemmas.json",
+            self.langs.source, self.langs.target
+        ))
     }
 
     /// `data/dict/source/target/temp/tidy/source-target-forms.json`
     ///
     /// Example: `data/dict/el/el/temp/tidy/el-el-forms.json`
     pub fn path_forms(&self) -> PathBuf {
-        self.dir_tidy()
-            .join(format!("{}-{}-forms.json", self.source, self.target))
+        self.dir_tidy().join(format!(
+            "{}-{}-forms.json",
+            self.langs.source, self.langs.target
+        ))
     }
 
     /// Temporary working directory path used before zipping the dictionary.
@@ -214,24 +208,23 @@ impl PathManager {
     /// Example: `dictionary_name-el-en`
     /// Example: `dictionary_name-el-en-gloss`
     pub fn dict_name_expanded(&self) -> String {
+        let dict_name = &self.dict_name;
+        let LangSpecs {
+            edition,
+            source,
+            target,
+        } = self.langs;
+
+        use DictionaryType::*;
         let mut expanded = match self.dict_ty {
-            DictionaryType::Main => format!("{}-{}-{}", self.dict_name, self.source, self.target),
-            DictionaryType::Glossary => {
-                format!("{}-{}-{}-gloss", self.dict_name, self.source, self.target)
-            }
-            DictionaryType::GlossaryExtended => {
-                format!(
-                    "{}-{}-{}-{}-gloss",
-                    self.dict_name, self.edition, self.source, self.target
-                )
-            }
-            DictionaryType::Ipa => {
-                format!("{}-{}-{}-ipa", self.dict_name, self.source, self.target)
-            }
-            DictionaryType::IpaMerged => format!("{}-{}-ipa", self.dict_name, self.target),
+            Main => format!("{dict_name}-{source}-{target}"),
+            Glossary => format!("{dict_name}-{source}-{target}-gloss"),
+            GlossaryExtended => format!("{dict_name}-{edition}-{source}-{target}-gloss"),
+            Ipa => format!("{dict_name}-{source}-{target}-ipa"),
+            IpaMerged => format!("{dict_name}-{target}-ipa"),
         };
 
-        if self.experimental {
+        if self.opts.experimental {
             expanded.push_str("-exp");
         }
 
@@ -250,132 +243,5 @@ impl PathManager {
     /// Example: `data/dict/el/el/temp/diagnostics`
     pub fn dir_diagnostics(&self) -> PathBuf {
         self.dir_temp().join("diagnostics")
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::cli::{
-        GlossaryArgs, GlossaryExtendedArgs, GlossaryExtendedLangs, GlossaryLangs, MainArgs,
-        MainLangs,
-    };
-
-    use super::*;
-
-    macro_rules! exp {
-        ($edition:expr, [$($p:expr),*]) => {
-            vec![(
-                $edition, vec![$(std::path::PathBuf::from($p)),*],
-            )]
-        };
-    }
-
-    type E = Vec<(EditionLang, Vec<PathBuf>)>;
-
-    #[test]
-    fn paths_main() {
-        fn go(source: Lang, target: EditionLang, expected: E) {
-            let args = MainArgs {
-                langs: MainLangs {
-                    edition: target,
-                    source,
-                    target,
-                },
-                ..Default::default()
-            };
-            let pm = PathManager::new(DictionaryType::Main, &args);
-            let paths = pm.paths_jsonl();
-            assert_eq!(paths, expected);
-        }
-
-        // main zh en
-        go(
-            Lang::Zh,        // source
-            EditionLang::En, // target
-            exp!(EditionLang::En, ["kaikki/zh-en-extract.jsonl"]),
-        );
-
-        go(
-            Lang::En,
-            EditionLang::Zh,
-            exp!(
-                EditionLang::Zh,
-                ["kaikki/en-zh-extract.jsonl", "kaikki/zh-extract.jsonl"]
-            ),
-        );
-
-        go(
-            Lang::En,
-            EditionLang::En,
-            exp!(EditionLang::En, ["kaikki/en-en-extract.jsonl"]),
-        );
-    }
-
-    #[test]
-    fn paths_glossary() {
-        fn go(source: EditionLang, target: Lang, expected: E) {
-            let args = GlossaryArgs {
-                langs: GlossaryLangs {
-                    edition: source,
-                    source,
-                    target,
-                },
-                ..Default::default()
-            };
-            let pm = PathManager::new(DictionaryType::Glossary, &args);
-            let paths = pm.paths_jsonl();
-            assert_eq!(paths, expected);
-        }
-
-        go(
-            EditionLang::Zh,
-            Lang::En,
-            exp!(
-                EditionLang::Zh,
-                ["kaikki/zh-zh-extract.jsonl", "kaikki/zh-extract.jsonl"]
-            ),
-        );
-
-        go(
-            EditionLang::En,
-            Lang::Zh,
-            exp!(EditionLang::En, ["kaikki/en-en-extract.jsonl"]),
-        );
-    }
-
-    #[test]
-    fn paths_glossary_extended() {
-        let args = GlossaryExtendedArgs {
-            langs: GlossaryExtendedLangs {
-                edition: Edition::All,
-                // These two are irrelevant
-                source: Lang::Tok,
-                target: Lang::Scn,
-            },
-            ..Default::default()
-        };
-        let pm = PathManager::new(DictionaryType::GlossaryExtended, &args);
-        let paths = pm.paths_jsonl();
-
-        assert!(
-            paths.contains(
-                exp!(
-                    EditionLang::Zh,
-                    ["kaikki/zh-zh-extract.jsonl", "kaikki/zh-extract.jsonl"]
-                )
-                .first()
-                .unwrap()
-            )
-        );
-        assert!(
-            paths.contains(
-                exp!(
-                    EditionLang::Nl,
-                    ["kaikki/nl-nl-extract.jsonl", "kaikki/nl-extract.jsonl"]
-                )
-                .first()
-                .unwrap()
-            )
-        );
     }
 }

@@ -52,3 +52,7 @@ clippy *args:
   -A clippy::module_name_repetitions \
   -A clippy::cast_precision_loss \
   -A clippy::unicode_not_nfc
+
+# top 20 zip files by size
+size:
+  find . -type f -name "*.zip" -exec du -h {} + | sort -hr | head -20

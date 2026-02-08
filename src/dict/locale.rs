@@ -1,14 +1,14 @@
-use crate::lang::EditionLang;
+use crate::lang::Lang;
 
 // This should be done differently, and support every section of the dictionary (i.e. Etymology)
 
-pub fn localize_examples_string(edition: EditionLang, n: usize) -> String {
-    let (singular, plural) = match edition {
-        EditionLang::Fr => ("exemple", "exemples"),
-        EditionLang::De => ("Beispiel", "Beispiele"),
-        EditionLang::Es => ("ejemplo", "ejemplos"),
-        EditionLang::Ru => ("пример", "примеры"),
-        EditionLang::Zh | EditionLang::Ja => return format!("{n} 例"), // special case
+pub fn localize_examples_string(target: Lang, n: usize) -> String {
+    let (singular, plural) = match target {
+        Lang::Fr => ("exemple", "exemples"),
+        Lang::De => ("Beispiel", "Beispiele"),
+        Lang::Es => ("ejemplo", "ejemplos"),
+        Lang::Ru => ("пример", "примеры"),
+        Lang::Zh | Lang::Ja => return format!("{n} 例"), // special case
         _ => ("example", "examples"),
     };
 

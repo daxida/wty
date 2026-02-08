@@ -2,7 +2,7 @@ use anyhow::Result;
 use std::fs;
 use std::path::Path;
 
-use crate::lang::{EditionLang, Lang};
+use crate::lang::{Edition, Lang};
 
 pub const SKIP_C: &str = "⏭";
 pub const CHECK_C: &str = "✓";
@@ -23,7 +23,7 @@ fn size(path: &Path) -> std::io::Result<u64> {
     }
 }
 
-fn human_size(size_bytes: f64) -> String {
+pub fn human_size(size_bytes: f64) -> String {
     let mut size = size_bytes;
     for unit in ["B", "KB", "MB"] {
         if size < 1024.0 {
@@ -64,7 +64,7 @@ pub fn skip_because_file_exists(skipped: &str, path: &Path) {
 }
 
 /// Return a link to the wiktionary page of this word.
-pub fn link_wiktionary(edition: EditionLang, source: Lang, word: &str) -> String {
+pub fn link_wiktionary(edition: Edition, source: Lang, word: &str) -> String {
     format!(
         "https://{}.wiktionary.org/wiki/{}#{}",
         edition,
@@ -74,7 +74,7 @@ pub fn link_wiktionary(edition: EditionLang, source: Lang, word: &str) -> String
 }
 
 /// Return a link to the kaikki page of this word.
-pub fn link_kaikki(edition: EditionLang, source: Lang, word: &str) -> String {
+pub fn link_kaikki(edition: Edition, source: Lang, word: &str) -> String {
     // 楽しい >> 楽/楽し/楽しい
     // 伸す >> 伸/伸す/伸す (when word.chars().count() < 2)
     // up >> u/up/up (word.len() is irrelevant, only char count matters)
@@ -87,11 +87,11 @@ pub fn link_kaikki(edition: EditionLang, source: Lang, word: &str) -> String {
     };
 
     let dictionary = match edition {
-        EditionLang::En => "dictionary",
+        Edition::En => "dictionary",
         other => &format!("{other}wiktionary"),
     };
     let localized_source = match edition {
-        EditionLang::En | EditionLang::El => &source.long().replace(' ', "%20"),
+        Edition::En | Edition::El => &source.long().replace(' ', "%20"),
         // https://github.com/tatuylonen/wiktextract/issues/1497
         _ => "All%20languages%20combined",
     };

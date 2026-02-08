@@ -2,17 +2,14 @@ use anyhow::Result;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-use kty::cli::{Cli, Command, Langs, SimpleArgs};
+use kty::cli::{Cli, Command, LangSpecs};
 use kty::dict::{DGlossary, DGlossaryExtended, DIpa, DIpaMerged, DMain, make_dict};
 use kty::download::download_jsonl;
-use kty::lang::{EditionLang, Lang};
-use kty::path::{DictionaryType, PathManager};
+use kty::lang::{Edition, Lang};
+use kty::path::PathManager;
 use kty::utils::skip_because_file_exists;
 
-fn setup_tracing(verbose: bool) {
-    // tracing_subscriber::fmt::init();
-    // Same defaults as the above, without timestamps
-
+fn init_logger(verbose: bool) {
     let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
         if verbose {
             // Only we are set to debug. ureq and other libs stay the same.
@@ -25,39 +22,28 @@ fn setup_tracing(verbose: bool) {
     tracing_subscriber::fmt()
         .with_env_filter(filter)
         .with_span_events(FmtSpan::CLOSE)
-        // .without_time()
-        .with_target(true)
-        .with_level(true)
+        .with_timer(tracing_subscriber::fmt::time::ChronoLocal::new(
+            "%H:%M:%S".to_string(),
+        ))
         .init();
 }
 
-fn run_command(cmd: &Command) -> Result<()> {
+#[tracing::instrument(skip_all, level = "debug")]
+fn run(cmd: Command) -> Result<()> {
+    tracing::trace!("{:#?}", cmd);
+
     match cmd {
-        Command::Main(args) => {
-            let pm = PathManager::new(DictionaryType::Main, args);
-            make_dict(DMain, args.options(), &pm)
-        }
-        Command::Glossary(args) => {
-            let pm = PathManager::new(DictionaryType::Glossary, args);
-            make_dict(DGlossary, args.options(), &pm)
-        }
-        Command::GlossaryExtended(args) => {
-            let pm = PathManager::new(DictionaryType::GlossaryExtended, args);
-            make_dict(DGlossaryExtended, args.options(), &pm)
-        }
-        Command::Ipa(args) => {
-            let pm = PathManager::new(DictionaryType::Ipa, args);
-            make_dict(DIpa, args.options(), &pm)
-        }
-        Command::IpaMerged(args) => {
-            let pm = PathManager::new(DictionaryType::IpaMerged, args);
-            make_dict(DIpaMerged, &args.options, &pm)
-        }
+        Command::Main(args) => make_dict(DMain, args),
+        Command::Glossary(args) => make_dict(DGlossary, args),
+        Command::GlossaryExtended(args) => make_dict(DGlossaryExtended, args),
+        Command::Ipa(args) => make_dict(DIpa, args),
+        Command::IpaMerged(args) => make_dict(DIpaMerged, args),
         Command::Download(args) => {
-            let pm = PathManager::new(DictionaryType::Main, args);
-            let langs = args.langs();
-            let source = langs.source();
-            let edition_lang: EditionLang = langs.edition().try_into().unwrap();
+            let langs: LangSpecs = args.langs.clone().try_into()?;
+            let quiet = args.options.quiet;
+            let source: Lang = langs.source.try_into().unwrap();
+            let edition_lang: Edition = langs.edition.try_into().unwrap();
+            let pm = PathManager::try_from(args)?;
             let opath = pm.path_jsonl(edition_lang, source);
 
             if opath.exists() {
@@ -65,7 +51,9 @@ fn run_command(cmd: &Command) -> Result<()> {
                 Ok(())
             } else {
                 let _ = std::fs::create_dir(pm.dir_kaik());
-                download_jsonl(edition_lang, source, &opath, args.options.quiet)
+                // Should really take the Kind as argument, but this command may disappear anyway
+                let kind = kty::dict::edition_to_kind(edition_lang);
+                download_jsonl(edition_lang, Some(source), kind, &opath, quiet)
             }
         }
         Command::Iso(args) => {
@@ -80,13 +68,7 @@ fn run_command(cmd: &Command) -> Result<()> {
 }
 
 fn main() -> Result<()> {
-    let cli = Cli::parse_cli()?;
-
-    setup_tracing(cli.verbose);
-    let span = tracing::info_span!("main");
-    let _guard = span.enter();
-
-    let cmd = cli.command;
-    tracing::debug!("{:#?}", cmd);
-    run_command(&cmd)
+    let cli = Cli::parse_cli();
+    init_logger(cli.verbose);
+    run(cli.command)
 }

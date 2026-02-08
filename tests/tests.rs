@@ -1,8 +1,8 @@
-use kty::cli::{GlossaryArgs, GlossaryLangs, MainArgs, MainLangs, Options};
+use kty::cli::{DictName, GlossaryArgs, GlossaryLangs, IpaArgs, MainArgs, MainLangs, Options};
 use kty::dict::{DGlossary, DIpa, DMain};
-use kty::lang::{EditionLang, Lang};
+use kty::lang::{Edition, Lang};
 use kty::make_dict;
-use kty::path::{DictionaryType, PathManager};
+use kty::path::PathManager;
 
 use anyhow::{Ok, Result};
 use tracing_subscriber::EnvFilter;
@@ -50,37 +50,36 @@ fn fixture_options(fixture_dir: &Path) -> Options {
     }
 }
 
-fn fixture_main_args(
-    edition: EditionLang,
-    source: Lang,
-    target: EditionLang,
-    fixture_dir: &Path,
-) -> MainArgs {
+fn fixture_main_args(source: Lang, target: Edition, fixture_dir: &Path) -> MainArgs {
     MainArgs {
         langs: MainLangs {
-            edition,
-            source,
-            target,
+            source: source.into(),
+            target: target.into(),
         },
+        dict_name: DictName::default(),
         options: fixture_options(fixture_dir),
-        ..Default::default()
     }
 }
 
-fn fixture_glossary_args(
-    edition: EditionLang,
-    source: EditionLang,
-    target: Lang,
-    fixture_dir: &Path,
-) -> GlossaryArgs {
+fn fixture_ipa_args(source: Lang, target: Edition, fixture_dir: &Path) -> IpaArgs {
+    IpaArgs {
+        langs: MainLangs {
+            source: source.into(),
+            target: target.into(),
+        },
+        dict_name: DictName::default(),
+        options: fixture_options(fixture_dir),
+    }
+}
+
+fn fixture_glossary_args(source: Edition, target: Lang, fixture_dir: &Path) -> GlossaryArgs {
     GlossaryArgs {
         langs: GlossaryLangs {
-            edition,
-            source,
-            target,
+            source: source.into(),
+            target: target.into(),
         },
+        dict_name: DictName::default(),
         options: fixture_options(fixture_dir),
-        ..Default::default()
     }
 }
 
@@ -141,13 +140,12 @@ fn snapshot() {
     // failfast
     // main
     for (source, target) in &cases {
-        let Result::Ok(target) = EditionLang::try_from(*target) else {
+        let Result::Ok(target) = (*target).try_into() else {
             continue; // skip if target is not edition
         };
-        let args = fixture_main_args(target, *source, target, &fixture_dir);
-        let pm = PathManager::new(DictionaryType::Main, &args);
+        let args = fixture_main_args(*source, target, &fixture_dir);
 
-        if let Err(e) = shapshot_main(&args.options, &pm) {
+        if let Err(e) = shapshot_main(args) {
             panic!("({source}): {e}");
         }
     }
@@ -158,25 +156,26 @@ fn snapshot() {
             continue;
         }
 
-        let Result::Ok(source) = EditionLang::try_from(*source) else {
+        let Result::Ok(source) = (*source).try_into() else {
             continue; // skip if source is not edition
         };
 
         for possible_target in &langs_in_testsuite {
-            let args = fixture_glossary_args(source, source, *possible_target, &fixture_dir);
-            let pm = PathManager::new(DictionaryType::Glossary, &args);
-            make_dict(DGlossary, &args.options, &pm).unwrap();
+            if Lang::from(source) == *possible_target {
+                continue;
+            }
+            let args = fixture_glossary_args(source, *possible_target, &fixture_dir);
+            make_dict(DGlossary, args).unwrap();
         }
     }
 
     // ipa
     for (source, target) in &cases {
-        let Result::Ok(target) = EditionLang::try_from(*target) else {
+        let Result::Ok(target) = (*target).try_into() else {
             continue; // skip if target is not edition
         };
-        let args = fixture_main_args(target, *source, target, &fixture_dir);
-        let pm = PathManager::new(DictionaryType::Ipa, &args);
-        make_dict(DIpa, &args.options, &pm).unwrap();
+        let args = fixture_ipa_args(*source, target, &fixture_dir);
+        make_dict(DIpa, args).unwrap();
     }
 
     cleanup(&fixture_dir.join("dict"));
@@ -213,9 +212,10 @@ fn check_git_diff(pm: &PathManager) -> Result<()> {
 }
 
 /// Read the expected result in the snapshot first, then git diff
-fn shapshot_main(options: &Options, pm: &PathManager) -> Result<()> {
+fn shapshot_main(margs: MainArgs) -> Result<()> {
+    let pm = &PathManager::try_from(margs.clone())?;
     delete_previous_output(pm)?;
-    make_dict(DMain, options, pm)?;
+    make_dict(DMain, margs)?;
     check_git_diff(pm)?;
     Ok(())
 }

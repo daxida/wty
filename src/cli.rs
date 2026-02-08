@@ -1,10 +1,14 @@
+use std::fmt;
+use std::ops::Deref;
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use anyhow::{Ok, Result, bail};
 use clap::{Parser, Subcommand};
-use std::path::PathBuf;
 
-use crate::lang::Edition;
-use crate::lang::{EditionLang, Lang};
+use crate::lang::{EditionSpec, Lang, LangSpec};
 use crate::models::kaikki::WordEntry;
+use crate::path::{DictionaryType, PathManager};
 
 #[derive(Debug, Parser)]
 #[command(version)]
@@ -43,66 +47,66 @@ pub enum Command {
     Iso(IsoArgs),
 }
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Clone)]
 pub struct MainArgs {
     #[command(flatten)]
     pub langs: MainLangs,
 
     /// Dictionary name
-    #[arg(default_value = "kty")]
-    pub dict_name: String,
+    #[arg(default_value_t)]
+    pub dict_name: DictName,
 
     #[command(flatten)]
     pub options: Options,
 }
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug)]
 pub struct GlossaryArgs {
     #[command(flatten)]
     pub langs: GlossaryLangs,
 
     /// Dictionary name
-    #[arg(default_value = "kty")]
-    pub dict_name: String,
+    #[arg(default_value_t)]
+    pub dict_name: DictName,
 
     #[command(flatten)]
     pub options: Options,
 }
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug)]
 pub struct GlossaryExtendedArgs {
     #[command(flatten)]
     pub langs: GlossaryExtendedLangs,
 
     /// Dictionary name
-    #[arg(default_value = "kty")]
-    pub dict_name: String,
+    #[arg(default_value_t)]
+    pub dict_name: DictName,
 
     #[command(flatten)]
     pub options: Options,
 }
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug)]
 pub struct IpaArgs {
     #[command(flatten)]
     pub langs: MainLangs,
 
     /// Dictionary name
-    #[arg(default_value = "kty")]
-    pub dict_name: String,
+    #[arg(default_value_t)]
+    pub dict_name: DictName,
 
     #[command(flatten)]
     pub options: Options,
 }
 
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug)]
 pub struct IpaMergedArgs {
     #[command(flatten)]
     pub langs: IpaMergedLangs,
 
     /// Dictionary name
-    #[arg(default_value = "kty")]
-    pub dict_name: String,
+    #[arg(default_value_t)]
+    pub dict_name: DictName,
 
     #[command(flatten)]
     pub options: Options,
@@ -116,63 +120,47 @@ pub struct IsoArgs {
 }
 
 /// Langs-like struct that validates edition for `target` and skips `edition`.
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Clone)]
 pub struct MainLangs {
-    /// Edition language
-    #[arg(skip)]
-    pub edition: EditionLang,
-
     /// Source language
-    pub source: Lang,
+    pub source: LangSpec,
 
     /// Target language (edition)
-    pub target: EditionLang,
+    pub target: EditionSpec,
 }
 
 /// Langs-like struct that validates edition for `source` and skips `edition`.
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Clone)]
 pub struct GlossaryLangs {
-    /// Edition language
-    #[arg(skip)]
-    pub edition: EditionLang,
-
     /// Source language (edition)
-    pub source: EditionLang,
+    pub source: EditionSpec,
 
     /// Target language
-    pub target: Lang,
+    pub target: LangSpec,
 }
 
 /// Langs-like struct that validates edition for `edition`.
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Clone)]
 pub struct GlossaryExtendedLangs {
     /// Edition language
-    pub edition: Edition,
+    pub edition: EditionSpec,
 
     /// Source language
-    pub source: Lang,
+    pub source: LangSpec,
 
     /// Target language
-    pub target: Lang,
+    pub target: LangSpec,
 }
 
 /// Langs-like struct that only takes one language.
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Clone)]
 pub struct IpaMergedLangs {
-    /// Edition language
-    #[arg(skip)]
-    pub edition: Edition,
-
-    /// Source language
-    #[arg(skip)]
-    pub source: Lang,
-
     /// Target language
-    pub target: Lang,
+    pub target: LangSpec,
 }
 
 #[expect(clippy::struct_excessive_bools)]
-#[derive(Parser, Debug, Default)]
+#[derive(Parser, Debug, Default, Clone)]
 pub struct Options {
     /// Write temporary files to disk and skip zipping
     #[arg(long, short)]
@@ -227,6 +215,38 @@ pub struct Options {
     pub root_dir: PathBuf,
 }
 
+/// Newtype wrapper to overwrite the Default implementation.
+#[derive(Debug, Clone)]
+pub struct DictName(String);
+
+impl Default for DictName {
+    fn default() -> Self {
+        Self(String::from("kty"))
+    }
+}
+
+impl FromStr for DictName {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Result::Ok(Self(String::from(s)))
+    }
+}
+
+impl fmt::Display for DictName {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl Deref for DictName {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 fn parse_tuple(s: &str) -> Result<(FilterKey, String), String> {
     let parts: Vec<_> = s.split(',').map(|x| x.trim().to_string()).collect();
     if parts.len() != 2 {
@@ -262,165 +282,129 @@ impl FilterKey {
     }
 }
 
-fn push_filter_key_lang(filter: &mut Vec<(FilterKey, String)>, lang: Lang) {
-    filter.push((FilterKey::LangCode, lang.to_string()));
-}
-
-fn check_simple_english<A: SimpleArgs>(args: &A) -> Result<()> {
-    let source_is_simple = matches!(args.langs().source(), Lang::Simple);
-    let target_is_simple = matches!(args.langs().target(), Lang::Simple);
-
-    if source_is_simple ^ target_is_simple {
-        anyhow::bail!("Simple English must be used as both source and target.");
+fn check_simple_english(source: &LangSpec, target: &LangSpec) -> Result<()> {
+    match (source, target) {
+        (LangSpec::One(Lang::Simple), LangSpec::One(Lang::Simple)) => Ok(()),
+        (LangSpec::One(Lang::Simple), _) | (_, LangSpec::One(Lang::Simple)) => {
+            anyhow::bail!("Simple English must be used as both source and target.")
+        }
+        _ => Ok(()),
     }
-
-    Ok(())
 }
 
 // Only the main dictionary makes sense with Simple English
-fn err_on_simple_english<A: SimpleArgs>(args: &A) -> Result<()> {
-    let source_is_simple = matches!(args.langs().source(), Lang::Simple);
-    let target_is_simple = matches!(args.langs().target(), Lang::Simple);
-
-    if source_is_simple || target_is_simple {
-        anyhow::bail!("Simple English can not be used for this dictionary.");
+fn err_on_simple_english(source: &LangSpec, target: &LangSpec) -> Result<()> {
+    match (source, target) {
+        (LangSpec::One(Lang::Simple), _) | (_, LangSpec::One(Lang::Simple)) => {
+            anyhow::bail!("Simple English can not be used for this dictionary.")
+        }
+        _ => Ok(()),
     }
-
-    Ok(())
 }
 
-fn prepare_command(cmd: &mut Command) -> Result<()> {
-    match cmd {
-        Command::Main(args) => {
-            check_simple_english(args)?;
-            args.langs.edition = args.langs.target;
-            push_filter_key_lang(&mut args.options.filter, args.langs.source);
+fn err_on_source_being_target(source: &LangSpec, target: &LangSpec) -> Result<()> {
+    match (source, target) {
+        (LangSpec::One(source), LangSpec::One(target)) if source == target => {
+            anyhow::bail!("in a glossary dictionary source must be different from target.");
         }
-        Command::Glossary(args) => {
-            err_on_simple_english(args)?;
-            let source_as_lang: Lang = args.langs.source.into();
-            anyhow::ensure!(
-                source_as_lang != args.langs.target,
-                "in a glossary dictionary source must be different from target."
-            );
-
-            args.langs.edition = args.langs.source;
-            push_filter_key_lang(&mut args.options.filter, source_as_lang);
-        }
-        Command::GlossaryExtended(args) => {
-            err_on_simple_english(args)?;
-            anyhow::ensure!(
-                args.langs.source != args.langs.target,
-                "in a glossary dictionary source must be different from target."
-            );
-        }
-        Command::Ipa(args) => {
-            err_on_simple_english(args)?;
-            args.langs.edition = args.langs.target;
-            push_filter_key_lang(&mut args.options.filter, args.langs.source);
-        }
-        Command::IpaMerged(args) => {
-            err_on_simple_english(args)?;
-            args.langs.edition = Edition::All;
-            args.langs.source = args.langs.target;
-            push_filter_key_lang(&mut args.options.filter, args.langs.source);
-        }
-        Command::Download(args) => {
-            args.langs.edition = args.langs.target;
-        }
-        Command::Iso(_) => (),
+        _ => Ok(()),
     }
-
-    Ok(())
 }
 
 impl Cli {
-    pub fn parse_cli() -> Result<Self> {
-        let mut cli = Self::parse();
-        prepare_command(&mut cli.command)?;
-        Ok(cli)
+    pub fn parse_cli() -> Self {
+        Self::parse()
     }
 }
 
-/// Helper trait to support CLI edition validation, while treating them as equal later on.
-pub trait Langs {
-    fn edition(&self) -> Edition;
-    fn source(&self) -> Lang;
-    fn target(&self) -> Lang;
+/// Unified language configuration
+#[derive(Debug, Clone, Copy)]
+pub struct LangSpecs {
+    pub edition: EditionSpec,
+    pub source: LangSpec,
+    pub target: LangSpec,
 }
 
-impl Langs for MainLangs {
-    fn edition(&self) -> Edition {
-        Edition::EditionLang(self.edition)
-    }
-    fn source(&self) -> Lang {
-        self.source
-    }
-    fn target(&self) -> Lang {
-        self.target.into()
-    }
-}
+impl TryFrom<MainLangs> for LangSpecs {
+    type Error = anyhow::Error;
 
-impl Langs for GlossaryLangs {
-    fn edition(&self) -> Edition {
-        Edition::EditionLang(self.edition)
-    }
-    fn source(&self) -> Lang {
-        self.source.into()
-    }
-    fn target(&self) -> Lang {
-        self.target
+    fn try_from(langs: MainLangs) -> Result<Self> {
+        check_simple_english(&langs.source, &langs.target.into())?;
+
+        Ok(Self {
+            edition: langs.target,
+            source: langs.source,
+            target: langs.target.into(),
+        })
     }
 }
 
-impl Langs for GlossaryExtendedLangs {
-    fn edition(&self) -> Edition {
-        self.edition
-    }
-    fn source(&self) -> Lang {
-        self.source
-    }
-    fn target(&self) -> Lang {
-        self.target
+impl TryFrom<GlossaryLangs> for LangSpecs {
+    type Error = anyhow::Error;
+
+    fn try_from(langs: GlossaryLangs) -> Result<Self> {
+        err_on_simple_english(&langs.source.into(), &langs.target)?;
+        err_on_source_being_target(&langs.source.into(), &langs.target)?;
+
+        Ok(Self {
+            edition: langs.source,
+            source: langs.source.into(),
+            target: langs.target,
+        })
     }
 }
 
-// IpaLangs reuses MainLangs
+impl TryFrom<GlossaryExtendedLangs> for LangSpecs {
+    type Error = anyhow::Error;
 
-impl Langs for IpaMergedLangs {
-    fn edition(&self) -> Edition {
-        self.edition
-    }
-    fn source(&self) -> Lang {
-        self.source
-    }
-    fn target(&self) -> Lang {
-        self.target
+    fn try_from(langs: GlossaryExtendedLangs) -> Result<Self> {
+        err_on_simple_english(&langs.source, &langs.target)?;
+        err_on_source_being_target(&langs.source.into(), &langs.target)?;
+
+        Ok(Self {
+            edition: langs.edition,
+            source: langs.source,
+            target: langs.target,
+        })
     }
 }
 
-pub trait SimpleArgs {
-    fn dict_name(&self) -> &str;
-    fn langs(&self) -> &impl Langs;
-    fn options(&self) -> &Options;
+impl TryFrom<IpaMergedLangs> for LangSpecs {
+    type Error = anyhow::Error;
+
+    fn try_from(langs: IpaMergedLangs) -> Result<Self> {
+        err_on_simple_english(&langs.target, &langs.target)?;
+
+        Ok(Self {
+            edition: EditionSpec::All,
+            source: langs.target, // Not used
+            target: langs.target,
+        })
+    }
 }
 
-/// Implement the `SimpleArgs` trait.
-macro_rules! simple_args {
-    ($($ty:ty),* $(,)?) => {
-        $( impl SimpleArgs for $ty {
-            fn dict_name(&self) -> &str { &self.dict_name }
-            fn langs(&self) -> &impl Langs { &self.langs }
-            fn options(&self) -> &Options { &self.options }
-        } )*
+macro_rules! impl_try_into_pathmanager {
+    ($ty:ty, $dict_ty:expr) => {
+        impl TryFrom<$ty> for PathManager {
+            type Error = anyhow::Error;
+
+            fn try_from(args: $ty) -> Result<Self> {
+                Ok(Self {
+                    dict_ty: $dict_ty,
+                    dict_name: args.dict_name,
+                    langs: args.langs.try_into()?,
+                    opts: args.options,
+                })
+            }
+        }
     };
 }
 
-simple_args!(MainArgs);
-simple_args!(GlossaryArgs);
-simple_args!(GlossaryExtendedArgs);
-simple_args!(IpaArgs);
-simple_args!(IpaMergedArgs);
+impl_try_into_pathmanager!(MainArgs, DictionaryType::Main);
+impl_try_into_pathmanager!(GlossaryArgs, DictionaryType::Glossary);
+impl_try_into_pathmanager!(GlossaryExtendedArgs, DictionaryType::GlossaryExtended);
+impl_try_into_pathmanager!(IpaArgs, DictionaryType::Ipa);
+impl_try_into_pathmanager!(IpaMergedArgs, DictionaryType::IpaMerged);
 
 #[cfg(test)]
 mod tests {
@@ -447,8 +431,22 @@ mod tests {
     #[test]
     fn glossary_can_not_be_monolingual() {
         let res = Cli::try_parse_from(["kty", "glossary", "el", "el"]);
-        let mut cli = res.unwrap(); // The parsing should be ok
-        assert!(prepare_command(&mut cli.command).is_err());
+        let cli = res.unwrap(); // The parsing should be ok
+        match cli.command {
+            Command::Glossary(glossary_args) => {
+                assert!(LangSpecs::try_from(glossary_args.langs).is_err());
+            }
+            _ => panic!(),
+        }
+
+        let res = Cli::try_parse_from(["kty", "glossary-extended", "all", "el", "el"]);
+        let cli = res.unwrap(); // The parsing should be ok
+        match cli.command {
+            Command::GlossaryExtended(glossary_args) => {
+                assert!(LangSpecs::try_from(glossary_args.langs).is_err());
+            }
+            _ => panic!(),
+        }
     }
 
     #[test]

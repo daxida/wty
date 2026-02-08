@@ -1,6 +1,6 @@
 [package]
 name = "kty"
-version = "0.3.3"
+version = "0.4.0"
 edition = "2024"
 
 [lib]
@@ -23,7 +23,7 @@ regex = "1.12.2"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 tracing = { version = "0.1.41" }
-tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter", "chrono"] }
 unicode-normalization = "0.1.25"
 zip = { version = "6.0.0", default-features = false, features = ["deflate"] }
 

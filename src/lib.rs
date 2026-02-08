@@ -1,5 +1,4 @@
 pub mod cli;
-pub mod diagnostic;
 pub mod dict;
 pub mod download;
 pub mod lang;

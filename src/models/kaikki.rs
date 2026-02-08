@@ -99,6 +99,7 @@ pub struct AltForm {
 pub struct Form {
     pub form: String,
     pub tags: Vec<Tag>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     pub ruby: Vec<(String, String)>, // [ja] (kanji, hiragana)
 }
 
@@ -107,6 +108,7 @@ pub struct Form {
 pub struct Translation {
     pub lang_code: String,
     pub word: String,
+    #[serde(skip_serializing_if = "String::is_empty")]
     pub sense: String,
 }
 

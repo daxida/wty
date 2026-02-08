@@ -45,7 +45,7 @@ pub const REDUNDANT_FORM_TAGS: [&str; 1] = ["combined-form"];
 ///
 /// Expects (but does not check) tags WITHOUT spaces.
 pub fn sort_tags(tags: &mut [&str]) {
-    // debug_assert!(tags.iter().all(|tag| !tag.contains(' ')));
+    debug_assert!(tags.iter().all(|tag| !tag.contains(' ')));
 
     tags.sort_by(|a, b| {
         let index_a = TAG_ORDER.iter().position(|&x| x == *a);
@@ -85,45 +85,30 @@ pub fn sort_tags_by_similar(tags: &mut [Tag]) {
     });
 }
 
-/// First, remove duplicates.
-///
-/// Then, remove tag1 if there is a tag2 such that tag1 <= tag2
+/// Remove tag1 if there is a tag2 such that tag1 <= tag2.
 ///
 /// Expects (but does not check) tags WITH spaces.
 ///
 /// Examples:
-/// * ["a b", "b a"] > ["a b"]
-/// * ["s no ne", "ne s no", "ne", "no"] > ["ne s no"]
+/// * ["a b", "b a"] -> ["b a"]
+/// * ["s no ne", "ne s no", "ne", "no"] -> ["ne s no"]
 pub fn remove_redundant_tags(tags: &mut Vec<Tag>) {
-    // We can't just sort because lexicographical sort does not guarantee the correct order to then
-    // dedup.
-    // cf. tags = ["ne", "ne s no", "no", "s no ne"] (this is sorted by "tags.sort()")
-    tags.sort_by(|a, b| {
-        let by_count = a.matches(' ').count().cmp(&b.matches(' ').count());
-        if by_count == Ordering::Equal {
-            a.cmp(b)
-        } else {
-            by_count
-        }
-    });
-    // We can't just call dedup, because the inner words may not be sorted
-    // cf. tags = ["a b", "b a"]
-    tags.dedup_by(|a, b| {
-        let mut a_words: Vec<_> = a.split(' ').collect();
-        let mut b_words: Vec<_> = b.split(' ').collect();
-        a_words.sort_unstable();
-        b_words.sort_unstable();
-        a_words == b_words
-    });
-
     let mut keep = vec![true; tags.len()];
 
     for i in 0..tags.len() {
-        for j in 0..tags.len() {
-            // tag_i <= tag_j
-            if i != j && tags_are_subset(&tags[i], &tags[j]) {
+        if !keep[i] {
+            continue;
+        }
+        for j in (i + 1)..tags.len() {
+            if !keep[j] {
+                continue;
+            }
+
+            if tags_are_subset(&tags[i], &tags[j]) {
                 keep[i] = false;
                 break;
+            } else if tags_are_subset(&tags[j], &tags[i]) {
+                keep[j] = false;
             }
         }
     }
@@ -136,9 +121,7 @@ pub fn remove_redundant_tags(tags: &mut Vec<Tag>) {
     });
 }
 
-/// Check if all words in string `a` are present in string `b`.
-///
-/// F.e. "foo bar" is subset of "bar foo baz"
+/// Check if all words in `a` are present in `b`, f.e. "foo bar" is subset of "bar foo baz".
 fn tags_are_subset(a: &str, b: &str) -> bool {
     a.split(' ')
         .all(|a_word| b.split(' ').any(|b_word| b_word == a_word))
@@ -166,10 +149,13 @@ pub fn merge_person_tags(tags: &mut Vec<Tag>) {
         return;
     }
 
-    let unmerged_tags = std::mem::take(tags);
+    // Leave tags with same capacity since we are going to repopulate it
+    let mut old_tags = Vec::with_capacity(tags.capacity());
+    std::mem::swap(&mut old_tags, tags);
+
     let mut grouped: IndexMap<Vec<&str>, Vec<&str>> = IndexMap::new();
 
-    for tag in &unmerged_tags {
+    for tag in &old_tags {
         let (person_tags, other_tags): (Vec<_>, Vec<_>) =
             tag.split(' ').partition(|t| PERSON_TAGS.contains(t));
 
@@ -180,35 +166,33 @@ pub fn merge_person_tags(tags: &mut Vec<Tag>) {
     }
 
     for (other_tags, mut person_matches) in grouped {
-        let mut tags_cur: Vec<_> = other_tags.iter().map(|s| (*s).to_string()).collect();
-
         person_sort(&mut person_matches);
 
         // [first-person, third-person] > first/third-person
-        let merged_tag = format!(
-            "{}-person",
-            person_matches
-                .iter()
-                // SAFETY: PERSON_TAGS contains pmatch so it always ends in -person
-                .map(|pmatch| pmatch.strip_suffix("-person").unwrap())
-                .collect::<Vec<_>>() // unlucky collect because we can't join a map
-                .join("/")
-        );
+        let merged_person_tag = person_matches
+            .iter()
+            // SAFETY: PERSON_TAGS contains pmatch so it always ends in -person
+            .map(|pmatch| pmatch.strip_suffix("-person").unwrap())
+            .collect::<Vec<_>>()
+            .join("/")
+            + "-person";
 
-        tags_cur.push(merged_tag);
-        // sort_tags(&mut tags_cur);
-        tags.push(tags_cur.join(" "));
+        let tag = other_tags
+            .into_iter()
+            .chain(std::iter::once(merged_person_tag.as_ref()))
+            .collect::<Vec<_>>()
+            .join(" ");
+
+        tags.push(tag);
     }
 }
 
-/// Return a Vec<TagInformation> from `tag_bank_terms` that fits the yomitan tag schema.
+/// Return a Vec<TagInformation> from `TAG_BANK` (`tag_bank_terms.json`).
 pub fn get_tag_bank_as_tag_info() -> Vec<TagInformation> {
     TAG_BANK.iter().map(TagInformation::new).collect()
 }
 
-/// Look for the tag in `TAG_BANK` (`tag_bank_terms.json`) and return the `TagInformation` if any.
-///
-/// Note that `long_tag` is returned normalized.
+/// Find the tag in `TAG_BANK` (`tag_bank_terms.json`) and return the `TagInformation` if any.
 pub fn find_tag_in_bank(tag: &str) -> Option<TagInformation> {
     TAG_BANK.iter().find_map(|entry| {
         if entry.3.contains(&tag) {
@@ -219,12 +203,17 @@ pub fn find_tag_in_bank(tag: &str) -> Option<TagInformation> {
     })
 }
 
-/// Look for the short form in POSES (`tag_bank_terms.json` with category "partOfSpeech") and
-/// return the short form if any.
-pub fn find_short_pos(pos: &str) -> Option<&'static str> {
+/// Find the short form in POSES (`tag_bank_terms.json` with category "partOfSpeech").
+fn find_short_pos(pos: &str) -> Option<&'static str> {
     POSES
-        .into_iter()
-        .find_map(|(long, short)| if long == pos { Some(short) } else { None })
+        .iter()
+        .find_map(|(long, short)| if *long == pos { Some(*short) } else { None })
+}
+
+/// Find the short form in POSES (`tag_bank_terms.json` with category "partOfSpeech"), or default
+/// to input.
+pub fn find_short_pos_or_default(pos: &str) -> &str {
+    find_short_pos(pos).unwrap_or(pos)
 }
 
 #[cfg(test)]
@@ -341,7 +330,7 @@ mod tests {
     #[test]
     fn remove_redundant_tags_duplicates2() {
         let mut received = to_string_vec(&["a b", "b a"]);
-        let expected = to_string_vec(&["a b"]);
+        let expected = to_string_vec(&["b a"]);
         remove_redundant_tags(&mut received);
         assert_eq!(received, expected);
     }
@@ -349,7 +338,7 @@ mod tests {
     #[test]
     fn remove_redundant_tags_duplicates3() {
         let mut received = to_string_vec(&["a b", "c a b", "b a", "b a c", "c b a"]);
-        let expected = to_string_vec(&["b a c"]);
+        let expected = to_string_vec(&["c b a"]);
         remove_redundant_tags(&mut received);
         assert_eq!(received, expected);
     }

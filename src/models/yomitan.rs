@@ -5,14 +5,15 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Clone)]
 #[serde(untagged)]
 pub enum YomitanEntry {
-    TermBank(TermBank),         // 120 (24 * 5)
-    TermBankMeta(TermBankMeta), // 104
+    TermBank(TermBank),                     // 120 (24 * 5)
+    TermBankSimplified(TermBankSimplified), // 120 (24 * 5)
+    TermBankMeta(TermBankMeta),             // 104
 }
 
 impl YomitanEntry {
     pub const fn file_prefix(&self) -> &str {
         match self {
-            Self::TermBank(_) => "term_bank",
+            Self::TermBank(_) | Self::TermBankSimplified(_) => "term_bank",
             Self::TermBankMeta(_) => "term_meta_bank",
         }
     }
@@ -48,6 +49,33 @@ impl Serialize for TermBank {
         tup.serialize_element(&self.3)?;
         tup.serialize_element(&0u8)?;
         tup.serialize_element(&self.4)?;
+        tup.serialize_element(&0u8)?;
+        tup.serialize_element(&"")?;
+        tup.end()
+    }
+}
+
+// Used for forms in the main dictionary: definition_tags and rules do not change.
+// The objective is to minimize memory storage.
+#[derive(Debug, Clone)]
+pub struct TermBankSimplified(
+    pub String,                  // term
+    pub String,                  // reading
+    pub Vec<DetailedDefinition>, // definitions
+);
+
+impl Serialize for TermBankSimplified {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut tup = serializer.serialize_tuple(8)?;
+        tup.serialize_element(&self.0)?;
+        tup.serialize_element(&self.1)?;
+        tup.serialize_element(&"non-lemma")?;
+        tup.serialize_element(&"")?;
+        tup.serialize_element(&0u8)?;
+        tup.serialize_element(&self.2)?;
         tup.serialize_element(&0u8)?;
         tup.serialize_element(&"")?;
         tup.end()
@@ -93,7 +121,7 @@ pub enum Node {
     Text(String),              // 32
     Array(Vec<Node>),          // 32
     Generic(Box<GenericNode>), // 16
-    Backlink(BacklinkContent), // 40
+    Backlink(BacklinkContent), // 32
 }
 
 impl Node {
@@ -116,7 +144,7 @@ impl Node {
 }
 
 #[derive(Debug, Serialize, Clone)]
-pub struct NodeData(Map<String, String>);
+pub struct NodeData(pub Map<String, String>);
 
 impl<K, V> FromIterator<(K, V)> for NodeData
 where
@@ -164,14 +192,21 @@ impl GenericNode {
     }
 }
 
+// In the general case, this should be a String. We use an enum to shrink the size of Node.
+#[derive(Debug, Clone)]
+pub enum BacklinkContentKind {
+    Wiktionary,
+    Kaikki,
+}
+
 #[derive(Debug, Clone)]
 pub struct BacklinkContent {
-    href: String,
-    content: &'static str,
+    pub href: String,
+    pub content: BacklinkContentKind,
 }
 
 impl BacklinkContent {
-    pub const fn new(href: String, content: &'static str) -> Self {
+    pub const fn new(href: String, content: BacklinkContentKind) -> Self {
         Self { href, content }
     }
 }
@@ -186,7 +221,13 @@ impl Serialize for BacklinkContent {
         let mut state = serializer.serialize_struct("BacklinkContent", 3)?;
         state.serialize_field("tag", "a")?;
         state.serialize_field("href", &self.href)?;
-        state.serialize_field("content", &self.content)?;
+        state.serialize_field(
+            "content",
+            match &self.content {
+                BacklinkContentKind::Wiktionary => "Wiktionary",
+                BacklinkContentKind::Kaikki => "Kaikki",
+            },
+        )?;
         state.end()
     }
 }
@@ -213,8 +254,8 @@ impl DetailedDefinition {
 #[derive(Debug, Serialize, Clone)]
 pub struct StructuredContent {
     #[serde(rename = "type")]
-    ty: String, // should be hardcoded to "structured-content" (but then to serialize it...)
-    content: Node,
+    pub ty: String, // should be hardcoded to "structured-content" (but then to serialize it...)
+    pub content: Node,
 }
 
 pub fn wrap(tag: NTag, content_ty: &str, content: Node) -> Node {
