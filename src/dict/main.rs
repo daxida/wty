@@ -729,7 +729,7 @@ fn preprocess_main(
                 }
             }
         }
-        Edition::Ru => {
+        Edition::Ru | Edition::Es | Edition::Pl => {
             // Propagate entry.tags to sense.tags
             for sense in &mut entry.senses {
                 for tag in &entry.tags {

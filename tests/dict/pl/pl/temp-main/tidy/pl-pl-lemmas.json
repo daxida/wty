@@ -5,6 +5,10 @@
         {
           "gloss_tree": {
             "opad w postaci kryształków lodu": {
+              "tags": [
+                "inanimate",
+                "masculine"
+              ],
               "topics": [
                 "meteorology"
               ],
@@ -15,6 +19,10 @@
               ]
             },
             "śnieg (1.1) leżący na ziemi, przedmiotach": {
+              "tags": [
+                "inanimate",
+                "masculine"
+              ],
               "examples": [
                 {
                   "text": "Obiecałaś matce, że jej pomożesz w odgarnięciu śniegu."
@@ -24,7 +32,9 @@
             "zły obraz na ekranie telewizora": {
               "tags": [
                 "colloquial",
-                "metaphoric"
+                "metaphoric",
+                "inanimate",
+                "masculine"
               ],
               "topics": [
                 "technology"
@@ -38,7 +48,9 @@
             "kokaina": {
               "tags": [
                 "dated",
-                "metaphoric"
+                "metaphoric",
+                "inanimate",
+                "masculine"
               ]
             }
           },
