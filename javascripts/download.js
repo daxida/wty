@@ -4,16 +4,16 @@ function buildUrl(type, target, source) {
     const BASE_URL = "https://huggingface.co/datasets/daxida/test-dataset/resolve/main/dict";
     switch (type) {
         case "main":
-            return `${BASE_URL}/${source}/${target}/kty-${source}-${target}.zip`;
+            return `${BASE_URL}/${source}/${target}/wty-${source}-${target}.zip`;
 
         case "ipa":
-            return `${BASE_URL}/${source}/${target}/kty-${source}-${target}-ipa.zip`;
+            return `${BASE_URL}/${source}/${target}/wty-${source}-${target}-ipa.zip`;
 
         case "ipa-merged":
-            return `${BASE_URL}/${target}/all/kty-${target}-ipa.zip`;
+            return `${BASE_URL}/${target}/all/wty-${target}-ipa.zip`;
 
         case "glossary":
-            return `${BASE_URL}/${source}/${target}/kty-${source}-${target}-gloss.zip`;
+            return `${BASE_URL}/${source}/${target}/wty-${source}-${target}-gloss.zip`;
 
         default:
             return null;

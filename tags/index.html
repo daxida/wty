@@ -9,8 +9,10 @@
       
       
       
-        <link rel="prev" href="../tests/">
+        <link rel="prev" href="../language/">
       
+      
+        <link rel="next" href="../tests/">
       
       
         
@@ -21,7 +23,7 @@
     
     
       
-        <title>Update - wty</title>
+        <title>Tags - wty</title>
       
     
     
@@ -74,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#how-to-update-a-dictionary" class="md-skip">
+        <a href="#tag-order" class="md-skip">
           Skip to content
         </a>
       
@@ -110,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Update
+              Tags
             
           </span>
         </div>
@@ -400,10 +402,35 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../tags/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tags
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -419,6 +446,57 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tag-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag order
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tag-filtering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag filtering
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extraction-logic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Extraction logic
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -454,35 +532,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Update
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../update/" class="md-nav__link">
         
   
   
@@ -498,35 +551,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#how-to-update-a-dictionary" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        How to update a dictionary
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -551,21 +575,36 @@
   
 
 
-  <h1>Update</h1>
+  <h1>Tags</h1>
 
-<h2 id="how-to-update-a-dictionary">How to update a dictionary<a class="headerlink" href="#how-to-update-a-dictionary" title="Permanent link">&para;</a></h2>
-<p>Work in progress...</p>
-<ol>
-<li>Click on check for updates</li>
-<li>Click on the ! mark next to any dictionary that has an update</li>
-<li>Click on update</li>
-</ol>
-<p>Add a picture here, don't think yomitan covers it.</p>
-<p>This should fetch the dictionary for a future release.</p>
-<p>Explain this quote from <a href="https://yomitan.wiki/dictionaries/">here</a>:</p>
-<blockquote>
-<p>Be aware that non-English dictionaries generally contain fewer entries than their English counterparts. Even if your primary language is not English, you may consider also importing the English version for better coverage.</p>
-</blockquote>
+<p>Everything here only concerns the main dictionary.</p>
+<p>There are (at least) three cases in which one may want to modify tags:</p>
+<p>1 - <strong>Tag order</strong>: rules the order in which tags are displayed.<br />
+2 - <strong>Tag filtering</strong>: rules abbreviations and which tags are displayed.<br />
+3 - <strong>Extraction logic</strong>: rules where to extract tags from wiktionary data.</p>
+<p>Tag postprocessing is done after building the whole intermediate representation, to only sort once with every extracted tag. The relevant function is <code>src/dict/main.rs::postprocess_forms</code>.</p>
+<h3 id="tag-order">Tag order<a class="headerlink" href="#tag-order" title="Permanent link">&para;</a></h3>
+<p>Tag order is recorded in <code>assets/tag_order.json</code>. While this file has categories (formatility, cases etc.), those are later strip and serve only as visual help. The sorting is done with the flattened list.</p>
+<div class="admonition warning">
+<p class="admonition-title">Run the build script after any modification to update the rust code: either <code>just build</code> or <code>python3 scripts/build.py</code></p>
+</div>
+<h3 id="tag-filtering">Tag filtering<a class="headerlink" href="#tag-filtering" title="Permanent link">&para;</a></h3>
+<p>Tag filtering is recorded in <code>assets/tag_bank_term.json</code>. The items of this JSON list are a custom version of:</p>
+<div class="highlight"><pre><span></span><code><span class="kr">type</span><span class="w"> </span><span class="nx">TagInformation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nx">tagName</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">category</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">sortingOrder</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">notes</span><span class="o">:</span><span class="w"> </span><span class="kt">string</span><span class="p">,</span>
+<span class="w">  </span><span class="nx">popularityScore</span><span class="o">:</span><span class="w"> </span><span class="kt">number</span><span class="p">,</span>
+<span class="p">];</span>
+</code></pre></div>
+<p>where <code>notes</code> is replaced with either a string, or a list of strings representing aliases, the first one being shown when hovering the tag.</p>
+<p>Here is an example of a simple <a href="https://github.com/daxida/wty/commit/00c69daa89344d971978d905897aa19e7c1ae619">commit</a> to add the "Buddhism" tag, that modifies the JSON, then runs the build script.</p>
+<div class="admonition warning">
+<p class="admonition-title">Run the build script after any modification to update the rust code: either <code>just build</code> or <code>python3 scripts/build.py</code></p>
+</div>
+<h3 id="extraction-logic">Extraction logic<a class="headerlink" href="#extraction-logic" title="Permanent link">&para;</a></h3>
+<p>This requires some knowledge of kaikki internals and how they extract tags. TODO</p>
 
 
 
