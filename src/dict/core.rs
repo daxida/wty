@@ -19,25 +19,25 @@ use crate::utils::skip_because_file_exists;
 
 const CONSOLE_PRINT_INTERVAL: i32 = 10000;
 
-pub type E = Box<dyn Iterator<Item = YomitanEntry>>;
+// pub type E = Box<dyn Iterator<Item = YomitanEntry>>;
+pub type E = Vec<YomitanEntry>;
 
-// The label is used in tests to write separate files for lemmas/forms.
+// Used in tests to write separate files for lemmas/forms.
 pub struct LabelledYomitanEntry {
     pub label: &'static str,
     pub entries: E,
-    // pub entries: Vec<YomitanEntry>,
 }
 
 impl LabelledYomitanEntry {
     pub fn new(
         label: &'static str,
-        entries: impl IntoIterator<Item = YomitanEntry> + 'static,
-        // entries: Vec<YomitanEntry>,
+        // entries: impl IntoIterator<Item = YomitanEntry> + 'static,
+        entries: Vec<YomitanEntry>,
     ) -> Self {
         Self {
             label,
-            entries: Box::new(entries.into_iter()),
-            // entries,
+            // entries: Box::new(entries.into_iter()),
+            entries,
         }
     }
 }
@@ -372,15 +372,15 @@ fn find_or_download_jsonl(
         .path;
 
     // TODO: remove this once it's done: it prevents downloading in the testsuite
-    anyhow::bail!(
-        "Downloading is disabled but JSONL file was not found @ {}",
-        path.display()
-    );
+    // anyhow::bail!(
+    //     "Downloading is disabled but JSONL file was not found @ {}",
+    //     path.display()
+    // );
 
-    // #[cfg(feature = "html")]
-    // crate::download::download_jsonl(edition, lang, kind, path, opts.quiet)?;
-    //
-    // Ok(path.clone())
+    #[cfg(feature = "html")]
+    crate::download::download_jsonl(edition, lang, kind, path, false)?;
+
+    Ok(path.clone())
 }
 
 fn iter_datasets<'a, D: DatasetStrategy>(

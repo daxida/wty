@@ -12,7 +12,6 @@ use zip::ZipWriter;
 use zip::write::SimpleFileOptions;
 
 use crate::cli::Options;
-use crate::dict::E;
 use crate::dict::core::LabelledYomitanEntry;
 use crate::dict::index::get_index;
 use crate::lang::Lang;
@@ -58,7 +57,7 @@ pub fn write_yomitan(
             write_banks(
                 opts.pretty,
                 opts.quiet,
-                lentry.entries,
+                &lentry.entries,
                 &mut bank_index,
                 lentry.label,
                 &out_dir,
@@ -101,7 +100,7 @@ pub fn write_yomitan(
         write_banks(
             opts.pretty,
             opts.quiet,
-            lentry.entries,
+            &lentry.entries,
             &mut bank_index,
             lentry.label,
             &writer_path,
@@ -116,115 +115,66 @@ pub fn write_yomitan(
     Ok(())
 }
 
-/// Write yomitan entries in banks to a sink (either disk or zip).
-#[tracing::instrument(skip_all, level = "trace")]
+/// Writes `yomitan_entries` in batches to `out_sink` (either disk or a zip).
+#[tracing::instrument(skip_all)]
 fn write_banks(
     pretty: bool,
     quiet: bool,
-    mut yomitan_entries: E,
+    yomitan_entries: &[YomitanEntry],
     bank_index: &mut usize,
     label: &str,
     out_dir: &Path,
     mut sink: Sink,
 ) -> Result<()> {
-    // Pull first entry to determine prefix
-    let first = match yomitan_entries.next() {
-        Some(e) => e,
+    // NOTE: this assumes that once a type is passed, all the remaining entries are of same type
+    let bank_name_prefix = match yomitan_entries.first() {
+        Some(first) => first.file_prefix(),
         None => return Ok(()),
     };
 
-    let bank_name_prefix = first.file_prefix().to_string();
-    let mut bank: Vec<YomitanEntry> = Vec::with_capacity(BANK_SIZE);
-    bank.push(first);
+    let total_bank_num = yomitan_entries.len().div_ceil(BANK_SIZE);
 
-    let mut bank_num = 0;
+    for (bank_num, bank) in yomitan_entries.chunks(BANK_SIZE).enumerate() {
+        *bank_index += 1;
 
-    for entry in yomitan_entries {
-        bank.push(entry);
+        let json_bytes = if pretty {
+            serde_json::to_vec_pretty(&bank)?
+        } else {
+            serde_json::to_vec(&bank)?
+        };
 
-        if bank.len() == BANK_SIZE {
-            write_single_bank(
-                &bank,
-                bank_index,
-                &bank_name_prefix,
-                bank_num,
-                label,
-                out_dir,
-                &mut sink,
-                pretty,
-                quiet,
-            )?;
-            bank.clear();
-            bank_num += 1;
+        let bank_name = format!("{bank_name_prefix}_{bank_index}.json");
+        let file_path = out_dir.join(&bank_name);
+
+        match sink {
+            Sink::Disk => {
+                let mut file = File::create(&file_path)?;
+                file.write_all(&json_bytes)?;
+            }
+            Sink::Zip(ref mut zip, zip_options) => {
+                zip.start_file(&bank_name, zip_options)?;
+                zip.write_all(&json_bytes)?;
+            }
         }
-    }
 
-    // Flush remainder
-    if !bank.is_empty() {
-        write_single_bank(
-            &bank,
-            bank_index,
-            &bank_name_prefix,
-            bank_num,
-            label,
-            out_dir,
-            &mut sink,
-            pretty,
-            quiet,
-        )?;
+        if !quiet {
+            if bank_num > 0 {
+                print!("\r\x1b[K");
+            }
+            pretty_print_at_path(
+                &format!(
+                    "Wrote yomitan {label} bank {}/{total_bank_num} ({} entries)",
+                    bank_num + 1,
+                    bank.len()
+                ),
+                &file_path,
+            );
+            std::io::stdout().flush()?;
+        }
     }
 
     if !quiet {
         println!();
-    }
-
-    Ok(())
-}
-
-fn write_single_bank(
-    bank: &[YomitanEntry],
-    bank_index: &mut usize,
-    bank_name_prefix: &str,
-    bank_num: usize,
-    label: &str,
-    out_dir: &Path,
-    sink: &mut Sink,
-    pretty: bool,
-    quiet: bool,
-) -> Result<()> {
-    *bank_index += 1;
-    let json_bytes = if pretty {
-        serde_json::to_vec_pretty(&bank)?
-    } else {
-        serde_json::to_vec(&bank)?
-    };
-    let bank_name = format!("{bank_name_prefix}_{bank_index}.json");
-    let file_path = out_dir.join(&bank_name);
-
-    match *sink {
-        Sink::Disk => {
-            let mut file = File::create(&file_path)?;
-            file.write_all(&json_bytes)?;
-        }
-        Sink::Zip(ref mut zip, zip_opts) => {
-            zip.start_file(&bank_name, zip_opts)?;
-            zip.write_all(&json_bytes)?;
-        }
-    }
-
-    if !quiet {
-        if bank_num > 0 {
-            print!("\r\x1b[K");
-        }
-        pretty_print_at_path(
-            &format!(
-                "Wrote yomitan {label} bank {} ({} entries)",
-                bank_num + 1,
-                bank.len()
-            ),
-            &file_path,
-        );
-        std::io::stdout().flush()?;
     }
 
     Ok(())
