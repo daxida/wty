@@ -284,6 +284,10 @@ impl Dictionary for DMain {
         entry.lang_code == source.as_ref()
     }
 
+    fn supports_lang_code_prefilter(&self) -> bool {
+        true
+    }
+
     fn preprocess(&self, langs: Langs, entry: &mut WordEntry, opts: &Options, irs: &mut Self::I) {
         preprocess_main(langs.edition, langs.source, opts, entry, irs);
     }

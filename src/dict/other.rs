@@ -1,16 +1,16 @@
 use crate::{
-    Map, Set,
     cli::{GlossaryArgs, GlossaryExtendedArgs, IpaArgs, IpaMergedArgs},
-    dict::{Dictionary, LabelledYomitanEntry, Langs, get_reading},
+    dict::{get_reading, Dictionary, LabelledYomitanEntry, Langs},
     lang::{Edition, Lang},
     models::{
         kaikki::WordEntry,
         yomitan::{
-            DetailedDefinition, Ipa, NTag, Node, PhoneticTranscription, TermBank, TermBankMeta,
-            TermPhoneticTranscription, YomitanEntry, wrap,
+            wrap, DetailedDefinition, Ipa, NTag, Node, PhoneticTranscription, TermBank,
+            TermBankMeta, TermPhoneticTranscription, YomitanEntry,
         },
     },
     tags::find_short_pos_or_default,
+    Map, Set,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -31,6 +31,10 @@ impl Dictionary for DGlossary {
 
     fn keep_if(&self, source: Lang, entry: &WordEntry) -> bool {
         entry.lang_code == source.as_ref()
+    }
+
+    fn supports_lang_code_prefilter(&self) -> bool {
+        true
     }
 
     fn process(&self, langs: Langs, entry: &WordEntry, irs: &mut Self::I) {
@@ -86,6 +90,10 @@ impl Dictionary for DIpa {
         entry.lang_code == source.as_ref()
     }
 
+    fn supports_lang_code_prefilter(&self) -> bool {
+        true
+    }
+
     fn process(&self, langs: Langs, entry: &WordEntry, irs: &mut Self::I) {
         process_ipa(langs.edition, langs.source, entry, irs);
     }
@@ -101,6 +109,10 @@ impl Dictionary for DIpaMerged {
 
     fn keep_if(&self, source: Lang, entry: &WordEntry) -> bool {
         entry.lang_code == source.as_ref()
+    }
+
+    fn supports_lang_code_prefilter(&self) -> bool {
+        true
     }
 
     fn process(&self, langs: Langs, entry: &WordEntry, irs: &mut Self::I) {

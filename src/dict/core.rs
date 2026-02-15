@@ -1,12 +1,13 @@
 use anyhow::{Context, Ok, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
+use std::borrow::Cow;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
-use crate::Map;
+use crate::{Map, Set};
 use crate::cli::Options;
 use crate::dict::writer::write_yomitan;
 use crate::download::DatasetKind;
@@ -92,6 +93,13 @@ pub trait Dictionary {
     /// Whether to keep or not this entry.
     fn keep_if(&self, source: Lang, entry: &WordEntry) -> bool;
 
+    /// Whether `keep_if` only depends on `entry.lang_code` matching `source`.
+    ///
+    /// This lets us skip full deserialization for clearly irrelevant lines.
+    fn supports_lang_code_prefilter(&self) -> bool {
+        false
+    }
+
     // NOTE: Maybe we can get rid of this (blocked by mutable behaviour of the main dictionary).
     //
     /// How to preprocess a `WordEntry`. Everything that mutates `entry` should go here.
@@ -132,6 +140,21 @@ pub trait Dictionary {
 fn rejected(entry: &WordEntry, opts: &Options) -> bool {
     opts.reject.iter().any(|(k, v)| k.field_value(entry) == v)
         || !opts.filter.iter().all(|(k, v)| k.field_value(entry) == v)
+}
+
+#[derive(Deserialize)]
+#[serde(default)]
+struct LangCodeProbe<'a> {
+    #[serde(borrow)]
+    lang_code: Cow<'a, str>,
+}
+
+impl<'a> Default for LangCodeProbe<'a> {
+    fn default() -> Self {
+        Self {
+            lang_code: Cow::Borrowed(""),
+        }
+    }
 }
 
 use crate::dict::{DGlossary, DGlossaryExtended, DIpa, DIpaMerged, DMain};
@@ -419,6 +442,21 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
 
     for pair in iter_datasets(&dict, pm) {
         let (edition, path_jsonl) = pair?;
+        let langs_for_edition = dict.iter_langs(edition, source_pm, target_pm);
+        let lang_code_prefilter = if dict.supports_lang_code_prefilter()
+            && opts.first < 0
+            && opts.filter.is_empty()
+            && opts.reject.is_empty()
+        {
+            Some(
+                langs_for_edition
+                    .iter()
+                    .map(|langs| langs.source.as_ref().to_string())
+                    .collect::<Set<_>>(),
+            )
+        } else {
+            None
+        };
 
         let reader_file = File::open(&path_jsonl)?;
         let mut reader = BufReader::with_capacity(capacity, reader_file);
@@ -434,15 +472,23 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
 
             line_count += 1;
 
-            let mut entry: WordEntry =
-                serde_json::from_slice(&line).with_context(|| "Error decoding JSON @ make_dict")?;
-
             if !opts.quiet && line_count % CONSOLE_PRINT_INTERVAL == 0 {
                 print!("Processed {line_count} lines...\r");
                 std::io::stdout().flush()?;
             }
 
-            if rejected(&entry, opts) {
+            if let Some(lang_code_prefilter) = &lang_code_prefilter {
+                let probe: LangCodeProbe = serde_json::from_slice(&line)
+                    .with_context(|| "Error decoding JSON @ make_dict (lang_code prefilter)")?;
+                if !lang_code_prefilter.contains(probe.lang_code.as_ref()) {
+                    continue;
+                }
+            }
+
+            let mut entry: WordEntry =
+                serde_json::from_slice(&line).with_context(|| "Error decoding JSON @ make_dict")?;
+
+            if (!opts.filter.is_empty() || !opts.reject.is_empty()) && rejected(&entry, opts) {
                 continue;
             }
 
@@ -451,7 +497,7 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
                 break;
             }
 
-            for langs in dict.iter_langs(edition, source_pm, target_pm) {
+            for &langs in &langs_for_edition {
                 if dict.keep_if(langs.source, &entry) {
                     let key = dict.langs_to_key(langs);
                     let irs = irs_map.entry(key).or_default();
