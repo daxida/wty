@@ -1,12 +1,12 @@
 use anyhow::{Context, Ok, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
+use std::borrow::Cow;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
-use crate::Map;
 use crate::cli::Options;
 use crate::dict::writer::write_yomitan;
 use crate::download::DatasetKind;
@@ -16,11 +16,11 @@ use crate::models::yomitan::YomitanEntry;
 use crate::path::{PathKind, PathManager};
 use crate::utils::pretty_print_at_path;
 use crate::utils::skip_because_file_exists;
+use crate::{Map, Set};
 
 const CONSOLE_PRINT_INTERVAL: i32 = 10000;
 
-// pub type E = Box<dyn Iterator<Item = YomitanEntry>>;
-pub type E = Vec<YomitanEntry>;
+pub type E = Box<dyn Iterator<Item = YomitanEntry>>;
 
 // Used in tests to write separate files for lemmas/forms.
 pub struct LabelledYomitanEntry {
@@ -31,13 +31,11 @@ pub struct LabelledYomitanEntry {
 impl LabelledYomitanEntry {
     pub fn new(
         label: &'static str,
-        // entries: impl IntoIterator<Item = YomitanEntry> + 'static,
-        entries: Vec<YomitanEntry>,
+        entries: impl IntoIterator<Item = YomitanEntry> + 'static,
     ) -> Self {
         Self {
             label,
-            // entries: Box::new(entries.into_iter()),
-            entries,
+            entries: Box::new(entries.into_iter()),
         }
     }
 }
@@ -92,6 +90,13 @@ pub trait Dictionary {
     /// Whether to keep or not this entry.
     fn keep_if(&self, source: Lang, entry: &WordEntry) -> bool;
 
+    /// Whether `keep_if` only depends on `entry.lang_code` matching `source`.
+    ///
+    /// This lets us skip full deserialization for clearly irrelevant lines.
+    fn supports_lang_code_prefilter(&self) -> bool {
+        false
+    }
+
     // NOTE: Maybe we can get rid of this (blocked by mutable behaviour of the main dictionary).
     //
     /// How to preprocess a `WordEntry`. Everything that mutates `entry` should go here.
@@ -132,6 +137,21 @@ pub trait Dictionary {
 fn rejected(entry: &WordEntry, opts: &Options) -> bool {
     opts.reject.iter().any(|(k, v)| k.field_value(entry) == v)
         || !opts.filter.iter().all(|(k, v)| k.field_value(entry) == v)
+}
+
+#[derive(Deserialize)]
+#[serde(default)]
+struct LangCodeProbe<'a> {
+    #[serde(borrow)]
+    lang_code: Cow<'a, str>,
+}
+
+impl<'a> Default for LangCodeProbe<'a> {
+    fn default() -> Self {
+        Self {
+            lang_code: Cow::Borrowed(""),
+        }
+    }
 }
 
 use crate::dict::{DGlossary, DGlossaryExtended, DIpa, DIpaMerged, DMain};
@@ -339,7 +359,7 @@ fn find_or_download_jsonl(
     lang: Option<Lang>,
     kind: DatasetKind,
     pm: &PathManager,
-) -> Result<PathBuf> {
+) -> Result<(PathBuf, PathKind)> {
     let paths_candidates = pm.dataset_paths(edition, lang);
     let kinds_to_check = match kind {
         DatasetKind::Filtered => vec![PathKind::Filtered],
@@ -357,19 +377,16 @@ fn find_or_download_jsonl(
         if !pm.opts.quiet {
             skip_because_file_exists(&format!("download ({kind:?})"), &existing.path);
         }
-        return Ok(existing.path.clone());
+        return Ok((existing.path.clone(), existing.kind));
     }
 
-    let path = &of_kind
-        .iter()
-        .next_back()
-        .unwrap_or_else(|| {
-            panic!(
-                "No path available for the requested kind: {kind:?}, \
+    let selected = of_kind.iter().next_back().unwrap_or_else(|| {
+        panic!(
+            "No path available for the requested kind: {kind:?}, \
              for edition={edition:?} and lang={lang:?} | {paths_candidates:?}"
-            )
-        })
-        .path;
+        )
+    });
+    let path = &selected.path;
 
     // TODO: remove this once it's done: it prevents downloading in the testsuite
     // anyhow::bail!(
@@ -380,13 +397,13 @@ fn find_or_download_jsonl(
     #[cfg(feature = "html")]
     crate::download::download_jsonl(edition, lang, kind, path, false)?;
 
-    Ok(path.clone())
+    Ok((path.clone(), selected.kind))
 }
 
 fn iter_datasets<'a, D: DatasetStrategy>(
     dict: &'a D,
     pm: &'a PathManager,
-) -> impl Iterator<Item = Result<(Edition, PathBuf)>> + 'a {
+) -> impl Iterator<Item = Result<(Edition, PathBuf, PathKind)>> + 'a {
     let (edition_pm, source_pm, _) = pm.langs();
 
     edition_pm.variants().into_iter().map(move |edition| {
@@ -395,10 +412,13 @@ fn iter_datasets<'a, D: DatasetStrategy>(
             DatasetRequest::FilteredEdition => (Some(edition.into()), DatasetKind::Unfiltered),
             DatasetRequest::FilteredLang(lang) => (Some(lang), edition_to_kind(edition)),
         };
-        let path_jsonl = find_or_download_jsonl(edition, lang, kind, pm)?;
-        tracing::debug!("edition: {edition}, path: {}", path_jsonl.display());
+        let (path_jsonl, path_kind) = find_or_download_jsonl(edition, lang, kind, pm)?;
+        tracing::debug!(
+            "edition: {edition}, kind: {path_kind:?}, path: {}",
+            path_jsonl.display()
+        );
 
-        Ok((edition, path_jsonl))
+        Ok((edition, path_jsonl, path_kind))
     })
 }
 
@@ -418,7 +438,24 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
     let mut irs_map: Map<LangsKey, D::I> = Map::default();
 
     for pair in iter_datasets(&dict, pm) {
-        let (edition, path_jsonl) = pair?;
+        let (edition, path_jsonl, path_kind) = pair?;
+        let langs_for_edition = dict.iter_langs(edition, source_pm, target_pm);
+
+        let lang_code_prefilter = if matches!(path_kind, PathKind::Unfiltered)
+            && dict.supports_lang_code_prefilter()
+            && opts.first < 0
+            && opts.filter.is_empty()
+            && opts.reject.is_empty()
+        {
+            Some(
+                langs_for_edition
+                    .iter()
+                    .map(|langs| langs.source.as_ref().to_string())
+                    .collect::<Set<_>>(),
+            )
+        } else {
+            None
+        };
 
         let reader_file = File::open(&path_jsonl)?;
         let mut reader = BufReader::with_capacity(capacity, reader_file);
@@ -434,15 +471,26 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
 
             line_count += 1;
 
-            let mut entry: WordEntry =
-                serde_json::from_slice(&line).with_context(|| "Error decoding JSON @ make_dict")?;
-
             if !opts.quiet && line_count % CONSOLE_PRINT_INTERVAL == 0 {
                 print!("Processed {line_count} lines...\r");
                 std::io::stdout().flush()?;
             }
 
-            if rejected(&entry, opts) {
+            if let Some(lang_code_prefilter) = &lang_code_prefilter {
+                let probe: LangCodeProbe = serde_json::from_slice(&line)
+                    .with_context(|| "Error decoding JSON @ make_dict (lang_code prefilter)")?;
+                let keep = lang_code_prefilter.contains(probe.lang_code.as_ref());
+                if !keep {
+                    continue;
+                }
+            }
+
+            let mut entry: WordEntry =
+                serde_json::from_slice(&line).with_context(|| "Error decoding JSON @ make_dict")?;
+
+            let is_rejected =
+                (!opts.filter.is_empty() || !opts.reject.is_empty()) && rejected(&entry, opts);
+            if is_rejected {
                 continue;
             }
 
@@ -451,7 +499,7 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
                 break;
             }
 
-            for langs in dict.iter_langs(edition, source_pm, target_pm) {
+            for &langs in &langs_for_edition {
                 if dict.keep_if(langs.source, &entry) {
                     let key = dict.langs_to_key(langs);
                     let irs = irs_map.entry(key).or_default();

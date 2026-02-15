@@ -284,6 +284,10 @@ impl Dictionary for DMain {
         entry.lang_code == source.as_ref()
     }
 
+    fn supports_lang_code_prefilter(&self) -> bool {
+        true
+    }
+
     fn preprocess(&self, langs: Langs, entry: &mut WordEntry, opts: &Options, irs: &mut Self::I) {
         preprocess_main(langs.edition, langs.source, opts, entry, irs);
     }
@@ -1322,13 +1326,16 @@ fn normalize_orthography(source: Lang, word: &str) -> String {
 }
 
 #[tracing::instrument(skip_all, level = "trace")]
-fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> Vec<YomitanEntry> {
+fn iter_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> impl Iterator<Item = YomitanEntry> {
     lemma_map
         .into_flat_iter()
         .map(move |(lemma, reading, pos, info)| {
             to_yomitan_lemma(target, &lemma, &reading, &pos, info)
         })
-        .collect()
+}
+
+fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> impl Iterator<Item = YomitanEntry> {
+    iter_yomitan_lemmas(target, lemma_map)
 }
 
 // TODO: consume info
@@ -1612,7 +1619,7 @@ fn structured_examples(target: Lang, examples: &[Example]) -> Node {
 }
 
 #[tracing::instrument(skip_all, level = "trace")]
-fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
+fn iter_yomitan_forms(source: Lang, form_map: FormMap) -> impl Iterator<Item = YomitanEntry> {
     form_map
         .into_flat_iter()
         .map(move |(uninflected, inflected, _, _, tags)| {
@@ -1638,5 +1645,8 @@ fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
                 deinflection_definitions,
             ))
         })
-        .collect()
+}
+
+fn to_yomitan_forms(source: Lang, form_map: FormMap) -> impl Iterator<Item = YomitanEntry> {
+    iter_yomitan_forms(source, form_map)
 }
