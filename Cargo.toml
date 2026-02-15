@@ -43,13 +43,7 @@ debug = true
 panic = "abort"
 
 [features]
-default = [
-    "html",
-    "opt-hot-path",
-    "opt-lang-probe-scan",
-    "opt-lang-probe-unfiltered-only",
-    "opt-stream-write",
-]
+default = ["html", "opt-hot-path", "opt-stream-write"]
 
 # Provide download utilities for kaikki/wiktextract generated jsonlines
 html = ["ureq", "flate2"]
@@ -57,12 +51,6 @@ html = ["ureq", "flate2"]
 # Hot-path optimizations in make_dict: precomputed langs, guarded reject checks,
 # and lang_code prefilter path.
 opt-hot-path = []
-
-# Replace serde lang_code probe with a fast JSON precheck scanner.
-opt-lang-probe-scan = []
-
-# Only run lang_code prefilter when consuming unfiltered datasets.
-opt-lang-probe-unfiltered-only = []
 
 # Stream Yomitan bank writing in chunks instead of materializing full vectors.
 opt-stream-write = []

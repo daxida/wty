@@ -148,167 +148,6 @@ fn rejected(entry: &WordEntry, opts: &Options) -> bool {
         || !opts.filter.iter().all(|(k, v)| k.field_value(entry) == v)
 }
 
-#[cfg(feature = "opt-lang-probe-scan")]
-#[inline]
-fn skip_json_whitespace(line: &[u8], mut idx: usize) -> usize {
-    while idx < line.len() {
-        match line[idx] {
-            b' ' | b'\t' | b'\r' | b'\n' => idx += 1,
-            _ => break,
-        }
-    }
-    idx
-}
-
-#[cfg(feature = "opt-lang-probe-scan")]
-#[inline]
-fn skip_json_string(line: &[u8], idx: usize) -> Option<usize> {
-    if line.get(idx).copied()? != b'"' {
-        return None;
-    }
-    let mut i = idx + 1;
-    while i < line.len() {
-        let b = line[i];
-        if b == b'"' {
-            return Some(i + 1);
-        }
-        if b == b'\\' {
-            i += 2;
-        } else {
-            i += 1;
-        }
-    }
-    None
-}
-
-#[cfg(feature = "opt-lang-probe-scan")]
-#[inline]
-fn skip_json_compound(line: &[u8], idx: usize) -> Option<usize> {
-    match line.get(idx).copied()? {
-        b'{' | b'[' => {}
-        _ => return None,
-    }
-
-    let mut depth: u32 = 1;
-    let mut i = idx + 1;
-    let mut in_string = false;
-
-    while i < line.len() {
-        let b = line[i];
-        if in_string {
-            match b {
-                b'"' => in_string = false,
-                b'\\' => {
-                    i += 1;
-                    if i >= line.len() {
-                        return None;
-                    }
-                }
-                _ => {}
-            }
-            i += 1;
-            continue;
-        }
-
-        match b {
-            b'"' => {
-                in_string = true;
-                i += 1;
-            }
-            b'{' | b'[' => {
-                depth += 1;
-                i += 1;
-            }
-            b'}' | b']' => {
-                depth = depth.checked_sub(1)?;
-                i += 1;
-                if depth == 0 {
-                    return Some(i);
-                }
-            }
-            _ => i += 1,
-        }
-    }
-
-    None
-}
-
-#[cfg(feature = "opt-lang-probe-scan")]
-#[inline]
-fn skip_json_primitive(line: &[u8], idx: usize) -> Option<usize> {
-    let mut i = idx;
-    while i < line.len() {
-        match line[i] {
-            b',' | b'}' | b']' | b' ' | b'\t' | b'\r' | b'\n' => return Some(i),
-            _ => i += 1,
-        }
-    }
-    Some(i)
-}
-
-#[cfg(feature = "opt-lang-probe-scan")]
-fn skip_json_value(line: &[u8], idx: usize) -> Option<usize> {
-    let i = skip_json_whitespace(line, idx);
-    match line.get(i).copied()? {
-        b'"' => skip_json_string(line, i),
-        b'{' | b'[' => skip_json_compound(line, i),
-        _ => skip_json_primitive(line, i),
-    }
-}
-
-/// Fast path used by source-language dictionaries to avoid full serde parsing
-/// when `lang_code` doesn't match.
-#[cfg(feature = "opt-lang-probe-scan")]
-fn probe_top_level_lang_code(line: &[u8]) -> Option<&str> {
-    let mut i = skip_json_whitespace(line, 0);
-    if line.get(i).copied()? != b'{' {
-        return None;
-    }
-    i += 1;
-
-    loop {
-        i = skip_json_whitespace(line, i);
-        match line.get(i).copied()? {
-            b'}' => return None,
-            b'"' => {}
-            _ => return None,
-        }
-
-        let key_start = i + 1;
-        i = skip_json_string(line, i)?;
-        let key_end = i - 1;
-
-        i = skip_json_whitespace(line, i);
-        if line.get(i).copied()? != b':' {
-            return None;
-        }
-        i += 1;
-        i = skip_json_whitespace(line, i);
-
-        if &line[key_start..key_end] == b"lang_code" {
-            if line.get(i).copied()? != b'"' {
-                return None;
-            }
-            let value_start = i + 1;
-            i = skip_json_string(line, i)?;
-            let value_end = i - 1;
-            if line[value_start..value_end].contains(&b'\\') {
-                return None;
-            }
-            return std::str::from_utf8(&line[value_start..value_end]).ok();
-        }
-
-        i = skip_json_value(line, i)?;
-        i = skip_json_whitespace(line, i);
-
-        match line.get(i).copied()? {
-            b',' => i += 1,
-            b'}' => return None,
-            _ => return None,
-        }
-    }
-}
-
 #[derive(Deserialize)]
 #[serde(default)]
 struct LangCodeProbe<'a> {
@@ -611,33 +450,16 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
         let (edition, path_jsonl, path_kind) = pair?;
         #[cfg(not(feature = "opt-hot-path"))]
         let _ = path_kind;
-        #[cfg(all(
-            feature = "opt-hot-path",
-            not(feature = "opt-lang-probe-unfiltered-only")
-        ))]
-        let _ = path_kind;
 
         #[cfg(feature = "opt-hot-path")]
         let langs_for_edition = dict.iter_langs(edition, source_pm, target_pm);
 
         #[cfg(feature = "opt-hot-path")]
-        let prefilter_allowed_for_dataset = {
-            #[cfg(feature = "opt-lang-probe-unfiltered-only")]
-            {
-                matches!(path_kind, PathKind::Unfiltered)
-            }
-            #[cfg(not(feature = "opt-lang-probe-unfiltered-only"))]
-            {
-                true
-            }
-        };
-
-        #[cfg(feature = "opt-hot-path")]
-        let lang_code_prefilter = if dict.supports_lang_code_prefilter()
+        let lang_code_prefilter = if matches!(path_kind, PathKind::Unfiltered)
+            && dict.supports_lang_code_prefilter()
             && opts.first < 0
             && opts.filter.is_empty()
             && opts.reject.is_empty()
-            && prefilter_allowed_for_dataset
         {
             Some(
                 langs_for_edition
@@ -671,21 +493,9 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
             }
 
             if let Some(lang_code_prefilter) = &lang_code_prefilter {
-                #[cfg(feature = "opt-lang-probe-scan")]
-                let keep = if let Some(lang_code) = probe_top_level_lang_code(&line) {
-                    lang_code_prefilter.contains(lang_code)
-                } else {
-                    let probe: LangCodeProbe = serde_json::from_slice(&line).with_context(
-                        || "Error decoding JSON @ make_dict (lang_code prefilter fallback)",
-                    )?;
-                    lang_code_prefilter.contains(probe.lang_code.as_ref())
-                };
-                #[cfg(not(feature = "opt-lang-probe-scan"))]
-                let keep = {
-                    let probe: LangCodeProbe = serde_json::from_slice(&line)
-                        .with_context(|| "Error decoding JSON @ make_dict (lang_code prefilter)")?;
-                    lang_code_prefilter.contains(probe.lang_code.as_ref())
-                };
+                let probe: LangCodeProbe = serde_json::from_slice(&line)
+                    .with_context(|| "Error decoding JSON @ make_dict (lang_code prefilter)")?;
+                let keep = lang_code_prefilter.contains(probe.lang_code.as_ref());
                 if !keep {
                     continue;
                 }
@@ -784,38 +594,3 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
     Ok(())
 }
 // TODO: rename this to make_dicts when done, and keep the original
-
-#[cfg(all(test, feature = "opt-lang-probe-scan"))]
-mod tests {
-    use super::probe_top_level_lang_code;
-
-    #[test]
-    fn probe_lang_code_returns_top_level_value() {
-        let line = br#"{"word":"x","lang_code":"ja","translations":[{"lang_code":"en"}]}"#;
-        assert_eq!(probe_top_level_lang_code(line), Some("ja"));
-    }
-
-    #[test]
-    fn probe_lang_code_ignores_nested_values_before_key() {
-        let line = br#"{"meta":{"lang_code":"en"},"word":"x","lang_code":"ja"}"#;
-        assert_eq!(probe_top_level_lang_code(line), Some("ja"));
-    }
-
-    #[test]
-    fn probe_lang_code_ignores_string_content() {
-        let line = br#"{"word":"\"lang_code\":\"en\"","lang_code":"ja"}"#;
-        assert_eq!(probe_top_level_lang_code(line), Some("ja"));
-    }
-
-    #[test]
-    fn probe_lang_code_handles_whitespace() {
-        let line = b"{\n  \"word\": \"x\",\n  \"lang_code\": \"de\"\n}";
-        assert_eq!(probe_top_level_lang_code(line), Some("de"));
-    }
-
-    #[test]
-    fn probe_lang_code_none_when_missing() {
-        let line = br#"{"word":"x","translations":[{"lang_code":"en"}]}"#;
-        assert_eq!(probe_top_level_lang_code(line), None);
-    }
-}
