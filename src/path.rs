@@ -31,7 +31,7 @@ impl fmt::Display for DictionaryType {
 // this could also be used to ingest some other shape of the data (like rkyv Archive)
 //
 // cf. download::DatasetKind
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PathKind {
     /// Path to a filtered jsonl. English-edition-only, for other editions this is just an alias.
     Filtered,

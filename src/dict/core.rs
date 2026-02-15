@@ -517,7 +517,7 @@ fn find_or_download_jsonl(
     lang: Option<Lang>,
     kind: DatasetKind,
     pm: &PathManager,
-) -> Result<PathBuf> {
+) -> Result<(PathBuf, PathKind)> {
     let paths_candidates = pm.dataset_paths(edition, lang);
     let kinds_to_check = match kind {
         DatasetKind::Filtered => vec![PathKind::Filtered],
@@ -535,10 +535,10 @@ fn find_or_download_jsonl(
         if !pm.opts.quiet {
             skip_because_file_exists(&format!("download ({kind:?})"), &existing.path);
         }
-        return Ok(existing.path.clone());
+        return Ok((existing.path.clone(), existing.kind));
     }
 
-    let path = &of_kind
+    let selected = of_kind
         .iter()
         .next_back()
         .unwrap_or_else(|| {
@@ -546,8 +546,8 @@ fn find_or_download_jsonl(
                 "No path available for the requested kind: {kind:?}, \
              for edition={edition:?} and lang={lang:?} | {paths_candidates:?}"
             )
-        })
-        .path;
+        });
+    let path = &selected.path;
 
     // TODO: remove this once it's done: it prevents downloading in the testsuite
     // anyhow::bail!(
@@ -558,13 +558,13 @@ fn find_or_download_jsonl(
     #[cfg(feature = "html")]
     crate::download::download_jsonl(edition, lang, kind, path, false)?;
 
-    Ok(path.clone())
+    Ok((path.clone(), selected.kind))
 }
 
 fn iter_datasets<'a, D: DatasetStrategy>(
     dict: &'a D,
     pm: &'a PathManager,
-) -> impl Iterator<Item = Result<(Edition, PathBuf)>> + 'a {
+) -> impl Iterator<Item = Result<(Edition, PathBuf, PathKind)>> + 'a {
     let (edition_pm, source_pm, _) = pm.langs();
 
     edition_pm.variants().into_iter().map(move |edition| {
@@ -573,10 +573,13 @@ fn iter_datasets<'a, D: DatasetStrategy>(
             DatasetRequest::FilteredEdition => (Some(edition.into()), DatasetKind::Unfiltered),
             DatasetRequest::FilteredLang(lang) => (Some(lang), edition_to_kind(edition)),
         };
-        let path_jsonl = find_or_download_jsonl(edition, lang, kind, pm)?;
-        tracing::debug!("edition: {edition}, path: {}", path_jsonl.display());
+        let (path_jsonl, path_kind) = find_or_download_jsonl(edition, lang, kind, pm)?;
+        tracing::debug!(
+            "edition: {edition}, kind: {path_kind:?}, path: {}",
+            path_jsonl.display()
+        );
 
-        Ok((edition, path_jsonl))
+        Ok((edition, path_jsonl, path_kind))
     })
 }
 
@@ -596,9 +599,10 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
     let mut irs_map: Map<LangsKey, D::I> = Map::default();
 
     for pair in iter_datasets(&dict, pm) {
-        let (edition, path_jsonl) = pair?;
+        let (edition, path_jsonl, path_kind) = pair?;
         let langs_for_edition = dict.iter_langs(edition, source_pm, target_pm);
-        let lang_code_prefilter = if dict.supports_lang_code_prefilter()
+        let lang_code_prefilter = if matches!(path_kind, PathKind::Unfiltered)
+            && dict.supports_lang_code_prefilter()
             && opts.first < 0
             && opts.filter.is_empty()
             && opts.reject.is_empty()
