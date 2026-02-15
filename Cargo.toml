@@ -43,17 +43,10 @@ debug = true
 panic = "abort"
 
 [features]
-default = ["html", "opt-hot-path", "opt-stream-write"]
+default = ["html"]
 
 # Provide download utilities for kaikki/wiktextract generated jsonlines
 html = ["ureq", "flate2"]
-
-# Hot-path optimizations in make_dict: precomputed langs, guarded reject checks,
-# and lang_code prefilter path.
-opt-hot-path = []
-
-# Stream Yomitan bank writing in chunks instead of materializing full vectors.
-opt-stream-write = []
 
 [[bench]]
 name = "benchmark"

@@ -20,10 +20,7 @@ use crate::{Map, Set};
 
 const CONSOLE_PRINT_INTERVAL: i32 = 10000;
 
-#[cfg(feature = "opt-stream-write")]
 pub type E = Box<dyn Iterator<Item = YomitanEntry>>;
-#[cfg(not(feature = "opt-stream-write"))]
-pub type E = Vec<YomitanEntry>;
 
 // Used in tests to write separate files for lemmas/forms.
 pub struct LabelledYomitanEntry {
@@ -32,7 +29,6 @@ pub struct LabelledYomitanEntry {
 }
 
 impl LabelledYomitanEntry {
-    #[cfg(feature = "opt-stream-write")]
     pub fn new(
         label: &'static str,
         entries: impl IntoIterator<Item = YomitanEntry> + 'static,
@@ -41,11 +37,6 @@ impl LabelledYomitanEntry {
             label,
             entries: Box::new(entries.into_iter()),
         }
-    }
-
-    #[cfg(not(feature = "opt-stream-write"))]
-    pub fn new(label: &'static str, entries: Vec<YomitanEntry>) -> Self {
-        Self { label, entries }
     }
 }
 
@@ -448,13 +439,8 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
 
     for pair in iter_datasets(&dict, pm) {
         let (edition, path_jsonl, path_kind) = pair?;
-        #[cfg(not(feature = "opt-hot-path"))]
-        let _ = path_kind;
-
-        #[cfg(feature = "opt-hot-path")]
         let langs_for_edition = dict.iter_langs(edition, source_pm, target_pm);
 
-        #[cfg(feature = "opt-hot-path")]
         let lang_code_prefilter = if matches!(path_kind, PathKind::Unfiltered)
             && dict.supports_lang_code_prefilter()
             && opts.first < 0
@@ -470,8 +456,6 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
         } else {
             None
         };
-        #[cfg(not(feature = "opt-hot-path"))]
-        let lang_code_prefilter: Option<Set<String>> = None;
 
         let reader_file = File::open(&path_jsonl)?;
         let mut reader = BufReader::with_capacity(capacity, reader_file);
@@ -504,11 +488,8 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
             let mut entry: WordEntry =
                 serde_json::from_slice(&line).with_context(|| "Error decoding JSON @ make_dict")?;
 
-            #[cfg(feature = "opt-hot-path")]
             let is_rejected =
                 (!opts.filter.is_empty() || !opts.reject.is_empty()) && rejected(&entry, opts);
-            #[cfg(not(feature = "opt-hot-path"))]
-            let is_rejected = rejected(&entry, opts);
             if is_rejected {
                 continue;
             }
@@ -518,17 +499,7 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
                 break;
             }
 
-            #[cfg(feature = "opt-hot-path")]
             for &langs in &langs_for_edition {
-                if dict.keep_if(langs.source, &entry) {
-                    let key = dict.langs_to_key(langs);
-                    let irs = irs_map.entry(key).or_default();
-                    dict.preprocess(langs, &mut entry, opts, irs);
-                    dict.process(langs, &entry, irs);
-                }
-            }
-            #[cfg(not(feature = "opt-hot-path"))]
-            for langs in dict.iter_langs(edition, source_pm, target_pm) {
                 if dict.keep_if(langs.source, &entry) {
                     let key = dict.langs_to_key(langs);
                     let irs = irs_map.entry(key).or_default();

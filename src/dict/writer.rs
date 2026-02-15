@@ -53,23 +53,11 @@ pub fn write_yomitan(
     if opts.save_temps {
         let out_dir = pm.dir_temp_dict();
         fs::create_dir_all(&out_dir)?;
-        #[allow(unused_mut)]
         for mut lentry in labelled_entries {
-            #[cfg(feature = "opt-stream-write")]
             write_banks(
                 opts.pretty,
                 opts.quiet,
                 &mut lentry.entries,
-                &mut bank_index,
-                lentry.label,
-                &out_dir,
-                Sink::Disk,
-            )?;
-            #[cfg(not(feature = "opt-stream-write"))]
-            write_banks(
-                opts.pretty,
-                opts.quiet,
-                &lentry.entries,
                 &mut bank_index,
                 lentry.label,
                 &out_dir,
@@ -108,23 +96,11 @@ pub fn write_yomitan(
     zip.start_file("tag_bank_1.json", zip_opts)?; // it needs to end in _1
     zip.write_all(&tag_bank_bytes)?;
 
-    #[allow(unused_mut)]
     for mut lentry in labelled_entries {
-        #[cfg(feature = "opt-stream-write")]
         write_banks(
             opts.pretty,
             opts.quiet,
             &mut lentry.entries,
-            &mut bank_index,
-            lentry.label,
-            &writer_path,
-            Sink::Zip(&mut zip, zip_opts),
-        )?;
-        #[cfg(not(feature = "opt-stream-write"))]
-        write_banks(
-            opts.pretty,
-            opts.quiet,
-            &lentry.entries,
             &mut bank_index,
             lentry.label,
             &writer_path,
@@ -168,55 +144,6 @@ fn write_bank_chunk(
     Ok(file_path)
 }
 
-#[cfg(not(feature = "opt-stream-write"))]
-#[tracing::instrument(skip_all)]
-fn write_banks(
-    pretty: bool,
-    quiet: bool,
-    yomitan_entries: &[YomitanEntry],
-    bank_index: &mut usize,
-    label: &str,
-    out_dir: &Path,
-    mut sink: Sink,
-) -> Result<()> {
-    // NOTE: this assumes that once a type is passed, all the remaining entries are of same type
-    let bank_name_prefix = match yomitan_entries.first() {
-        Some(first) => first.file_prefix(),
-        None => return Ok(()),
-    };
-
-    let total_bank_num = yomitan_entries.len().div_ceil(BANK_SIZE);
-
-    for (bank_num, bank) in yomitan_entries.chunks(BANK_SIZE).enumerate() {
-        *bank_index += 1;
-
-        let bank_name = format!("{bank_name_prefix}_{bank_index}.json");
-        let file_path = write_bank_chunk(pretty, bank, &bank_name, out_dir, &mut sink)?;
-
-        if !quiet {
-            if bank_num > 0 {
-                print!("\r\x1b[K");
-            }
-            pretty_print_at_path(
-                &format!(
-                    "Wrote yomitan {label} bank {}/{total_bank_num} ({} entries)",
-                    bank_num + 1,
-                    bank.len()
-                ),
-                &file_path,
-            );
-            std::io::stdout().flush()?;
-        }
-    }
-
-    if !quiet {
-        println!();
-    }
-
-    Ok(())
-}
-
-#[cfg(feature = "opt-stream-write")]
 #[tracing::instrument(skip_all)]
 fn write_banks(
     pretty: bool,

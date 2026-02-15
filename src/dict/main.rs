@@ -1334,14 +1334,8 @@ fn iter_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> impl Iterator<Item 
         })
 }
 
-#[cfg(feature = "opt-stream-write")]
 fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> impl Iterator<Item = YomitanEntry> {
     iter_yomitan_lemmas(target, lemma_map)
-}
-
-#[cfg(not(feature = "opt-stream-write"))]
-fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> Vec<YomitanEntry> {
-    iter_yomitan_lemmas(target, lemma_map).collect()
 }
 
 // TODO: consume info
@@ -1653,12 +1647,6 @@ fn iter_yomitan_forms(source: Lang, form_map: FormMap) -> impl Iterator<Item = Y
         })
 }
 
-#[cfg(feature = "opt-stream-write")]
 fn to_yomitan_forms(source: Lang, form_map: FormMap) -> impl Iterator<Item = YomitanEntry> {
     iter_yomitan_forms(source, form_map)
-}
-
-#[cfg(not(feature = "opt-stream-write"))]
-fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
-    iter_yomitan_forms(source, form_map).collect()
 }
