@@ -1326,13 +1326,22 @@ fn normalize_orthography(source: Lang, word: &str) -> String {
 }
 
 #[tracing::instrument(skip_all, level = "trace")]
-fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> Vec<YomitanEntry> {
+fn iter_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> impl Iterator<Item = YomitanEntry> {
     lemma_map
         .into_flat_iter()
         .map(move |(lemma, reading, pos, info)| {
             to_yomitan_lemma(target, &lemma, &reading, &pos, info)
         })
-        .collect()
+}
+
+#[cfg(feature = "opt-stream-write")]
+fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> impl Iterator<Item = YomitanEntry> {
+    iter_yomitan_lemmas(target, lemma_map)
+}
+
+#[cfg(not(feature = "opt-stream-write"))]
+fn to_yomitan_lemmas(target: Lang, lemma_map: LemmaMap) -> Vec<YomitanEntry> {
+    iter_yomitan_lemmas(target, lemma_map).collect()
 }
 
 // TODO: consume info
@@ -1616,7 +1625,7 @@ fn structured_examples(target: Lang, examples: &[Example]) -> Node {
 }
 
 #[tracing::instrument(skip_all, level = "trace")]
-fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
+fn iter_yomitan_forms(source: Lang, form_map: FormMap) -> impl Iterator<Item = YomitanEntry> {
     form_map
         .into_flat_iter()
         .map(move |(uninflected, inflected, _, _, tags)| {
@@ -1642,5 +1651,14 @@ fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
                 deinflection_definitions,
             ))
         })
-        .collect()
+}
+
+#[cfg(feature = "opt-stream-write")]
+fn to_yomitan_forms(source: Lang, form_map: FormMap) -> impl Iterator<Item = YomitanEntry> {
+    iter_yomitan_forms(source, form_map)
+}
+
+#[cfg(not(feature = "opt-stream-write"))]
+fn to_yomitan_forms(source: Lang, form_map: FormMap) -> Vec<YomitanEntry> {
+    iter_yomitan_forms(source, form_map).collect()
 }

@@ -1,16 +1,16 @@
 use crate::{
+    Map, Set,
     cli::{GlossaryArgs, GlossaryExtendedArgs, IpaArgs, IpaMergedArgs},
-    dict::{get_reading, Dictionary, LabelledYomitanEntry, Langs},
+    dict::{Dictionary, LabelledYomitanEntry, Langs, get_reading},
     lang::{Edition, Lang},
     models::{
         kaikki::WordEntry,
         yomitan::{
-            wrap, DetailedDefinition, Ipa, NTag, Node, PhoneticTranscription, TermBank,
-            TermBankMeta, TermPhoneticTranscription, YomitanEntry,
+            DetailedDefinition, Ipa, NTag, Node, PhoneticTranscription, TermBank, TermBankMeta,
+            TermPhoneticTranscription, YomitanEntry, wrap,
         },
     },
     tags::find_short_pos_or_default,
-    Map, Set,
 };
 
 #[derive(Debug, Clone, Copy)]

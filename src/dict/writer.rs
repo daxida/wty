@@ -5,7 +5,7 @@
 
 use std::fs::{self, File};
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 use zip::ZipWriter;
@@ -53,7 +53,19 @@ pub fn write_yomitan(
     if opts.save_temps {
         let out_dir = pm.dir_temp_dict();
         fs::create_dir_all(&out_dir)?;
-        for lentry in labelled_entries {
+        #[allow(unused_mut)]
+        for mut lentry in labelled_entries {
+            #[cfg(feature = "opt-stream-write")]
+            write_banks(
+                opts.pretty,
+                opts.quiet,
+                &mut lentry.entries,
+                &mut bank_index,
+                lentry.label,
+                &out_dir,
+                Sink::Disk,
+            )?;
+            #[cfg(not(feature = "opt-stream-write"))]
             write_banks(
                 opts.pretty,
                 opts.quiet,
@@ -96,7 +108,19 @@ pub fn write_yomitan(
     zip.start_file("tag_bank_1.json", zip_opts)?; // it needs to end in _1
     zip.write_all(&tag_bank_bytes)?;
 
-    for lentry in labelled_entries {
+    #[allow(unused_mut)]
+    for mut lentry in labelled_entries {
+        #[cfg(feature = "opt-stream-write")]
+        write_banks(
+            opts.pretty,
+            opts.quiet,
+            &mut lentry.entries,
+            &mut bank_index,
+            lentry.label,
+            &writer_path,
+            Sink::Zip(&mut zip, zip_opts),
+        )?;
+        #[cfg(not(feature = "opt-stream-write"))]
         write_banks(
             opts.pretty,
             opts.quiet,
@@ -116,6 +140,35 @@ pub fn write_yomitan(
 }
 
 /// Writes `yomitan_entries` in batches to `out_sink` (either disk or a zip).
+#[tracing::instrument(skip_all)]
+fn write_bank_chunk(
+    pretty: bool,
+    bank: &[YomitanEntry],
+    bank_name: &str,
+    out_dir: &Path,
+    sink: &mut Sink,
+) -> Result<PathBuf> {
+    let json_bytes = if pretty {
+        serde_json::to_vec_pretty(bank)?
+    } else {
+        serde_json::to_vec(bank)?
+    };
+
+    let file_path = out_dir.join(bank_name);
+    match sink {
+        Sink::Disk => {
+            let mut file = File::create(&file_path)?;
+            file.write_all(&json_bytes)?;
+        }
+        Sink::Zip(zip, zip_options) => {
+            zip.start_file(bank_name, *zip_options)?;
+            zip.write_all(&json_bytes)?;
+        }
+    }
+    Ok(file_path)
+}
+
+#[cfg(not(feature = "opt-stream-write"))]
 #[tracing::instrument(skip_all)]
 fn write_banks(
     pretty: bool,
@@ -137,25 +190,8 @@ fn write_banks(
     for (bank_num, bank) in yomitan_entries.chunks(BANK_SIZE).enumerate() {
         *bank_index += 1;
 
-        let json_bytes = if pretty {
-            serde_json::to_vec_pretty(&bank)?
-        } else {
-            serde_json::to_vec(&bank)?
-        };
-
         let bank_name = format!("{bank_name_prefix}_{bank_index}.json");
-        let file_path = out_dir.join(&bank_name);
-
-        match sink {
-            Sink::Disk => {
-                let mut file = File::create(&file_path)?;
-                file.write_all(&json_bytes)?;
-            }
-            Sink::Zip(ref mut zip, zip_options) => {
-                zip.start_file(&bank_name, zip_options)?;
-                zip.write_all(&json_bytes)?;
-            }
-        }
+        let file_path = write_bank_chunk(pretty, bank, &bank_name, out_dir, &mut sink)?;
 
         if !quiet {
             if bank_num > 0 {
@@ -171,6 +207,69 @@ fn write_banks(
             );
             std::io::stdout().flush()?;
         }
+    }
+
+    if !quiet {
+        println!();
+    }
+
+    Ok(())
+}
+
+#[cfg(feature = "opt-stream-write")]
+#[tracing::instrument(skip_all)]
+fn write_banks(
+    pretty: bool,
+    quiet: bool,
+    yomitan_entries: &mut dyn Iterator<Item = YomitanEntry>,
+    bank_index: &mut usize,
+    label: &str,
+    out_dir: &Path,
+    mut sink: Sink,
+) -> Result<()> {
+    let Some(first) = yomitan_entries.next() else {
+        return Ok(());
+    };
+    let bank_name_prefix = first.file_prefix().to_string();
+    let mut bank_num = 0usize;
+    let mut bank: Vec<YomitanEntry> = Vec::with_capacity(BANK_SIZE);
+    bank.push(first);
+
+    let mut flush_bank = |bank: &mut Vec<YomitanEntry>, bank_num: usize| -> Result<()> {
+        *bank_index += 1;
+        let bank_name = format!("{bank_name_prefix}_{bank_index}.json");
+        let file_path = write_bank_chunk(pretty, bank, &bank_name, out_dir, &mut sink)?;
+
+        if !quiet {
+            if bank_num > 1 {
+                print!("\r\x1b[K");
+            }
+            pretty_print_at_path(
+                &format!(
+                    "Wrote yomitan {label} bank {} ({} entries)",
+                    bank_num,
+                    bank.len()
+                ),
+                &file_path,
+            );
+            std::io::stdout().flush()?;
+        }
+
+        bank.clear();
+        Ok(())
+    };
+
+    for entry in yomitan_entries {
+        bank.push(entry);
+        if bank.len() == BANK_SIZE {
+            bank_num += 1;
+            flush_bank(&mut bank, bank_num)?;
+        }
+    }
+
+    if !bank.is_empty() {
+        bank_num += 1;
+        flush_bank(&mut bank, bank_num)?;
     }
 
     if !quiet {

@@ -7,7 +7,6 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 use std::path::PathBuf;
 
-use crate::{Map, Set};
 use crate::cli::Options;
 use crate::dict::writer::write_yomitan;
 use crate::download::DatasetKind;
@@ -17,10 +16,13 @@ use crate::models::yomitan::YomitanEntry;
 use crate::path::{PathKind, PathManager};
 use crate::utils::pretty_print_at_path;
 use crate::utils::skip_because_file_exists;
+use crate::{Map, Set};
 
 const CONSOLE_PRINT_INTERVAL: i32 = 10000;
 
-// pub type E = Box<dyn Iterator<Item = YomitanEntry>>;
+#[cfg(feature = "opt-stream-write")]
+pub type E = Box<dyn Iterator<Item = YomitanEntry>>;
+#[cfg(not(feature = "opt-stream-write"))]
 pub type E = Vec<YomitanEntry>;
 
 // Used in tests to write separate files for lemmas/forms.
@@ -30,16 +32,20 @@ pub struct LabelledYomitanEntry {
 }
 
 impl LabelledYomitanEntry {
+    #[cfg(feature = "opt-stream-write")]
     pub fn new(
         label: &'static str,
-        // entries: impl IntoIterator<Item = YomitanEntry> + 'static,
-        entries: Vec<YomitanEntry>,
+        entries: impl IntoIterator<Item = YomitanEntry> + 'static,
     ) -> Self {
         Self {
             label,
-            // entries: Box::new(entries.into_iter()),
-            entries,
+            entries: Box::new(entries.into_iter()),
         }
+    }
+
+    #[cfg(not(feature = "opt-stream-write"))]
+    pub fn new(label: &'static str, entries: Vec<YomitanEntry>) -> Self {
+        Self { label, entries }
     }
 }
 
@@ -142,6 +148,7 @@ fn rejected(entry: &WordEntry, opts: &Options) -> bool {
         || !opts.filter.iter().all(|(k, v)| k.field_value(entry) == v)
 }
 
+#[cfg(feature = "opt-lang-probe-scan")]
 #[inline]
 fn skip_json_whitespace(line: &[u8], mut idx: usize) -> usize {
     while idx < line.len() {
@@ -153,6 +160,7 @@ fn skip_json_whitespace(line: &[u8], mut idx: usize) -> usize {
     idx
 }
 
+#[cfg(feature = "opt-lang-probe-scan")]
 #[inline]
 fn skip_json_string(line: &[u8], idx: usize) -> Option<usize> {
     if line.get(idx).copied()? != b'"' {
@@ -173,6 +181,7 @@ fn skip_json_string(line: &[u8], idx: usize) -> Option<usize> {
     None
 }
 
+#[cfg(feature = "opt-lang-probe-scan")]
 #[inline]
 fn skip_json_compound(line: &[u8], idx: usize) -> Option<usize> {
     match line.get(idx).copied()? {
@@ -224,6 +233,7 @@ fn skip_json_compound(line: &[u8], idx: usize) -> Option<usize> {
     None
 }
 
+#[cfg(feature = "opt-lang-probe-scan")]
 #[inline]
 fn skip_json_primitive(line: &[u8], idx: usize) -> Option<usize> {
     let mut i = idx;
@@ -236,6 +246,7 @@ fn skip_json_primitive(line: &[u8], idx: usize) -> Option<usize> {
     Some(i)
 }
 
+#[cfg(feature = "opt-lang-probe-scan")]
 fn skip_json_value(line: &[u8], idx: usize) -> Option<usize> {
     let i = skip_json_whitespace(line, idx);
     match line.get(i).copied()? {
@@ -247,6 +258,7 @@ fn skip_json_value(line: &[u8], idx: usize) -> Option<usize> {
 
 /// Fast path used by source-language dictionaries to avoid full serde parsing
 /// when `lang_code` doesn't match.
+#[cfg(feature = "opt-lang-probe-scan")]
 fn probe_top_level_lang_code(line: &[u8]) -> Option<&str> {
     let mut i = skip_json_whitespace(line, 0);
     if line.get(i).copied()? != b'{' {
@@ -538,15 +550,12 @@ fn find_or_download_jsonl(
         return Ok((existing.path.clone(), existing.kind));
     }
 
-    let selected = of_kind
-        .iter()
-        .next_back()
-        .unwrap_or_else(|| {
-            panic!(
-                "No path available for the requested kind: {kind:?}, \
+    let selected = of_kind.iter().next_back().unwrap_or_else(|| {
+        panic!(
+            "No path available for the requested kind: {kind:?}, \
              for edition={edition:?} and lang={lang:?} | {paths_candidates:?}"
-            )
-        });
+        )
+    });
     let path = &selected.path;
 
     // TODO: remove this once it's done: it prevents downloading in the testsuite
@@ -600,12 +609,35 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
 
     for pair in iter_datasets(&dict, pm) {
         let (edition, path_jsonl, path_kind) = pair?;
+        #[cfg(not(feature = "opt-hot-path"))]
+        let _ = path_kind;
+        #[cfg(all(
+            feature = "opt-hot-path",
+            not(feature = "opt-lang-probe-unfiltered-only")
+        ))]
+        let _ = path_kind;
+
+        #[cfg(feature = "opt-hot-path")]
         let langs_for_edition = dict.iter_langs(edition, source_pm, target_pm);
-        let lang_code_prefilter = if matches!(path_kind, PathKind::Unfiltered)
-            && dict.supports_lang_code_prefilter()
+
+        #[cfg(feature = "opt-hot-path")]
+        let prefilter_allowed_for_dataset = {
+            #[cfg(feature = "opt-lang-probe-unfiltered-only")]
+            {
+                matches!(path_kind, PathKind::Unfiltered)
+            }
+            #[cfg(not(feature = "opt-lang-probe-unfiltered-only"))]
+            {
+                true
+            }
+        };
+
+        #[cfg(feature = "opt-hot-path")]
+        let lang_code_prefilter = if dict.supports_lang_code_prefilter()
             && opts.first < 0
             && opts.filter.is_empty()
             && opts.reject.is_empty()
+            && prefilter_allowed_for_dataset
         {
             Some(
                 langs_for_edition
@@ -616,6 +648,8 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
         } else {
             None
         };
+        #[cfg(not(feature = "opt-hot-path"))]
+        let lang_code_prefilter: Option<Set<String>> = None;
 
         let reader_file = File::open(&path_jsonl)?;
         let mut reader = BufReader::with_capacity(capacity, reader_file);
@@ -637,12 +671,19 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
             }
 
             if let Some(lang_code_prefilter) = &lang_code_prefilter {
+                #[cfg(feature = "opt-lang-probe-scan")]
                 let keep = if let Some(lang_code) = probe_top_level_lang_code(&line) {
                     lang_code_prefilter.contains(lang_code)
                 } else {
                     let probe: LangCodeProbe = serde_json::from_slice(&line).with_context(
                         || "Error decoding JSON @ make_dict (lang_code prefilter fallback)",
                     )?;
+                    lang_code_prefilter.contains(probe.lang_code.as_ref())
+                };
+                #[cfg(not(feature = "opt-lang-probe-scan"))]
+                let keep = {
+                    let probe: LangCodeProbe = serde_json::from_slice(&line)
+                        .with_context(|| "Error decoding JSON @ make_dict (lang_code prefilter)")?;
                     lang_code_prefilter.contains(probe.lang_code.as_ref())
                 };
                 if !keep {
@@ -653,7 +694,12 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
             let mut entry: WordEntry =
                 serde_json::from_slice(&line).with_context(|| "Error decoding JSON @ make_dict")?;
 
-            if (!opts.filter.is_empty() || !opts.reject.is_empty()) && rejected(&entry, opts) {
+            #[cfg(feature = "opt-hot-path")]
+            let is_rejected =
+                (!opts.filter.is_empty() || !opts.reject.is_empty()) && rejected(&entry, opts);
+            #[cfg(not(feature = "opt-hot-path"))]
+            let is_rejected = rejected(&entry, opts);
+            if is_rejected {
                 continue;
             }
 
@@ -662,7 +708,17 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
                 break;
             }
 
+            #[cfg(feature = "opt-hot-path")]
             for &langs in &langs_for_edition {
+                if dict.keep_if(langs.source, &entry) {
+                    let key = dict.langs_to_key(langs);
+                    let irs = irs_map.entry(key).or_default();
+                    dict.preprocess(langs, &mut entry, opts, irs);
+                    dict.process(langs, &entry, irs);
+                }
+            }
+            #[cfg(not(feature = "opt-hot-path"))]
+            for langs in dict.iter_langs(edition, source_pm, target_pm) {
                 if dict.keep_if(langs.source, &entry) {
                     let key = dict.langs_to_key(langs);
                     let irs = irs_map.entry(key).or_default();
@@ -729,7 +785,7 @@ pub fn make_dict<D: Dictionary + IterLang + DatasetStrategy>(
 }
 // TODO: rename this to make_dicts when done, and keep the original
 
-#[cfg(test)]
+#[cfg(all(test, feature = "opt-lang-probe-scan"))]
 mod tests {
     use super::probe_top_level_lang_code;
 
