@@ -1,7 +1,7 @@
 // Simple javascript script to generate the download urls from the language selection.
 
 function buildUrl(type, target, source) {
-    const BASE_URL = "https://huggingface.co/datasets/daxida/test-dataset/resolve/main/dict";
+    const BASE_URL = "https://huggingface.co/datasets/daxida/wty-release/resolve/main/dict";
     switch (type) {
         case "main":
             return `${BASE_URL}/${source}/${target}/wty-${source}-${target}.zip`;
