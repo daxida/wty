@@ -1,6 +1,7 @@
 // Simple javascript script to generate the download urls from the language selection.
 
-function buildUrl(type, target, source) {
+// Cf. src/path.rs::dict_name_expanded
+function buildUrl(type, source, target) {
     const BASE_URL = "https://huggingface.co/datasets/daxida/wty-release/resolve/main/latest/dict";
     switch (type) {
         case "main":
@@ -45,7 +46,7 @@ function setupRow(row) {
             return;
         }
 
-        const url = buildUrl(type, target, source);
+        const url = buildUrl(type, source, target);
         if (!url) {
             btn.disabled = true;
             info.textContent = "";
