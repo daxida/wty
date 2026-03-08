@@ -144,8 +144,12 @@ impl PathManager {
     }
 
     pub fn setup_dirs(&self) -> anyhow::Result<()> {
-        fs::create_dir_all(self.dir_kaik())?;
-        fs::create_dir_all(self.dir_dict())?;
+        if !self.opts.stream {
+            fs::create_dir_all(self.dir_kaik())?;
+        }
+        if !self.opts.output_stdout {
+            fs::create_dir_all(self.dir_dict())?;
+        }
 
         if self.opts.save_temps {
             // not needed for dictionaries that don't support write_ir
@@ -231,5 +235,63 @@ impl PathManager {
     /// Example: `data/dict/el/el/temp/diagnostics`
     pub fn dir_diagnostics(&self) -> PathBuf {
         self.dir_temp().join("diagnostics")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::*;
+
+    fn temp_root(label: &str) -> PathBuf {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        std::env::temp_dir().join(format!("wty-{label}-{unique}"))
+    }
+
+    fn path_manager(stream: bool, root_dir: PathBuf) -> PathManager {
+        PathManager {
+            dict_ty: DictionaryType::Main,
+            dict_name: DictName::default(),
+            langs: LangSpecs {
+                edition: EditionSpec::One(Edition::En),
+                source: Lang::Ja,
+                target: Lang::En,
+            },
+            opts: Options {
+                stream,
+                root_dir,
+                ..Default::default()
+            },
+        }
+    }
+
+    #[test]
+    fn setup_dirs_skips_kaikki_dir_when_streaming() {
+        let root_dir = temp_root("stream");
+        let pm = path_manager(true, root_dir.clone());
+
+        pm.setup_dirs().unwrap();
+
+        assert!(!pm.dir_kaik().exists());
+        assert!(pm.dir_dicts().exists());
+
+        let _ = fs::remove_dir_all(root_dir);
+    }
+
+    #[test]
+    fn setup_dirs_keeps_kaikki_dir_in_cache_mode() {
+        let root_dir = temp_root("cache");
+        let pm = path_manager(false, root_dir.clone());
+
+        pm.setup_dirs().unwrap();
+
+        assert!(pm.dir_kaik().exists());
+        assert!(pm.dir_dicts().exists());
+
+        let _ = fs::remove_dir_all(root_dir);
     }
 }
