@@ -137,23 +137,25 @@ fn write_banks(
     for (bank_num, bank) in yomitan_entries.chunks(BANK_SIZE).enumerate() {
         *bank_index += 1;
 
-        let json_bytes = if pretty {
-            serde_json::to_vec_pretty(&bank)?
-        } else {
-            serde_json::to_vec(&bank)?
-        };
-
         let bank_name = format!("{bank_name_prefix}_{bank_index}.json");
         let file_path = out_dir.join(&bank_name);
 
         match sink {
             Sink::Disk => {
                 let mut file = File::create(&file_path)?;
-                file.write_all(&json_bytes)?;
+                if pretty {
+                    serde_json::to_writer_pretty(&mut file, &bank)?;
+                } else {
+                    serde_json::to_writer(&mut file, &bank)?;
+                }
             }
             Sink::Zip(ref mut zip, zip_options) => {
                 zip.start_file(&bank_name, zip_options)?;
-                zip.write_all(&json_bytes)?;
+                if pretty {
+                    serde_json::to_writer_pretty(&mut **zip, &bank)?;
+                } else {
+                    serde_json::to_writer(&mut **zip, &bank)?;
+                }
             }
         }
 

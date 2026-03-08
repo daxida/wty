@@ -1,9 +1,17 @@
 use std::fs;
+use std::io::{Read, Write};
+use std::net::TcpListener;
 use std::path::{Path, PathBuf};
+use std::sync::{Mutex, OnceLock};
+use std::thread;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use anyhow::{Ok, Result};
+use flate2::Compression;
+use flate2::write::GzEncoder;
 use tracing_subscriber::EnvFilter;
 use tracing_subscriber::fmt::format::FmtSpan;
+use zip::ZipArchive;
 
 use wty::cli::{DictName, GlossaryArgs, GlossaryLangs, IpaArgs, MainArgs, MainLangs, Options};
 use wty::dict::{DGlossary, DIpa, DMain};
@@ -50,6 +58,15 @@ fn fixture_options(fixture_dir: &Path) -> Options {
     }
 }
 
+fn output_options(root_dir: &Path, stream: bool) -> Options {
+    Options {
+        pretty: true,
+        stream,
+        root_dir: root_dir.to_path_buf(),
+        ..Default::default()
+    }
+}
+
 fn fixture_main_args(source: Lang, target: Edition, fixture_dir: &Path) -> MainArgs {
     MainArgs {
         langs: MainLangs {
@@ -58,6 +75,14 @@ fn fixture_main_args(source: Lang, target: Edition, fixture_dir: &Path) -> MainA
         },
         dict_name: DictName::default(),
         options: fixture_options(fixture_dir),
+    }
+}
+
+fn output_main_args(source: Lang, target: Edition, root_dir: &Path, stream: bool) -> MainArgs {
+    MainArgs {
+        langs: MainLangs { source, target },
+        dict_name: DictName::default(),
+        options: output_options(root_dir, stream),
     }
 }
 
@@ -92,6 +117,77 @@ fn setup_tracing_test() {
         .with_target(true)
         .with_level(true)
         .init();
+}
+
+fn temp_root(label: &str) -> PathBuf {
+    let unique = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    std::env::temp_dir().join(format!("wty-test-{label}-{unique}"))
+}
+
+fn gzip_fixture(path: &Path) -> Vec<u8> {
+    let input = fs::read(path).unwrap();
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(&input).unwrap();
+    encoder.finish().unwrap()
+}
+
+fn start_kaikki_server(body: Vec<u8>, request_count: usize) -> (String, thread::JoinHandle<()>) {
+    let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+    let addr = listener.local_addr().unwrap();
+    let handle = thread::spawn(move || {
+        for _ in 0..request_count {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut request = Vec::new();
+            let mut buf = [0_u8; 1024];
+            loop {
+                let bytes_read = stream.read(&mut buf).unwrap();
+                if bytes_read == 0 {
+                    break;
+                }
+                request.extend_from_slice(&buf[..bytes_read]);
+                if request.windows(4).any(|window| window == b"\r\n\r\n") {
+                    break;
+                }
+            }
+
+            let request_text = String::from_utf8(request).unwrap();
+            let request_line = request_text.lines().next().unwrap();
+            assert_eq!(
+                request_line,
+                "GET /dictionary/raw-wiktextract-data.jsonl.gz HTTP/1.1"
+            );
+
+            write!(
+                stream,
+                "HTTP/1.1 200 OK\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                body.len()
+            )
+            .unwrap();
+            stream.write_all(&body).unwrap();
+            stream.flush().unwrap();
+        }
+    });
+
+    (format!("http://{addr}"), handle)
+}
+
+fn zip_contents(path: &Path) -> Vec<(String, Vec<u8>)> {
+    let file = fs::File::open(path).unwrap();
+    let mut zip = ZipArchive::new(file).unwrap();
+    let mut contents = Vec::new();
+
+    for index in 0..zip.len() {
+        let mut entry = zip.by_index(index).unwrap();
+        let mut data = Vec::new();
+        entry.read_to_end(&mut data).unwrap();
+        contents.push((entry.name().to_string(), data));
+    }
+
+    contents.sort_by(|left, right| left.0.cmp(&right.0));
+    contents
 }
 
 /// Test via snapshots and git diffs like the original
@@ -179,6 +275,50 @@ fn snapshot() {
     }
 
     cleanup(&fixture_dir.join("dict"));
+}
+
+#[test]
+fn streamed_main_matches_cached_main_without_creating_cache_files() {
+    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+    let _guard = ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+    let fixture = PathBuf::from("tests/kaikki/ja-en-extract.jsonl");
+    let gzipped_fixture = gzip_fixture(&fixture);
+    let (base_url, server) = start_kaikki_server(gzipped_fixture, 2);
+
+    let cached_root = temp_root("cached-main");
+    let streamed_root = temp_root("streamed-main");
+    fs::create_dir_all(&cached_root).unwrap();
+    fs::create_dir_all(&streamed_root).unwrap();
+
+    unsafe {
+        std::env::set_var("WTY_KAIKKI_ROOT_URL", &base_url);
+    }
+
+    let cached_args = output_main_args(Lang::Ja, Edition::En, &cached_root, false);
+    let streamed_args = output_main_args(Lang::Ja, Edition::En, &streamed_root, true);
+
+    let cached_pm = PathManager::try_from(cached_args.clone()).unwrap();
+    let streamed_pm = PathManager::try_from(streamed_args.clone()).unwrap();
+
+    make_dict(DMain, cached_args).unwrap();
+    make_dict(DMain, streamed_args).unwrap();
+
+    unsafe {
+        std::env::remove_var("WTY_KAIKKI_ROOT_URL");
+    }
+
+    server.join().unwrap();
+
+    assert!(cached_pm.dir_kaik().exists());
+    assert!(!streamed_pm.dir_kaik().exists());
+    assert_eq!(
+        zip_contents(&cached_pm.path_dict()),
+        zip_contents(&streamed_pm.path_dict())
+    );
+
+    let _ = fs::remove_dir_all(cached_root);
+    let _ = fs::remove_dir_all(streamed_root);
 }
 
 /// Delete generated artifacts from previous tests runs, if any

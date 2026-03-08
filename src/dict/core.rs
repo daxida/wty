@@ -196,6 +196,41 @@ pub struct Langs {
     pub target: Lang,
 }
 
+#[derive(Debug, Clone)]
+pub enum DatasetInput {
+    Cached(PathBuf),
+    Streamed(Edition),
+}
+
+impl DatasetInput {
+    fn open_reader(&self, capacity: usize, quiet: bool) -> Result<Box<dyn BufRead>> {
+        match self {
+            Self::Cached(path) => Ok(Box::new(BufReader::with_capacity(
+                capacity,
+                File::open(path)?,
+            ))),
+            Self::Streamed(edition) => {
+                #[cfg(feature = "html")]
+                {
+                    crate::download::stream_jsonl_reader(*edition, quiet, capacity)
+                }
+                #[cfg(not(feature = "html"))]
+                {
+                    let _ = (edition, quiet, capacity);
+                    anyhow::bail!("streamed downloads require the `html` feature")
+                }
+            }
+        }
+    }
+
+    fn display_path(&self) -> String {
+        match self {
+            Self::Cached(path) => path.display().to_string(),
+            Self::Streamed(edition) => format!("stream://{edition}"),
+        }
+    }
+}
+
 impl Langs {
     pub const fn new(edition: Edition, source: Lang, target: Lang) -> Self {
         Self {
@@ -256,19 +291,33 @@ pub fn find_or_download_jsonl(
     // );
 
     #[cfg(feature = "html")]
-    crate::download::download_jsonl(edition, path, false)?;
+    crate::download::download_jsonl_to_path(edition, path, pm.opts.quiet)?;
 
     Ok(path.clone())
 }
 
-pub fn iter_datasets(pm: &PathManager) -> impl Iterator<Item = Result<(Edition, PathBuf)>> + '_ {
+fn dataset_input(edition: Edition, source: Lang, pm: &PathManager) -> Result<DatasetInput> {
+    if pm.opts.stream {
+        return Ok(DatasetInput::Streamed(edition));
+    }
+
+    Ok(DatasetInput::Cached(find_or_download_jsonl(
+        edition,
+        Some(source),
+        pm,
+    )?))
+}
+
+pub fn iter_datasets(
+    pm: &PathManager,
+) -> impl Iterator<Item = Result<(Edition, DatasetInput)>> + '_ {
     let (edition_pm, source_pm, _) = pm.langs();
 
     edition_pm.variants().into_iter().map(move |edition| {
-        let path_jsonl = find_or_download_jsonl(edition, Some(source_pm), pm)?;
-        tracing::debug!("edition: {edition}, path: {}", path_jsonl.display());
+        let dataset = dataset_input(edition, source_pm, pm)?;
+        tracing::debug!("edition: {edition}, path: {}", dataset.display_path());
 
-        Ok((edition, path_jsonl))
+        Ok((edition, dataset))
     })
 }
 
@@ -300,10 +349,8 @@ pub fn make_dict<D: Dictionary + AggregationKey>(dict: D, raw_args: D::A) -> Res
     let mut irs_map: Map<LangsKey, D::I> = Map::default();
 
     for pair in iter_datasets(pm) {
-        let (edition, path_jsonl) = pair?;
-
-        let reader_file = File::open(&path_jsonl)?;
-        let mut reader = BufReader::with_capacity(capacity, reader_file);
+        let (edition, dataset) = pair?;
+        let mut reader = dataset.open_reader(capacity, opts.quiet)?;
 
         let mut line_count = 0;
         let mut accepted_count = 0;

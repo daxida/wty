@@ -172,6 +172,10 @@ pub struct Options {
     #[arg(long, short)]
     pub redownload: bool,
 
+    /// Stream input directly from Kaikki instead of writing raw jsonl files to disk
+    #[arg(long)]
+    pub stream: bool,
+
     /// Only keep the first n filtered lines. -1 keeps all
     #[arg(long, default_value_t = -1)]
     pub first: i32,
