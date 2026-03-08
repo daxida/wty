@@ -176,6 +176,10 @@ pub struct Options {
     #[arg(long)]
     pub stream: bool,
 
+    /// Write the generated Yomitan zip archive to stdout
+    #[arg(long = "stdout", requires = "quiet", conflicts_with = "save_temps")]
+    pub output_stdout: bool,
+
     /// Only keep the first n filtered lines. -1 keeps all
     #[arg(long, default_value_t = -1)]
     pub first: i32,
@@ -456,5 +460,11 @@ mod tests {
         assert!(MainArgs::try_parse_from(["_pname", "el", "el", "--filter", "foo,bar"]).is_err());
         assert!(MainArgs::try_parse_from(["_pname", "el", "el", "--filter", "word,hello"]).is_ok());
         assert!(MainArgs::try_parse_from(["_pname", "el", "el", "--reject", "pos,name"]).is_ok());
+    }
+
+    #[test]
+    fn stdout_requires_quiet() {
+        assert!(MainArgs::try_parse_from(["_pname", "el", "el", "--stdout"]).is_err());
+        assert!(MainArgs::try_parse_from(["_pname", "el", "el", "--stdout", "--quiet"]).is_ok());
     }
 }

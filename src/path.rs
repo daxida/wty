@@ -147,7 +147,9 @@ impl PathManager {
         if !self.opts.stream {
             fs::create_dir_all(self.dir_kaik())?;
         }
-        fs::create_dir_all(self.dir_dict())?;
+        if !self.opts.output_stdout {
+            fs::create_dir_all(self.dir_dict())?;
+        }
 
         if self.opts.save_temps {
             // not needed for dictionaries that don't support write_ir
