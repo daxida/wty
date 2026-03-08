@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::{Read, Write};
 use std::net::TcpListener;
+use std::process::Command;
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, OnceLock};
 use std::thread;
@@ -122,6 +123,14 @@ fn gzip_fixture(path: &Path) -> Vec<u8> {
     let input = fs::read(path).unwrap();
     let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
     encoder.write_all(&input).unwrap();
+    encoder.finish().unwrap()
+}
+
+fn gzip_repeated_line(line: &[u8], repeat: usize) -> Vec<u8> {
+    let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
+    for _ in 0..repeat {
+        encoder.write_all(line).unwrap();
+    }
     encoder.finish().unwrap()
 }
 
@@ -310,6 +319,85 @@ fn streamed_main_matches_cached_main_without_creating_cache_files() {
 
     let _ = fs::remove_dir_all(cached_root);
     let _ = fs::remove_dir_all(streamed_root);
+}
+
+#[test]
+fn streamed_main_peak_rss_stays_well_below_dataset_size() {
+    static ENV_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+
+    let _guard = ENV_LOCK.get_or_init(|| Mutex::new(())).lock().unwrap();
+    let filler = "x".repeat(1024);
+    let line = format!(
+        r#"{{"lang_code":"ja","word":"example","pos":"noun","junk":"{filler}"}}"#,
+    );
+    let line = format!("{line}\n");
+    let repeat = 100_000;
+    let dataset_size = line.len() * repeat;
+    let gzipped_fixture = gzip_repeated_line(line.as_bytes(), repeat);
+    let (base_url, server) = start_kaikki_server(gzipped_fixture, 1);
+
+    let root_dir = temp_root("stream-memory");
+    fs::create_dir_all(&root_dir).unwrap();
+
+    let python = r#"
+import resource
+import subprocess
+import sys
+
+proc = subprocess.run(
+    sys.argv[1:],
+    stdout=subprocess.DEVNULL,
+    stderr=subprocess.PIPE,
+)
+if proc.returncode != 0:
+    sys.stderr.buffer.write(proc.stderr)
+    raise SystemExit(proc.returncode)
+
+rss = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+if sys.platform != "darwin":
+    rss *= 1024
+print(rss)
+"#;
+
+    let output = Command::new("python3")
+        .arg("-c")
+        .arg(python)
+        .arg(env!("CARGO_BIN_EXE_wty"))
+        .arg("main")
+        .arg("ja")
+        .arg("en")
+        .arg("--stream")
+        .arg("--stdout")
+        .arg("--quiet")
+        .arg("--filter")
+        .arg("word,__never__")
+        .arg("--root-dir")
+        .arg(&root_dir)
+        .env("WTY_KAIKKI_ROOT_URL", &base_url)
+        .output()
+        .unwrap();
+
+    if !output.status.success() {
+        panic!("{}", String::from_utf8_lossy(&output.stderr));
+    }
+
+    let rss_bytes: usize = String::from_utf8(output.stdout)
+        .unwrap()
+        .trim()
+        .parse()
+        .unwrap();
+
+    server.join().unwrap();
+
+    assert!(dataset_size > 100 * 1024 * 1024);
+    assert!(
+        rss_bytes * 3 < dataset_size,
+        "expected peak RSS ({rss_bytes} bytes) to stay well below dataset size ({dataset_size} bytes)",
+    );
+    assert!(!root_dir.join("kaikki").exists());
+    assert!(!root_dir.join("dict").exists());
+
+    let _ = fs::remove_dir_all(root_dir);
 }
 
 /// Delete generated artifacts from previous tests runs, if any
