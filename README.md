@@ -1,3 +1,5 @@
+> **⚠️ DEPRECATED**: This repository is no longer being maintained. Please use the official [wiktionary-to-yomitan](https://github.com/yomidevs/wiktionary-to-yomitan) repository instead.
+
 ## wiktionary to yomitan (wty)
 
 [![Build status](https://github.com/daxida/wty/workflows/ci/badge.svg)](https://github.com/daxida/wty/actions)
