@@ -63,6 +63,7 @@
     {"iso": "ro",  "language": "Romanian",               "displayName": "Romanian",                 "flag": "🇷🇴"                       },
     {"iso": "ru",  "language": "Russian",                "displayName": "Russian",                  "flag": "🇷🇺",   "hasEdition": true },
     {"iso": "sa",  "language": "Sanskrit",               "displayName": "Sanskrit",                 "flag": "🏳️"                       },
+    {"iso": "gd",  "language": "Scottish Gaelic",        "displayName": "Scottish Gaelic",          "flag": "🏴󠁧󠁢󠁳󠁣󠁴󠁿"                       },
     {"iso": "sh",  "language": "Serbo-Croatian",         "displayName": "Serbo-Croatian",           "flag": "🇷🇸🇭🇷"                     },
     {"iso": "scn", "language": "Sicilian",               "displayName": "Sicilian",                 "flag": "🍋"                       },
     {"iso": "sl",  "language": "Slovene",                "displayName": "Slovene",                  "flag": "🇸🇮"                       },
