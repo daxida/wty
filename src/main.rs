@@ -42,6 +42,10 @@ fn run(cmd: Command) -> Result<()> {
         Command::Ipa(args) => make_dict(DIpa, args),
         Command::IpaMerged(args) => make_dict(DIpaMerged, args),
         Command::Download(args) => {
+            if args.options.stream {
+                anyhow::bail!("`wty download` does not support `--stream`.");
+            }
+
             // NOTE: uses MainArgs, so it expects two language codes.
             let langs: LangSpecs = args.langs.clone().try_into()?;
             let source: Lang = langs.source.try_into().unwrap();
@@ -69,4 +73,17 @@ fn main() -> Result<()> {
     let cli = Cli::parse_cli();
     init_logger(cli.verbose);
     run(cli.command)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use clap::Parser;
+
+    #[test]
+    fn download_rejects_stream_mode() {
+        let cli = Cli::try_parse_from(["wty", "download", "ja", "en", "--stream"]).unwrap();
+        let err = run(cli.command).unwrap_err();
+        assert!(err.to_string().contains("does not support `--stream`"));
+    }
 }
